@@ -4,7 +4,7 @@ import { ArrowRight, CheckCircle2, Navigation, Route, FileText, BarChart3, Users
 
 export default function LandingPage() {
   return (
-    <div className="min-h-screen bg-slate-50 font-sans flex flex-col selection:bg-blue-200">
+    <div className="min-h-screen bg-slate-50 font-sans flex flex-col selection:bg-blue-200 overflow-x-hidden">
       
       {/* 🌟 Navigation Bar */}
       <nav className="w-full bg-white/80 backdrop-blur-xl border-b border-slate-200 sticky top-0 z-50 transition-all duration-300">
@@ -12,7 +12,7 @@ export default function LandingPage() {
           <div className="flex justify-between h-20 items-center">
             {/* Logo */}
             <div className="flex-shrink-0 flex items-center group cursor-pointer">
-              <Image src="/logo.png" alt="Transitflow LOGISTICS" width={240} height={60} className="h-14 w-auto object-contain mix-blend-multiply transition-transform duration-300 group-hover:scale-105" />
+              <Image src="/logo.png" alt="Transitflow LOGISTICS" width={240} height={60} className="h-10 md:h-14 w-auto object-contain mix-blend-multiply transition-transform duration-300 group-hover:scale-105" />
             </div>
             
             {/* Nav Links */}
@@ -23,12 +23,12 @@ export default function LandingPage() {
             </div>
 
             {/* Auth Buttons */}
-            <div className="flex items-center space-x-4">
-              <Link href="/login" className="text-slate-600 hover:text-slate-900 font-bold text-[15px] px-5 py-2.5 rounded-full hover:bg-slate-100 transition-all">
+            <div className="flex items-center space-x-2 md:space-x-4">
+              <Link href="/login" className="hidden sm:block text-slate-600 hover:text-slate-900 font-bold text-sm md:text-[15px] px-3 md:px-5 py-2.5 rounded-full hover:bg-slate-100 transition-all">
                 Sign In
               </Link>
-              <Link href="/register" className="bg-[#2563EB] hover:bg-[#1D4ED8] text-white font-bold text-[15px] px-7 py-2.5 rounded-full shadow-[0_8px_20px_rgb(37,99,235,0.25)] hover:shadow-[0_8px_25px_rgb(37,99,235,0.4)] hover:-translate-y-0.5 transition-all flex items-center gap-2">
-                Start Free <ArrowRight className="w-4 h-4" />
+              <Link href="/register" className="bg-[#2563EB] hover:bg-[#1D4ED8] text-white font-bold text-sm md:text-[15px] px-4 md:px-7 py-2 md:py-2.5 rounded-full shadow-[0_8px_20px_rgb(37,99,235,0.25)] hover:shadow-[0_8px_25px_rgb(37,99,235,0.4)] hover:-translate-y-0.5 transition-all flex items-center gap-1 md:gap-2">
+                Start Free <ArrowRight className="w-3 h-3 md:w-4 md:h-4" />
               </Link>
             </div>
           </div>
@@ -78,18 +78,18 @@ export default function LandingPage() {
               </Link>
             </div>
             
-            <div className="mt-14 flex flex-wrap items-center justify-center gap-x-10 gap-y-4 text-slate-300 text-[15px] font-semibold">
-              <div className="flex items-center gap-2"><CheckCircle2 className="w-5 h-5 text-emerald-400"/> Zero Setup Fees</div>
-              <div className="flex items-center gap-2"><CheckCircle2 className="w-5 h-5 text-emerald-400"/> 2PL & 3PL Support</div>
-              <div className="flex items-center gap-2"><CheckCircle2 className="w-5 h-5 text-emerald-400"/> Mobile App for Drivers</div>
+            <div className="mt-10 md:mt-14 flex flex-wrap items-center justify-center gap-x-4 md:gap-x-10 gap-y-4 text-slate-300 text-sm md:text-[15px] font-semibold">
+              <div className="flex items-center gap-1.5 md:gap-2"><CheckCircle2 className="w-4 h-4 md:w-5 md:h-5 text-emerald-400"/> Zero Setup Fees</div>
+              <div className="flex items-center gap-1.5 md:gap-2"><CheckCircle2 className="w-4 h-4 md:w-5 md:h-5 text-emerald-400"/> 2PL & 3PL Support</div>
+              <div className="flex items-center gap-1.5 md:gap-2"><CheckCircle2 className="w-4 h-4 md:w-5 md:h-5 text-emerald-400"/> Mobile App for Drivers</div>
             </div>
           </div>
         </div>
         
         {/* ✨ Features Grid */}
-        <div id="features" className="bg-slate-50 py-32 relative -mt-10 rounded-t-[3rem] shadow-[0_-20px_50px_rgba(0,0,0,0.2)]">
+        <div id="features" className="bg-slate-50 py-20 md:py-32 relative -mt-6 md:-mt-10 rounded-t-3xl md:rounded-t-[3rem] shadow-[0_-20px_50px_rgba(0,0,0,0.2)]">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="text-center mb-20">
+            <div className="text-center mb-12 md:mb-20">
               <h2 className="text-blue-600 font-bold tracking-wider uppercase text-sm mb-3">Why TransitFlow?</h2>
               <h3 className="text-4xl md:text-5xl font-black text-slate-900 tracking-tight">Everything you need to scale</h3>
             </div>
@@ -155,10 +155,10 @@ export default function LandingPage() {
         </div>
 
         {/* 🔄 How It Works */}
-        <div id="how-it-works" className="bg-white py-32 border-t border-slate-100">
+        <div id="how-it-works" className="bg-white py-20 md:py-32 border-t border-slate-100">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
             <h2 className="text-blue-600 font-bold tracking-wider uppercase text-sm mb-3">Workflow</h2>
-            <h3 className="text-4xl md:text-5xl font-black text-slate-900 tracking-tight mb-20">Logistics simplified in 4 steps</h3>
+            <h3 className="text-4xl md:text-5xl font-black text-slate-900 tracking-tight mb-12 md:mb-20">Logistics simplified in 4 steps</h3>
             
             <div className="grid grid-cols-1 md:grid-cols-4 gap-8 relative">
               {/* Connecting Line */}
@@ -201,33 +201,33 @@ export default function LandingPage() {
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center divide-x divide-slate-800">
               <div className="p-4 hover:scale-105 transition-transform duration-300">
-                <div className="text-4xl md:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-indigo-400 mb-2">₹500Cr+</div>
-                <div className="text-slate-400 font-medium text-lg">Freight Managed</div>
+                <div className="text-3xl md:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-indigo-400 mb-2">₹500Cr+</div>
+                <div className="text-slate-400 font-medium text-sm md:text-lg">Freight Managed</div>
               </div>
               <div className="p-4 hover:scale-105 transition-transform duration-300">
-                <div className="text-4xl md:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-teal-400 mb-2">50,000+</div>
-                <div className="text-slate-400 font-medium text-lg">Trips Completed</div>
+                <div className="text-3xl md:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-teal-400 mb-2">50,000+</div>
+                <div className="text-slate-400 font-medium text-sm md:text-lg">Trips Completed</div>
               </div>
               <div className="p-4 hover:scale-105 transition-transform duration-300">
-                <div className="text-4xl md:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-400 mb-2">99.9%</div>
-                <div className="text-slate-400 font-medium text-lg">Uptime Reliability</div>
+                <div className="text-3xl md:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-400 mb-2">99.9%</div>
+                <div className="text-slate-400 font-medium text-sm md:text-lg">Uptime Reliability</div>
               </div>
               <div className="p-4 hover:scale-105 transition-transform duration-300">
-                <div className="text-4xl md:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-orange-400 to-amber-400 mb-2">500+</div>
-                <div className="text-slate-400 font-medium text-lg">Fleet Owners</div>
+                <div className="text-3xl md:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-orange-400 to-amber-400 mb-2">500+</div>
+                <div className="text-slate-400 font-medium text-sm md:text-lg">Fleet Owners</div>
               </div>
             </div>
           </div>
         </div>
 
         {/* 🎯 CTA Section */}
-        <div className="bg-gradient-to-br from-blue-600 to-indigo-700 py-32 relative overflow-hidden">
+        <div className="bg-gradient-to-br from-blue-600 to-indigo-700 py-20 md:py-32 relative overflow-hidden">
           <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10"></div>
           <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10">
-            <h2 className="text-4xl md:text-6xl font-black text-white mb-8 tracking-tight">Ready to transform your transport business?</h2>
-            <p className="text-xl text-blue-100 mb-12 font-medium">Join hundreds of logistics companies upgrading their operations with TransitFlow today.</p>
-            <Link href="/register" className="inline-flex items-center justify-center gap-3 bg-white text-blue-700 hover:bg-blue-50 font-black text-xl px-12 py-5 rounded-full shadow-2xl hover:shadow-[0_0_40px_rgba(255,255,255,0.4)] hover:-translate-y-1 transition-all duration-300">
-              Create Your Free Account <ArrowRight className="w-6 h-6" />
+            <h2 className="text-3xl md:text-6xl font-black text-white mb-6 md:mb-8 tracking-tight">Ready to transform your transport business?</h2>
+            <p className="text-lg md:text-xl text-blue-100 mb-8 md:mb-12 font-medium">Join hundreds of logistics companies upgrading their operations with TransitFlow today.</p>
+            <Link href="/register" className="inline-flex items-center justify-center gap-2 md:gap-3 bg-white text-blue-700 hover:bg-blue-50 font-black text-lg md:text-xl px-8 md:px-12 py-4 md:py-5 rounded-full shadow-2xl hover:shadow-[0_0_40px_rgba(255,255,255,0.4)] hover:-translate-y-1 transition-all duration-300">
+              Create Your Free Account <ArrowRight className="w-5 h-5 md:w-6 md:h-6" />
             </Link>
           </div>
         </div>
