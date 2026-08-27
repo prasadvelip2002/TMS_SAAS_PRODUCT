@@ -33,7 +33,7 @@ export default function LoginPage() {
         localStorage.setItem("user", JSON.stringify(data.user));
         document.cookie = "isLoggedIn=true; path=/; max-age=86400"; // Set cookie for middleware
         toast.success("Login successful!");
-        router.push("/");
+        window.location.href = "/dashboard";
       } else {
         toast.error("Invalid credentials.");
       }
