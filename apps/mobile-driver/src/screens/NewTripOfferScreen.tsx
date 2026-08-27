@@ -2,12 +2,12 @@ import React from 'react';
 import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, ScrollView } from 'react-native';
 
 export default function NewTripOfferScreen({ trip, onAccept, onReject }: { trip: any, onAccept: () => void, onReject: () => void }) {
-  const source = trip?.indent?.source || 'Mumbai';
-  const dest = trip?.indent?.destination || 'Pune';
-  const material = trip?.indent?.material || 'Auto parts';
-  const distance = '148 km';
-  const weight = '16 T';
-  const earning = '₹28,500';
+  const source = trip?.indent?.source || 'Origin';
+  const dest = trip?.indent?.destination || 'Destination';
+  const material = trip?.indent?.material || 'General Goods';
+  const distance = 'TBD';
+  const weight = trip?.indent?.capacityInTons ? `${trip.indent.capacityInTons} T` : 'TBD';
+  // const earning = `₹${(trip?.supplierRate || trip?.freightCharges || 0).toLocaleString()}`;
 
   return (
     <View style={styles.container}>
@@ -20,7 +20,7 @@ export default function NewTripOfferScreen({ trip, onAccept, onReject }: { trip:
           <View style={styles.pillContainer}>
             <Text style={styles.pillText}>New Trip Offer</Text>
           </View>
-          <Text style={styles.tripId}>TRIP-{trip.id || '2291'}</Text>
+          <Text style={styles.tripId}>TRIP-{trip?.id || '---'}</Text>
           <Text style={styles.timer}>Expires in 04:58</Text>
         </View>
 
@@ -40,7 +40,7 @@ export default function NewTripOfferScreen({ trip, onAccept, onReject }: { trip:
               <View style={styles.gridItem}>
                 <Text style={styles.gridIcon}>📦</Text>
                 <View>
-                  <Text style={styles.gridLabel}>AUTO PARTS</Text>
+                  <Text style={styles.gridLabel}>{material.toUpperCase()}</Text>
                   <Text style={styles.gridValue}>{weight}</Text>
                 </View>
               </View>
@@ -49,7 +49,7 @@ export default function NewTripOfferScreen({ trip, onAccept, onReject }: { trip:
                 <Text style={styles.gridIcon}>📍</Text>
                 <View>
                   <Text style={styles.gridLabel}>DISTANCE</Text>
-                  <Text style={styles.gridValue}>{distance}</Text>
+                  <Text style={styles.gridValue}>148 km</Text>
                 </View>
               </View>
               
@@ -63,12 +63,21 @@ export default function NewTripOfferScreen({ trip, onAccept, onReject }: { trip:
               </View>
               
               <View style={styles.gridItem}>
+                <Text style={styles.gridIcon}>💳</Text>
+                <View>
+                  <Text style={styles.gridLabel}>ADVANCE LIMIT</Text>
+                  <Text style={styles.gridValue}>₹{Math.floor((trip?.supplierRate || 0) * 0.8).toLocaleString()}</Text>
+                </View>
+              </View>
+              {/* 
+              <View style={styles.gridItem}>
                 <Text style={styles.gridIcon}>₹</Text>
                 <View>
                   <Text style={styles.gridLabel}>EARNING</Text>
                   <Text style={styles.gridValue}>{earning}</Text>
                 </View>
               </View>
+              */}
             </View>
           </View>
 

@@ -3,9 +3,8 @@ using System.Collections.Generic;
 
 namespace api_backend.Models
 {
-    public class Driver
+    public class Driver : BaseEntity, ITenantEntity, ICompanyEntity
     {
-        public int Id { get; set; }
         public required string Name { get; set; }
         public string? Phone { get; set; }
         public string? LicenseNumber { get; set; }
@@ -16,7 +15,8 @@ namespace api_backend.Models
         public int TenantId { get; set; }
         public Tenant? Tenant { get; set; }
 
-        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+        public int CompanyId { get; set; }
+        public Company? Company { get; set; }
 
         public ICollection<Trip>? Trips { get; set; }
     }

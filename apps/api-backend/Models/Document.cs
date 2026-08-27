@@ -2,9 +2,8 @@ using System;
 
 namespace api_backend.Models
 {
-    public class Document
+    public class Document : BaseEntity, ITenantEntity, ICompanyEntity
     {
-        public int Id { get; set; }
         
         public required string EntityType { get; set; } // Vehicle, POD
         public int EntityId { get; set; }
@@ -17,6 +16,7 @@ namespace api_backend.Models
         public int TenantId { get; set; }
         public Tenant? Tenant { get; set; }
 
-        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+        public int CompanyId { get; set; }
+        public Company? Company { get; set; }
     }
 }

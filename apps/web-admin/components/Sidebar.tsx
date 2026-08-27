@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
-import { Grid, Users, Truck, CreditCard, Paperclip, FileText, Handshake, DollarSign, Camera, Plus, Check, Bell, BarChart2, Bot, ShoppingCart, Wallet, Map as MapIcon } from "lucide-react";
+import { Grid, Users, Truck, CreditCard, Paperclip, FileText, Handshake, DollarSign, Camera, Plus, Check, Bell, BarChart2, Bot, ShoppingCart, Wallet, Map as MapIcon, Building2 } from "lucide-react";
 
 export function Sidebar() {
   const pathname = usePathname();
@@ -25,44 +25,56 @@ export function Sidebar() {
 
   const navGroups = [
     {
+      group: 'SaaS Administration',
+      items: [
+        { href: '/saas-admin', label: 'Tenants & Billing', icon: Grid, roles: ['Platform Admin'] }
+      ]
+    },
+    {
       group: 'Overview',
       items: [
-        { href: '/', label: 'Dashboard', icon: Grid, roles: ['Tenant Admin', 'Manager', 'Accounts', 'Internal User'] },
-        { href: '/map', label: 'Fleet Map Dashboard', icon: MapIcon, roles: ['Tenant Admin', 'Manager', 'Internal User'] }
+        { href: '/dashboard', label: 'Dashboard', icon: Grid, roles: ['Tenant Admin', 'Manager', 'Accounts', 'Internal User', 'Platform Admin'] },
+        { href: '/map', label: 'Fleet Map Dashboard', icon: MapIcon, roles: ['Tenant Admin', 'Manager', 'Internal User', 'Platform Admin'] }
       ]
     },
     {
       group: 'Masters',
       items: [
-        { href: '/customers', label: 'Customer Master', icon: Users, roles: ['Tenant Admin', 'Internal User', 'Accounts'] },
-        { href: '/fleet', label: 'Fleet Vendor Master', icon: Truck, roles: ['Tenant Admin', 'Internal User', 'Accounts'] },
-        { href: '/vehicles', label: 'Vehicle Master', icon: CreditCard, roles: ['Tenant Admin', 'Internal User', 'Accounts'] },
-        { href: '/drivers', label: 'Driver Master', icon: Users, roles: ['Tenant Admin', 'Internal User', 'Accounts'] },
+        { href: '/customers', label: 'Customer Master', icon: Users, roles: ['Tenant Admin', 'Internal User', 'Accounts', 'Platform Admin'] },
+        { href: '/fleet', label: 'Fleet Vendor Master', icon: Truck, roles: ['Tenant Admin', 'Internal User', 'Accounts', 'Platform Admin'] },
+        { href: '/vehicles', label: 'Vehicle Master', icon: CreditCard, roles: ['Tenant Admin', 'Internal User', 'Accounts', 'Platform Admin'] },
+        { href: '/drivers', label: 'Driver Master', icon: Users, roles: ['Tenant Admin', 'Internal User', 'Accounts', 'Platform Admin'] },
       ]
     },
     {
       group: 'Trip Lifecycle',
       items: [
-        { href: '/trips', label: 'All Trips & Status', icon: Truck, roles: ['Tenant Admin', 'Internal User', 'Manager', 'Accounts'] },
-        { href: '/trips/indents', label: 'Indent Management', icon: FileText, roles: ['Tenant Admin', 'Internal User', 'Manager'] },
-        { href: '/trips/procurement', label: 'Procurement (RFQ)', icon: ShoppingCart, roles: ['Tenant Admin', 'Internal User', 'Manager'] },
-        { href: '/trips/confirmation', label: 'Trip Confirmation Sheet', icon: Paperclip, roles: ['Tenant Admin', 'Internal User'] },
-        { href: '/trips/assignment', label: 'Trip Assignment', icon: Handshake, roles: ['Tenant Admin', 'Internal User', 'Manager'] },
-        { href: '/trips/advance-payment', label: 'Advance Payment', icon: DollarSign, roles: ['Tenant Admin', 'Accounts'] },
-        { href: '/trips/pod', label: 'POD Review', icon: Camera, roles: ['Tenant Admin', 'Internal User', 'Manager'] },
-        { href: '/trips/charges', label: 'Additional Charges', icon: Plus, roles: ['Tenant Admin', 'Internal User', 'Accounts'] },
-        { href: '/payments/settlements', label: 'Vendor Settlements', icon: Wallet, roles: ['Tenant Admin', 'Accounts'] },
-        { href: '/payments/invoices', label: 'Customer Invoices', icon: FileText, roles: ['Tenant Admin', 'Accounts'] },
-        { href: '/payments', label: 'Final Payment', icon: DollarSign, roles: ['Tenant Admin', 'Accounts'] },
-        { href: '/automation', label: 'Automation Logs', icon: Bot, roles: ['Tenant Admin', 'Manager'] },
+        { href: '/trips', label: 'All Trips & Status', icon: Truck, roles: ['Tenant Admin', 'Internal User', 'Manager', 'Accounts', 'Platform Admin'] },
+        { href: '/trips/indents', label: 'Indent Management', icon: FileText, roles: ['Tenant Admin', 'Internal User', 'Manager', 'Platform Admin'] },
+        { href: '/trips/procurement', label: 'Procurement (RFQ)', icon: ShoppingCart, roles: ['Tenant Admin', 'Internal User', 'Manager', 'Platform Admin'] },
+        { href: '/trips/confirmation', label: 'Trip Confirmation Sheet', icon: Paperclip, roles: ['Tenant Admin', 'Internal User', 'Platform Admin'] },
+        { href: '/trips/assignment', label: 'Trip Assignment', icon: Handshake, roles: ['Tenant Admin', 'Internal User', 'Manager', 'Platform Admin'] },
+        { href: '/trips/pod', label: 'POD Review', icon: Camera, roles: ['Tenant Admin', 'Internal User', 'Manager', 'Platform Admin'] },
+        { href: '/automation', label: 'Automation Logs', icon: Bot, roles: ['Tenant Admin', 'Manager', 'Platform Admin'] },
+      ]
+    },
+    {
+      group: 'Finance & Payments',
+      items: [
+        { href: '/trips/advance-payment', label: 'Advance Payment', icon: DollarSign, roles: ['Tenant Admin', 'Accounts', 'Platform Admin'] },
+        { href: '/trips/charges', label: 'Additional Charges', icon: Plus, roles: ['Tenant Admin', 'Internal User', 'Accounts', 'Platform Admin'] },
+        { href: '/payments/settlements', label: 'Vendor Settlements', icon: Wallet, roles: ['Tenant Admin', 'Accounts', 'Platform Admin'] },
+        { href: '/payments/invoices', label: 'Customer Invoices', icon: FileText, roles: ['Tenant Admin', 'Accounts', 'Platform Admin'] },
+        { href: '/payments', label: 'Final Payment', icon: DollarSign, roles: ['Tenant Admin', 'Accounts', 'Platform Admin'] },
       ]
     },
     {
       group: 'System',
       items: [
-        { href: '/users', label: 'Team & Users', icon: Users, roles: ['Tenant Admin'] },
-        { href: '/reports', label: 'Reports', icon: BarChart2, roles: ['Tenant Admin', 'Manager', 'Accounts'] },
-        { href: '/notifications', label: 'Notifications & WhatsApp', icon: Bell, roles: ['Tenant Admin', 'Manager'] },
+        { href: '/users', label: 'Team & Users', icon: Users, roles: ['Tenant Admin', 'Platform Admin'] },
+        { href: '/settings', label: 'Organization Settings', icon: Building2, roles: ['Tenant Admin', 'Platform Admin'] },
+        { href: '/reports', label: 'Reports', icon: BarChart2, roles: ['Tenant Admin', 'Manager', 'Accounts', 'Platform Admin'] },
+        { href: '/notifications', label: 'Notifications & WhatsApp', icon: Bell, roles: ['Tenant Admin', 'Manager', 'Platform Admin'] },
       ]
     }
   ];
@@ -71,7 +83,7 @@ export function Sidebar() {
     <div className="w-[260px] shrink-0 bg-[#0F172A] text-slate-400 flex flex-col h-full border-r border-slate-800 relative z-40">
       <div className="h-[100px] shrink-0 flex items-center px-5 justify-center mb-2 border-b border-slate-800/80">
         <div className="bg-white/95 backdrop-blur px-4 py-2.5 rounded-xl w-full flex justify-center shadow-[0_2px_10px_rgba(0,0,0,0.2)]">
-          <img src="/logo.png" alt="HITRO LOGISTICS" className="w-[160px] h-[45px] object-contain mix-blend-multiply" />
+          <img src="/logo.png" alt="Transitflow LOGISTICS" className="w-[160px] h-[45px] object-contain mix-blend-multiply" />
         </div>
       </div>
 
@@ -95,11 +107,11 @@ export function Sidebar() {
                     href={item.href}
                     className={`flex items-center gap-3 px-3 py-2.5 mx-3 my-1 text-[13.5px] cursor-pointer rounded-xl transition-all duration-300 group
                       ${isActive 
-                        ? 'bg-gradient-to-r from-orange-500 to-orange-600 text-white font-semibold shadow-[0_4px_12px_rgba(249,115,22,0.25)]' 
+                        ? 'bg-gradient-to-r from-blue-600 to-blue-700 text-white font-semibold shadow-[0_4px_12px_rgba(249,115,22,0.25)]' 
                         : 'text-slate-400 hover:bg-slate-800/50 hover:text-slate-200 font-medium border border-transparent'
                       }`}
                   >
-                    <Icon className={`w-4 h-4 shrink-0 transition-transform duration-300 group-hover:scale-110 ${isActive ? 'text-white' : 'text-slate-500 group-hover:text-orange-500'}`} strokeWidth={isActive ? 2.5 : 2} />
+                    <Icon className={`w-4 h-4 shrink-0 transition-transform duration-300 group-hover:scale-110 ${isActive ? 'text-white' : 'text-slate-500 group-hover:text-blue-600'}`} strokeWidth={isActive ? 2.5 : 2} />
                     <span>{item.label}</span>
                   </Link>
                 );

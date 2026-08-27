@@ -1,13 +1,68 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Image, Alert, ActivityIndicator } from 'react-native';
+import * as ImagePicker from 'expo-image-picker';
 
-export default function PODUploadScreen({ trip, onBack, onComplete }: { trip: any, onBack: () => void, onComplete: () => void }) {
-  const [frontUploaded, setFrontUploaded] = useState(true); // Default true to match mockup
-  const [backUploaded, setBackUploaded] = useState(false);
+const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://10.0.2.2:5063/api';
 
-  const source = trip?.indent?.source || 'Delhi';
-  const dest = trip?.indent?.destination || 'Jaipur';
-  const tripId = trip?.id || '2287';
+export default function PODUploadScreen({ trip, authState, onBack, onComplete }: { trip: any, authState: any, onBack: () => void, onComplete: () => void }) {
+  const [frontImage, setFrontImage] = useState<string | null>(null);
+  const [backImage, setBackImage] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  const source = trip?.indent?.source || 'Origin';
+  const dest = trip?.indent?.destination || 'Destination';
+  const tripId = trip?.id || '---';
+
+  const handleUpload = async () => {
+    if (!frontImage && !backImage) {
+      Alert.alert('Error', 'Please select at least one image to upload.');
+      return;
+    }
+    
+    setLoading(true);
+    try {
+      const uploadSingleImage = async (uri: string, name: string) => {
+        const formData = new FormData();
+        const fileMatch = uri.match(/\/([^\/?#]+)[^\/]*$/);
+        const fileName = name;
+        const typeMatch = uri.match(/\.(\w+)$/);
+        const mimeType = typeMatch ? `image/${typeMatch[1]}` : 'image/jpeg';
+        
+        formData.append('file', {
+          uri: uri,
+          name: fileName,
+          type: mimeType
+        } as any);
+        formData.append('entityType', 'Trip');
+        formData.append('entityId', trip.id.toString());
+        formData.append('documentType', 'POD');
+        
+        const response = await fetch(`${API_URL}/Documents/Upload`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${authState.token}`
+            // Content-Type is multipart/form-data, automatically set by fetch with FormData
+          },
+          body: formData
+        });
+        
+        if (!response.ok) {
+          throw new Error('Upload failed');
+        }
+      };
+
+      if (frontImage) await uploadSingleImage(frontImage, 'POD_front.jpg');
+      if (backImage) await uploadSingleImage(backImage, 'POD_back.jpg');
+      
+      Alert.alert('Success', 'POD uploaded successfully!');
+      onComplete();
+    } catch (error) {
+      console.error(error);
+      Alert.alert('Upload Error', 'Failed to upload POD to the server.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <View style={styles.container}>
@@ -28,43 +83,65 @@ export default function PODUploadScreen({ trip, onBack, onComplete }: { trip: an
         <View style={styles.uploadSection}>
           <Text style={styles.sectionTitle}>Front side</Text>
           <TouchableOpacity 
-            style={[styles.uploadBox, frontUploaded && styles.uploadBoxSuccess]}
-            onPress={() => setFrontUploaded(!frontUploaded)}
+            style={[styles.uploadBox, frontImage && styles.uploadBoxSuccess]}
+            onPress={() => {
+              Alert.alert('Upload Front POD', 'Choose an option', [
+                { text: 'Camera', onPress: async () => {
+                    const result = await ImagePicker.launchCameraAsync({ quality: 0.8 });
+                    if (!result.canceled) setFrontImage(result.assets[0].uri);
+                  }
+                },
+                { text: 'Gallery', onPress: async () => {
+                    const result = await ImagePicker.launchImageLibraryAsync({ quality: 0.8 });
+                    if (!result.canceled) setFrontImage(result.assets[0].uri);
+                  }
+                },
+                { text: 'Cancel', style: 'cancel' }
+              ]);
+            }}
           >
-            {frontUploaded ? (
-              <>
-                <View style={styles.iconCircleSuccess}>
-                  <Text style={styles.iconSuccess}>✓</Text>
-                </View>
-                <Text style={styles.uploadedText}>POD_front.jpg uploaded</Text>
+            {frontImage ? (
+              <> 
+                <Image source={{ uri: frontImage }} style={styles.uploadedImage} />
+                <Text style={styles.uploadedText}>POD_front.jpg selected</Text>
               </>
             ) : (
               <>
                 <Text style={styles.cameraIcon}>📷</Text>
-                <Text style={styles.tapToCaptureText}>Tap to capture</Text>
+                <Text style={styles.tapToCaptureText}>Tap to select</Text>
               </>
             )}
           </TouchableOpacity>
-        </View>
 
-        {/* Back Side */}
-        <View style={styles.uploadSection}>
-          <Text style={styles.sectionTitle}>Back side</Text>
+          {/* Back Side */}
+          <Text style={[styles.sectionTitle, { marginTop: 24 }]}>Back side</Text>
           <TouchableOpacity 
-            style={[styles.uploadBox, backUploaded && styles.uploadBoxSuccess]}
-            onPress={() => setBackUploaded(!backUploaded)}
+            style={[styles.uploadBox, backImage && styles.uploadBoxSuccess]}
+            onPress={() => {
+              Alert.alert('Upload Back POD', 'Choose an option', [
+                { text: 'Camera', onPress: async () => {
+                    const result = await ImagePicker.launchCameraAsync({ quality: 0.8 });
+                    if (!result.canceled) setBackImage(result.assets[0].uri);
+                  }
+                },
+                { text: 'Gallery', onPress: async () => {
+                    const result = await ImagePicker.launchImageLibraryAsync({ quality: 0.8 });
+                    if (!result.canceled) setBackImage(result.assets[0].uri);
+                  }
+                },
+                { text: 'Cancel', style: 'cancel' }
+              ]);
+            }}
           >
-            {backUploaded ? (
-              <>
-                <View style={styles.iconCircleSuccess}>
-                  <Text style={styles.iconSuccess}>✓</Text>
-                </View>
-                <Text style={styles.uploadedText}>POD_back.jpg uploaded</Text>
+            {backImage ? (
+              <> 
+                <Image source={{ uri: backImage }} style={styles.uploadedImage} />
+                <Text style={styles.uploadedText}>POD_back.jpg selected</Text>
               </>
             ) : (
               <>
                 <Text style={styles.cameraIcon}>📷</Text>
-                <Text style={styles.tapToCaptureText}>Tap to capture</Text>
+                <Text style={styles.tapToCaptureText}>Tap to select</Text>
               </>
             )}
           </TouchableOpacity>
@@ -79,8 +156,12 @@ export default function PODUploadScreen({ trip, onBack, onComplete }: { trip: an
 
       {/* Footer */}
       <View style={styles.footer}>
-        <TouchableOpacity style={styles.submitBtn} onPress={onComplete}>
-          <Text style={styles.submitBtnText}>Continue to Documents</Text>
+        <TouchableOpacity style={styles.submitBtn} onPress={handleUpload} disabled={loading}>
+          {loading ? (
+            <ActivityIndicator color="#ffffff" />
+          ) : (
+            <Text style={styles.submitBtnText}>Submit POD</Text>
+          )}
         </TouchableOpacity>
       </View>
     </View>
@@ -178,6 +259,13 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '600',
     color: '#15803d', // Dark green
+    marginTop: 8,
+  },
+  uploadedImage: {
+    width: '100%',
+    height: 100,
+    resizeMode: 'cover',
+    borderRadius: 12,
   },
   infoRow: {
     flexDirection: 'row',

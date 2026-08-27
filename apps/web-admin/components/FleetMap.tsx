@@ -157,7 +157,7 @@ export default function FleetMap({ activeVehicle, fleet }: any) {
                     <span className="text-slate-500 text-xs font-semibold">Status</span>
                     <span className={`font-black text-sm px-2 py-1 rounded-md ${
                       v.status === 'Moving' ? 'text-green-600 bg-green-50' : 
-                      v.status === 'Delayed' ? 'text-orange-600 bg-orange-50' : 
+                      v.status === 'Delayed' ? 'text-blue-700 bg-blue-50' : 
                       'text-red-600 bg-red-50'
                     }`}>{v.status}</span>
                   </div>

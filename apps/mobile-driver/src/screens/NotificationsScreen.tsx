@@ -1,41 +1,40 @@
-import React from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, SafeAreaView } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, SafeAreaView, ActivityIndicator } from 'react-native';
 
-export default function NotificationsScreen({ onNavigate }: { onNavigate: (screen: string) => void }) {
-  const notifications = [
-    {
-      id: '1',
-      title: 'Advance approved',
-      message: '₹15,000 credited via UPI',
-      time: '2m ago',
-      icon: '✓',
-      iconColor: '#22c55e', // Green
-    },
-    {
-      id: '2',
-      title: 'POD reminder',
-      message: 'Upload POD for TRIP-2287',
-      time: '1h ago',
-      icon: '📷',
-      iconColor: '#f97316', // Orange
-    },
-    {
-      id: '3',
-      title: 'New trip assigned',
-      message: 'Mumbai → Pune · TRIP-2291',
-      time: '3h ago',
-      icon: '🚚',
-      iconColor: '#1e40af', // Navy blue
-    },
-    {
-      id: '4',
-      title: 'Charge under review',
-      message: 'Unloading ₹3,200 pending',
-      time: '5h ago',
-      icon: '💳',
-      iconColor: '#64748b', // Gray
-    },
-  ];
+const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://10.0.2.2:5063/api';
+
+export default function NotificationsScreen({ authState, onNavigate }: { authState: any, onNavigate: (screen: string) => void }) {
+  const [notifications, setNotifications] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchNotifications();
+  }, []);
+
+  const fetchNotifications = async () => {
+    try {
+      const response = await fetch(`${API_URL}/Notifications`, {
+        headers: { 'Authorization': `Bearer ${authState.token}` }
+      });
+      if (response.ok) {
+        const data = await response.json();
+        // Transform data slightly for the UI if needed
+        const mapped = data.map((n: any) => ({
+          id: n.id.toString(),
+          title: n.title,
+          message: n.message,
+          time: new Date(n.createdAt).toLocaleDateString(), // simplified
+          icon: '🔔',
+          iconColor: '#1e40af'
+        }));
+        setNotifications(mapped);
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const renderItem = ({ item }: { item: any }) => (
     <TouchableOpacity style={styles.card}>
@@ -57,12 +56,22 @@ export default function NotificationsScreen({ onNavigate }: { onNavigate: (scree
         <Text style={styles.headerTitle}>Notifications</Text>
       </View>
 
-      <FlatList
-        data={notifications}
-        keyExtractor={(item) => item.id}
-        renderItem={renderItem}
-        contentContainerStyle={styles.list}
-      />
+      {loading ? (
+        <View style={{flex:1, justifyContent:'center', alignItems:'center'}}>
+          <ActivityIndicator size="large" color="#1e40af" />
+        </View>
+      ) : notifications.length === 0 ? (
+        <View style={{flex:1, justifyContent:'center', alignItems:'center'}}>
+          <Text style={{color: '#64748b', fontSize: 16}}>No notifications yet</Text>
+        </View>
+      ) : (
+        <FlatList
+          data={notifications}
+          keyExtractor={(item) => item.id}
+          renderItem={renderItem}
+          contentContainerStyle={styles.list}
+        />
+      )}
 
       {/* Bottom Navigation Bar */}
       <View style={styles.bottomNav}>

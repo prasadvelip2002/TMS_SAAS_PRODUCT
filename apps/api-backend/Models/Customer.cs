@@ -2,9 +2,8 @@ using System;
 
 namespace api_backend.Models
 {
-    public class Customer
+    public class Customer : BaseEntity, ITenantEntity, ICompanyEntity
     {
-        public int Id { get; set; }
         public required string Name { get; set; }
         public string? GSTIN { get; set; }
         public string? Address { get; set; }
@@ -18,10 +17,10 @@ namespace api_backend.Models
         public string? PaymentTerms { get; set; }
         public string? Code { get; set; }
         public string? RateContract { get; set; }
-        public string? Status { get; set; }
         public int TenantId { get; set; }
         public Tenant? Tenant { get; set; }
 
-        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+        public int CompanyId { get; set; }
+        public Company? Company { get; set; }
     }
 }

@@ -4,7 +4,7 @@ import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-nati
 export default function DocumentUploadScreen({ trip, onBack, onComplete }: { trip: any, onBack: () => void, onComplete: () => void }) {
   const source = trip?.indent?.source || 'Delhi';
   const dest = trip?.indent?.destination || 'Jaipur';
-  const tripId = trip?.id || '2287';
+  const tripId = trip?.id || '---';
 
   const documents = [
     { id: 1, title: 'LR / Consignment note', status: 'Verified', icon: '📄', type: 'success' },

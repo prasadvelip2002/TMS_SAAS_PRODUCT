@@ -8,6 +8,8 @@ using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
+AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
+
 // Add HttpContextAccessor for DbContext
 builder.Services.AddHttpContextAccessor();
 

@@ -1,4 +1,4 @@
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://hitro-logistics.onrender.com/api';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5063/api';
 
 export async function fetchApi(endpoint: string, options: RequestInit = {}) {
   const url = `${API_BASE_URL}${endpoint}`;
@@ -27,6 +27,9 @@ export async function fetchApi(endpoint: string, options: RequestInit = {}) {
 
   if (response.status === 401) {
     if (typeof window !== 'undefined') {
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      document.cookie = 'isLoggedIn=; path=/; max-age=0'; // Clear the cookie
       window.location.href = '/login';
     }
     throw new Error('Unauthorized');

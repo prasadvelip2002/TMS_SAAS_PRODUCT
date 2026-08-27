@@ -66,42 +66,43 @@ export function ProtoButton({ children, variant = "primary", onClick, style }: {
 
 export function RouteTrack({ stages, currentIdx }: { stages: string[], currentIdx: number }) {
   return (
-    <div>
-      <div className="flex items-center my-[6px] mx-0 h-[16px]">
+    <div className="flex flex-col">
+      <div className="flex items-center mx-0 h-[16px] mt-2">
         {stages.map((stage, i) => (
           <React.Fragment key={i}>
-            <div 
-              className={`rounded-full shrink-0 ${
-                i === currentIdx 
-                  ? 'bg-signal w-[16px] h-[16px] ring-[3px] ring-signal-soft z-10' 
-                  : i < currentIdx 
-                    ? 'bg-route w-[9px] h-[9px] border-[2px] border-panel z-10' 
-                    : 'bg-line w-[9px] h-[9px] border-[2px] border-panel z-10'
-              }`} 
-            />
+            <div className="relative group cursor-pointer flex items-center justify-center">
+              {/* Dot */}
+              <div 
+                className={`rounded-full shrink-0 transition-all ${
+                  i === currentIdx 
+                    ? 'bg-amber-400 w-[14px] h-[14px] ring-4 ring-amber-100 z-10' 
+                    : i < currentIdx 
+                      ? 'bg-blue-500 w-[8px] h-[8px] z-10' 
+                      : 'bg-slate-200 w-[8px] h-[8px] z-10'
+                }`} 
+              />
+              {/* Tooltip */}
+              <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 px-2.5 py-1 bg-slate-800 text-white text-[11px] font-bold rounded shadow-lg opacity-0 group-hover:opacity-100 pointer-events-none whitespace-nowrap z-50 transition-opacity">
+                {stage}
+                <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-slate-800" />
+              </div>
+            </div>
+            
+            {/* Line */}
             {i < stages.length - 1 && (
               <div 
-                className="flex-1 h-[2px] relative -mx-[2px]" 
-                style={{
-                  background: i < currentIdx 
-                    ? 'repeating-linear-gradient(90deg, var(--color-route) 0 6px, transparent 6px 11px)'
-                    : 'repeating-linear-gradient(90deg, var(--color-line) 0 6px, transparent 6px 11px)'
-                }}
+                className={`flex-1 h-[2px] -mx-[1px] ${
+                  i < currentIdx ? 'bg-blue-500' : 'bg-slate-200'
+                }`}
               />
             )}
           </React.Fragment>
         ))}
       </div>
-      <div className="flex font-mono text-[9px] text-muted-text mt-[4px]">
-        {stages.map((stage, i) => (
-          <span 
-            key={i} 
-            className={`flex-1 text-center whitespace-nowrap ${i === 0 ? 'text-left flex-none w-[20px]' : ''} ${i === stages.length - 1 ? 'text-right flex-none w-[20px]' : ''}`}
-            style={i === currentIdx ? { color: '#B8501E', fontWeight: 700 } : {}}
-          >
-            {stage}
-          </span>
-        ))}
+      
+      {/* Current Stage Label */}
+      <div className="mt-2 text-[10.5px] font-bold text-slate-500 uppercase tracking-wide">
+        Current: <span className="text-amber-600">{stages[currentIdx] || 'Unknown'}</span>
       </div>
     </div>
   );
@@ -126,6 +127,6 @@ export function ProtoTable({ headers, children }: { headers: React.ReactNode[], 
   );
 }
 
-export function Td({ children, className = "", title }: { children: React.ReactNode, className?: string, title?: string }) {
-  return <td className={`px-[18px] py-[11px] ${className}`} title={title}>{children}</td>;
+export function Td({ children, className = "", title, colSpan }: { children: React.ReactNode, className?: string, title?: string, colSpan?: number }) {
+  return <td className={`px-[18px] py-[11px] ${className}`} title={title} colSpan={colSpan}>{children}</td>;
 }

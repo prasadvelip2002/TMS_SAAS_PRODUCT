@@ -16,6 +16,9 @@ export function IndentForm({ onSuccess }: { onSuccess: () => void }) {
     weight: "",
     vehicleType: "",
     loadingDate: new Date().toISOString().split('T')[0],
+    customerRate: "",
+    pricingModel: "CaseToCase",
+    warehouseLocation: "",
   });
 
   useEffect(() => {
@@ -32,7 +35,9 @@ export function IndentForm({ onSuccess }: { onSuccess: () => void }) {
         weight: parseFloat(formData.weight),
         loadingDate: new Date(formData.loadingDate).toISOString(),
         destination: formData.destinations[0] || "",
-        destinationsJson: JSON.stringify(formData.destinations)
+        destinationsJson: JSON.stringify(formData.destinations),
+        customerRate: formData.customerRate ? parseFloat(formData.customerRate) : null,
+        pricingModel: formData.pricingModel
       });
       onSuccess();
     } catch (error) {
@@ -151,6 +156,40 @@ export function IndentForm({ onSuccess }: { onSuccess: () => void }) {
             className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
             value={formData.loadingDate}
             onChange={e => setFormData({...formData, loadingDate: e.target.value})}
+          />
+        </div>
+
+        <div className="space-y-2">
+          <label className="text-sm font-medium">Pricing Model</label>
+          <select 
+            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+            value={formData.pricingModel}
+            onChange={e => setFormData({...formData, pricingModel: e.target.value})}
+          >
+            <option value="CaseToCase">Case to Case / Spot Rate</option>
+            <option value="AnnualContract">Annual Contract</option>
+          </select>
+        </div>
+
+        <div className="space-y-2">
+          <label className="text-sm font-medium">Customer Rate (₹)</label>
+          <input 
+            type="number" 
+            step="0.01" 
+            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+            value={formData.customerRate}
+            onChange={e => setFormData({...formData, customerRate: e.target.value})}
+            placeholder="e.g. 15000"
+          />
+        </div>
+
+        <div className="space-y-2">
+          <label className="text-sm font-medium">Intermediate Warehouse (Optional)</label>
+          <input 
+            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+            value={formData.warehouseLocation}
+            onChange={e => setFormData({...formData, warehouseLocation: e.target.value})}
+            placeholder="e.g. Bhiwandi Hub"
           />
         </div>
       </div>

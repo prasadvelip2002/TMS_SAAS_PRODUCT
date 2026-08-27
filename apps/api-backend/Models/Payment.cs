@@ -2,9 +2,8 @@ using System;
 
 namespace api_backend.Models
 {
-    public class Payment
+    public class Payment : BaseEntity, ITenantEntity, ICompanyEntity
     {
-        public int Id { get; set; }
         
         public int TripId { get; set; }
         public Trip? Trip { get; set; }
@@ -18,12 +17,12 @@ namespace api_backend.Models
         public Driver? Driver { get; set; }
         public string? BankProofUrl { get; set; }
         
-        public DateTime PaymentDate { get; set; } = DateTime.UtcNow;
-        public string Status { get; set; } = "Pending"; // Pending, Completed
+        public DateTime PaymentDate { get; set; } = DateTime.UtcNow; // Pending, Completed
 
         public int TenantId { get; set; }
         public Tenant? Tenant { get; set; }
 
-        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+        public int CompanyId { get; set; }
+        public Company? Company { get; set; }
     }
 }

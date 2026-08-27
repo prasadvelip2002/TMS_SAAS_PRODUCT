@@ -21,13 +21,14 @@ export function Header() {
   const handleLogout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
-    router.push("/login");
+    document.cookie = 'isLoggedIn=; path=/; max-age=0'; // Clear the middleware cookie
+    window.location.href = "/login";
   };
 
   return (
     <div className="h-[90px] shrink-0 bg-white/70 backdrop-blur-xl border-b border-slate-200/50 shadow-[0_4px_30px_rgb(0,0,0,0.03)] flex items-center justify-between px-10 relative z-50">
       <div className="flex flex-col">
-        <div className="font-bold text-[18px] text-slate-800 leading-tight">Dashboard</div>
+        <div className="font-bold text-[18px] text-slate-800 leading-tight">Welcome back, {user?.name || "Admin"} 👋</div>
         <div className="font-medium text-[12.5px] text-slate-500 mt-0.5 tracking-wide">Overview across all active trips</div>
       </div>
       <div className="flex items-center gap-6">
@@ -46,6 +47,7 @@ export function Header() {
             </div>
             <div className="text-left hidden sm:block">
               <div className="text-[13px] font-semibold text-slate-700 leading-none">{user?.name || "Admin"}</div>
+              <div className="text-[11px] text-slate-500 mt-1 leading-none">{user?.role || "Tenant Admin"}</div>
             </div>
           </button>
 

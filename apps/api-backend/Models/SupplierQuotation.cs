@@ -2,9 +2,8 @@ using System;
 
 namespace api_backend.Models
 {
-    public class SupplierQuotation
+    public class SupplierQuotation : BaseEntity, ITenantEntity, ICompanyEntity
     {
-        public int Id { get; set; }
         
         public int IndentId { get; set; }
         public Indent? Indent { get; set; }
@@ -15,14 +14,13 @@ namespace api_backend.Models
         public decimal QuotedRate { get; set; }
         
         public string? VehicleNumber { get; set; }
-        public string? DriverName { get; set; }
-        
-        public string Status { get; set; } = "Submitted"; // Submitted, Accepted, Rejected
+        public string? DriverName { get; set; } // Submitted, Accepted, Rejected
         public bool IsPreferred { get; set; }
 
         public int TenantId { get; set; }
         public Tenant? Tenant { get; set; }
 
-        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+        public int CompanyId { get; set; }
+        public Company? Company { get; set; }
     }
 }

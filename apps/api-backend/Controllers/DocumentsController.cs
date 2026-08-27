@@ -60,6 +60,15 @@ namespace api_backend.Controllers
             return document;
         }
 
+        // GET: api/Documents/trip/{tripId}
+        [HttpGet("trip/{tripId}")]
+        public async Task<ActionResult<IEnumerable<Document>>> GetDocumentsByTrip(int tripId)
+        {
+            return await _context.Documents
+                .Where(d => d.EntityType == "Trip" && d.EntityId == tripId)
+                .ToListAsync();
+        }
+
         // POST: api/Documents
         [HttpPost]
         public async Task<ActionResult<Document>> PostDocument(Document document)

@@ -22,6 +22,16 @@ namespace api_backend.Services
             var indent = await _context.Indents.FindAsync(request.IndentId);
             if (indent == null) throw new Exception("Indent not found.");
 
+            // Check if a Trip already exists for this Indent (e.g., from RFQ)
+            var trip = await _context.Trips.FirstOrDefaultAsync(t => t.IndentId == request.IndentId);
+            
+            bool isNewTrip = false;
+            if (trip == null)
+            {
+                trip = new Trip();
+                isNewTrip = true;
+            }
+
             // Calculate Freight
             decimal freightCharges = 0;
             if (request.BookingType == "PerTon")
@@ -33,27 +43,32 @@ namespace api_backend.Services
                 freightCharges = request.FixedRate;
             }
 
-            var trip = new Trip
-            {
-                IndentId = request.IndentId,
-                VendorId = request.VendorId,
-                VehicleId = request.VehicleId,
-                DriverId = request.DriverId,
-                BookingType = request.BookingType,
-                RatePerTon = request.RatePerTon,
-                FixedRate = request.FixedRate,
-                AdvanceAmount = request.AdvanceAmount,
-                StartingKM = request.StartingKM,
-                TripStartDate = request.TripStartDate,
-                FreightCharges = freightCharges,
-                BalanceAmount = freightCharges - request.AdvanceAmount, // balance is freight - advance
-                Status = "Assigned",
-                CreatedAt = DateTime.UtcNow
-            };
+            trip.IndentId = request.IndentId;
+            trip.VendorId = request.VendorId;
+            trip.VehicleId = request.VehicleId;
+            trip.DriverId = request.DriverId;
+            trip.BookingType = request.BookingType;
+            trip.RatePerTon = request.RatePerTon;
+            trip.FixedRate = request.FixedRate;
+            trip.AdvanceAmount = request.AdvanceAmount;
+            trip.StartingKM = request.StartingKM;
+            trip.TripStartDate = request.TripStartDate;
+            trip.FreightCharges = freightCharges;
+            trip.BalanceAmount = freightCharges - request.AdvanceAmount; // balance is freight - advance
+            trip.Status = "Assigned";
 
             indent.Status = "Assigned";
             
-            _context.Trips.Add(trip);
+            if (isNewTrip)
+            {
+                trip.CreatedAt = DateTime.UtcNow;
+                _context.Trips.Add(trip);
+            }
+            else
+            {
+                _context.Entry(trip).State = EntityState.Modified;
+            }
+
             await _context.SaveChangesAsync();
 
             return trip;

@@ -2,9 +2,8 @@ using System;
 
 namespace api_backend.Models
 {
-    public class Notification
+    public class Notification : BaseEntity, ITenantEntity, ICompanyEntity
     {
-        public int Id { get; set; }
         
         // This could link to a User/Driver model later when Auth is added
         public int? UserId { get; set; } 
@@ -16,6 +15,7 @@ namespace api_backend.Models
         public int TenantId { get; set; }
         public Tenant? Tenant { get; set; }
 
-        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+        public int CompanyId { get; set; }
+        public Company? Company { get; set; }
     }
 }

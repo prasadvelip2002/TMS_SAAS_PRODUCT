@@ -103,7 +103,7 @@ export default function DriverPODUpload() {
             <CheckCircle className="w-10 h-10 text-green-600" />
           </div>
           <h1 className="text-2xl font-black text-slate-900 mb-2">POD Uploaded!</h1>
-          <p className="text-slate-500 mb-6 text-sm">Thank you! Your Proof of Delivery has been sent to Hitro Logistics successfully.</p>
+          <p className="text-slate-500 mb-6 text-sm">Thank you! Your Proof of Delivery has been sent to Transitflow Logistics successfully.</p>
           <button onClick={() => window.close()} className="text-blue-500 font-semibold text-sm hover:underline">
             Close Window
           </button>
@@ -117,7 +117,7 @@ export default function DriverPODUpload() {
       <div className="bg-[#0F172A] text-white p-6 pt-10 rounded-b-[40px] shadow-lg mb-8 relative overflow-hidden">
         <div className="absolute inset-0 bg-blue-500/10" />
         <div className="relative z-10">
-          <img src="/logo.png" alt="HITRO LOGISTICS" className="h-6 mb-4 mix-blend-multiply bg-white/90 px-2 py-0.5 rounded" />
+          <img src="/logo.png" alt="TRANSITFLOW LOGISTICS" className="h-6 mb-4 mix-blend-multiply bg-white/90 px-2 py-0.5 rounded" />
           <h1 className="text-2xl font-black mb-1">Upload POD</h1>
           <p className="text-blue-200 text-sm opacity-80">Proof of Delivery Submission</p>
         </div>

@@ -2,11 +2,11 @@ using System;
 
 namespace api_backend.Models
 {
-    public class User
+    public class User : BaseEntity, ITenantEntity, ICompanyEntity
     {
-        public int Id { get; set; }
         public required string Name { get; set; }
         public required string Email { get; set; }
+        public string? Phone { get; set; }
         public required string PasswordHash { get; set; }
         
         public required string Role { get; set; } // Admin, Director/Operations Head, Operations Manager, Branch Supervisor, Finance, Driver
@@ -17,6 +17,7 @@ namespace api_backend.Models
         public int TenantId { get; set; }
         public Tenant? Tenant { get; set; }
 
-        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+        public int CompanyId { get; set; }
+        public Company? Company { get; set; }
     }
 }

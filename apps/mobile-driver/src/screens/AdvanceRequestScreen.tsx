@@ -2,13 +2,13 @@ import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, TextInput, ScrollView } from 'react-native';
 
 export default function AdvanceRequestScreen({ trip, onBack }: { trip: any, onBack: () => void }) {
-  const [amount, setAmount] = useState('15000');
-  const [reason, setReason] = useState('Fuel & toll for trip');
+  const [amount, setAmount] = useState('');
+  const [reason, setReason] = useState('');
   const [paymentMode, setPaymentMode] = useState('UPI');
 
-  const source = trip?.indent?.source || 'Mumbai';
-  const dest = trip?.indent?.destination || 'Pune';
-  const tripId = trip?.id || '2291';
+  const source = trip?.indent?.source || 'Origin';
+  const dest = trip?.indent?.destination || 'Destination';
+  const tripId = trip?.id || '---';
 
   return (
     <View style={styles.container}>
@@ -28,7 +28,9 @@ export default function AdvanceRequestScreen({ trip, onBack }: { trip: any, onBa
         <View style={styles.amountCard}>
           <Text style={styles.amountLabel}>Amount requested</Text>
           <Text style={styles.amountValue}>₹{parseInt(amount || '0').toLocaleString()}</Text>
-          <Text style={styles.limitText}>Within trip limit (₹18,000)</Text>
+          {trip?.supplierRate ? (
+            <Text style={styles.limitText}>Within trip limit (₹{Math.floor((trip?.supplierRate || 0) * 0.8).toLocaleString()})</Text>
+          ) : null}
         </View>
 
         {/* Quick Select Pills */}

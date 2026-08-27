@@ -20,7 +20,8 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      const response = await fetch("https://hitro-logistics.onrender.com/api/auth/login", {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5063/api';
+      const response = await fetch(`${apiUrl}/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
@@ -44,23 +45,26 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex w-full font-sans bg-slate-50">
+    <div className="h-screen flex w-full font-sans bg-slate-50 overflow-hidden">
       {/* Left side - Dark Theme Hero */}
-      <div className="hidden lg:flex flex-col w-1/2 bg-[#1E293B] text-white p-12 relative overflow-hidden">
+      <div className="hidden lg:flex flex-col w-1/2 bg-[#0F172A] text-white p-12 relative overflow-hidden h-full">
         
-        {/* Subtle Background Elements */}
-        <div className="absolute top-0 right-0 w-96 h-96 bg-[#F97316] opacity-10 blur-[100px] rounded-full translate-x-1/3 -translate-y-1/3" />
-        <div className="absolute bottom-0 left-0 w-96 h-96 bg-blue-500 opacity-10 blur-[100px] rounded-full -translate-x-1/3 translate-y-1/3" />
+        {/* Background Image of Moving Vehicle */}
+        <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1601584115197-04ecc0da31d7?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80')] bg-cover bg-center opacity-80 hover:scale-105 transition-transform duration-[20s] ease-linear"></div>
+        
+        {/* Gradient Overlays for Readability */}
+        <div className="absolute inset-0 bg-gradient-to-t from-[#0F172A] via-[#0F172A]/40 to-transparent"></div>
+        <div className="absolute inset-0 bg-gradient-to-r from-[#0F172A]/80 to-transparent/30"></div>
+        <div className="absolute top-0 right-0 w-96 h-96 bg-[#2563EB] opacity-30 blur-[100px] rounded-full translate-x-1/3 -translate-y-1/3" />
+        <div className="absolute bottom-0 left-0 w-96 h-96 bg-blue-500 opacity-30 blur-[100px] rounded-full -translate-x-1/3 translate-y-1/3" />
 
-        <div className="relative z-10 flex">
-          <div className="bg-white/95 backdrop-blur px-5 py-3 rounded-xl shadow-[0_2px_15px_rgba(0,0,0,0.2)]">
-            <Image src="/logo.png" alt="HITRO LOGISTICS" width={200} height={48} className="h-10 w-auto object-contain mix-blend-multiply" />
+        <div className="flex-1 flex flex-col justify-center max-w-xl relative z-10 mx-auto text-center items-center">
+          <div className="relative mb-12 -translate-y-12">
+            <div className="absolute inset-0 bg-white/70 blur-[80px] rounded-full scale-150"></div>
+            <Image src="/logo.png" alt="TRANSITFLOW LOGISTICS" width={600} height={180} className="relative z-10 h-40 w-auto object-contain drop-shadow-2xl" />
           </div>
-        </div>
-
-        <div className="flex-1 flex flex-col justify-center max-w-xl relative z-10">
-          <h1 className="text-4xl md:text-5xl font-bold leading-tight mb-6 tracking-tight text-white">
-            Intelligent Transport Management for Hitro Fleet
+          <h1 className="text-4xl md:text-5xl font-bold leading-tight mb-6 tracking-tight text-white drop-shadow-lg">
+            Intelligent Transport Management for Transitflow Fleet
           </h1>
           <p className="text-[#94A3B8] text-lg mb-12 font-medium leading-relaxed">
             Streamline your logistics, track shipments in real-time, and manage your entire fleet operations from a single unified platform.
@@ -79,11 +83,15 @@ export default function LoginPage() {
       </div>
 
       {/* Right side - Login Form */}
-      <div className="flex-1 flex flex-col justify-center py-12 px-4 sm:px-6 lg:px-20 xl:px-24 bg-white text-ink">
-        <div className="mx-auto w-full max-w-sm lg:w-[400px]">
+      <div className="flex-1 flex flex-col justify-center py-8 px-4 sm:px-6 lg:px-20 xl:px-24 bg-slate-50/50 text-ink relative h-full overflow-y-auto">
+        {/* Decorative elements behind the card */}
+        <div className="absolute top-0 right-0 -mt-20 -mr-20 w-80 h-80 bg-blue-100 rounded-full blur-3xl opacity-50 pointer-events-none" />
+        <div className="absolute bottom-0 left-0 -mb-20 -ml-20 w-80 h-80 bg-indigo-100 rounded-full blur-3xl opacity-50 pointer-events-none" />
+        
+        <div className="mx-auto w-full max-w-md bg-white p-8 sm:p-10 rounded-[2rem] shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 hover:shadow-[0_8px_40px_rgb(37,99,235,0.12)] hover:border-blue-200 transition-all duration-500 relative z-10 my-auto">
           <div className="text-center lg:text-left mb-10">
-            <div className="lg:hidden flex items-center justify-center h-24 mb-8">
-              <Image src="/logo.png" alt="HITRO LOGISTICS" width={200} height={96} className="h-full w-auto max-w-[200px] object-contain mix-blend-multiply" />
+            <div className="lg:hidden flex items-center justify-center h-28 mb-8">
+              <Image src="/logo.png" alt="TRANSITFLOW LOGISTICS" width={300} height={120} className="h-full w-auto max-w-[250px] object-contain mix-blend-multiply" />
             </div>
             <h2 className="text-3xl font-bold tracking-tight text-slate-900">Welcome back</h2>
             <p className="mt-2 text-sm text-slate-600">
@@ -102,7 +110,7 @@ export default function LoginPage() {
                   required 
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="block w-full px-4 py-3 text-[15px] border border-slate-200 rounded-xl focus:ring-2 focus:ring-[#F97316] focus:border-[#F97316] outline-none transition-all text-slate-700 bg-slate-50/50"
+                  className="block w-full px-4 py-3 text-[15px] border border-slate-200 rounded-xl focus:ring-2 focus:ring-[#2563EB] focus:border-[#2563EB] outline-none transition-all text-slate-700 bg-slate-50/50"
                 />
               </div>
             </div>
@@ -110,7 +118,7 @@ export default function LoginPage() {
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <Label htmlFor="password" className="text-sm font-medium text-slate-700">Password</Label>
-                <Link href="#" className="text-sm font-medium text-[#F97316] hover:underline">
+                <Link href="#" className="text-sm font-medium text-[#2563EB] hover:underline">
                   Forgot password?
                 </Link>
               </div>
@@ -122,7 +130,7 @@ export default function LoginPage() {
                   required 
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="block w-full px-4 py-3 text-[15px] border border-slate-200 rounded-xl focus:ring-2 focus:ring-[#F97316] focus:border-[#F97316] outline-none transition-all text-slate-700 bg-slate-50/50"
+                  className="block w-full px-4 py-3 text-[15px] border border-slate-200 rounded-xl focus:ring-2 focus:ring-[#2563EB] focus:border-[#2563EB] outline-none transition-all text-slate-700 bg-slate-50/50"
                 />
               </div>
             </div>
@@ -130,7 +138,7 @@ export default function LoginPage() {
             <button 
               type="submit" 
               disabled={loading}
-              className="w-full bg-[#F97316] hover:bg-[#ea580c] text-white font-bold py-3.5 px-4 rounded-xl shadow-[0_4px_14px_0_rgba(249,115,22,0.39)] transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-[#F97316] focus:ring-offset-2 disabled:opacity-70 text-[15px]"
+              className="w-full bg-[#2563EB] hover:bg-[#1D4ED8] text-white font-bold py-3.5 px-4 rounded-xl shadow-[0_4px_14px_0_rgba(249,115,22,0.39)] transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-[#2563EB] focus:ring-offset-2 disabled:opacity-70 text-[15px]"
             >
               {loading ? (
                 <span className="flex items-center justify-center">
@@ -146,8 +154,8 @@ export default function LoginPage() {
 
           <div className="mt-8 text-center text-[14px] text-slate-500 font-medium">
             Don&apos;t have an account?{" "}
-            <Link href="#" className="text-[#F97316] font-semibold hover:underline">
-              Request access
+            <Link href="/register" className="text-[#2563EB] font-semibold hover:underline">
+              Sign Up
             </Link>
           </div>
         </div>

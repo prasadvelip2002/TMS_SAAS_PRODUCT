@@ -3,9 +3,8 @@ using System.Collections.Generic;
 
 namespace api_backend.Models
 {
-    public class Trip
+    public class Trip : BaseEntity, ITenantEntity, ICompanyEntity
     {
-        public int Id { get; set; }
         
         public int IndentId { get; set; }
         public Indent? Indent { get; set; }
@@ -13,10 +12,10 @@ namespace api_backend.Models
         public int VendorId { get; set; }
         public Vendor? Vendor { get; set; }
 
-        public int VehicleId { get; set; }
+        public int? VehicleId { get; set; }
         public Vehicle? Vehicle { get; set; }
 
-        public int DriverId { get; set; }
+        public int? DriverId { get; set; }
         public Driver? Driver { get; set; }
 
         public decimal FreightCharges { get; set; }
@@ -36,7 +35,6 @@ namespace api_backend.Models
         public string? SupervisorName { get; set; }
         public string? SupervisorContact { get; set; }
         public string? SupplierPaymentTo { get; set; } // Vendor, Driver
-        
         public string Status { get; set; } = "Assigned"; // Assigned, Accepted, Started, Delivered, Closed
 
         public ICollection<Payment>? Payments { get; set; }
@@ -61,6 +59,9 @@ namespace api_backend.Models
         public int TenantId { get; set; }
         public Tenant? Tenant { get; set; }
 
+        public int CompanyId { get; set; }
+        public Company? Company { get; set; }
+
         public string LegType { get; set; } = "Direct"; // Direct, InboundLeg1, OutboundLeg2
         public int? ParentTripId { get; set; }
         public Trip? ParentTrip { get; set; }
@@ -68,7 +69,5 @@ namespace api_backend.Models
         public int? InvoiceId { get; set; }
         public Invoice? Invoice { get; set; }
         public bool IsVendorSettled { get; set; } = false;
-
-        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     }
 }

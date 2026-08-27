@@ -31,7 +31,7 @@ export default function LorryReceiptPrint() {
   if (loading) return <div className="p-10 text-center font-sans">Loading Document...</div>;
   if (!trip) return <div className="p-10 text-center font-sans text-red-500">Failed to load LR</div>;
 
-  const lrNumber = `HITRO-LR-${trip.id.toString().padStart(4, '0')}`;
+  const lrNumber = `TRANSITFLOW-LR-${trip.id.toString().padStart(4, '0')}`;
   const date = new Date(trip.createdAt).toLocaleDateString('en-IN');
   
   // Format for A4 print
@@ -42,10 +42,10 @@ export default function LorryReceiptPrint() {
         {/* Header */}
         <div className="flex justify-between items-start border-b-2 border-black pb-4 mb-6">
           <div>
-            <img src="/logo.png" alt="HITRO LOGISTICS" className="h-14 mb-2 mix-blend-multiply" />
-            <h1 className="text-xl font-black uppercase tracking-widest text-slate-900">Hitro Logistics</h1>
+            <img src="/logo.png" alt="TRANSITFLOW LOGISTICS" className="h-14 mb-2 mix-blend-multiply" />
+            <h1 className="text-xl font-black uppercase tracking-widest text-slate-900">Transitflow Logistics</h1>
             <p className="text-[11px] text-slate-600">Global Warehousing & 3PL Provider</p>
-            <p className="text-[11px] text-slate-600">info@hitrologistics.com | +91 98765 43210</p>
+            <p className="text-[11px] text-slate-600">info@transitflowlogistics.com | +91 98765 43210</p>
           </div>
           <div className="text-right">
             <h2 className="text-2xl font-bold uppercase tracking-wider mb-2">Lorry Receipt</h2>
@@ -70,7 +70,7 @@ export default function LorryReceiptPrint() {
           <div className="border border-slate-400 p-4 min-h-[140px]">
             <h3 className="font-bold text-[12px] border-b border-slate-300 pb-1 mb-2 uppercase text-slate-500">Consignee (Receiver)</h3>
             <p className="font-bold text-sm uppercase">
-              {trip.legType === "InboundLeg1" ? "HITRO LOGISTICS WAREHOUSE" : "OEM PLANT (Destination)"}
+              {trip.legType === "InboundLeg1" ? "TRANSITFLOW LOGISTICS WAREHOUSE" : "OEM PLANT (Destination)"}
             </p>
             <p className="text-[12px] mt-1 whitespace-pre-line">
               {trip.legType === "InboundLeg1" 
@@ -92,15 +92,15 @@ export default function LorryReceiptPrint() {
               </tr>
               <tr className="border-b border-slate-400">
                 <th className="p-2 border-r border-slate-400 text-[11px] uppercase text-slate-500">From</th>
-                <td className="p-2 border-r border-slate-400 text-sm">{trip.legType === "OutboundLeg2" ? "Hitro Warehouse" : trip.indent?.source}</td>
+                <td className="p-2 border-r border-slate-400 text-sm">{trip.legType === "OutboundLeg2" ? "Transitflow Warehouse" : trip.indent?.source}</td>
                 <th className="p-2 border-r border-slate-400 text-[11px] uppercase text-slate-500">To</th>
-                <td className="p-2 text-sm">{trip.legType === "InboundLeg1" ? "Hitro Warehouse" : trip.indent?.destination}</td>
+                <td className="p-2 text-sm">{trip.legType === "InboundLeg1" ? "Transitflow Warehouse" : trip.indent?.destination}</td>
               </tr>
               <tr>
                 <th className="p-2 border-r border-slate-400 text-[11px] uppercase text-slate-500">Driver Phone</th>
                 <td className="p-2 border-r border-slate-400 text-sm">{trip.driver?.phone || 'N/A'}</td>
                 <th className="p-2 border-r border-slate-400 text-[11px] uppercase text-slate-500">Transporter</th>
-                <td className="p-2 text-sm">{trip.vendor?.name || 'Hitro Own Fleet'}</td>
+                <td className="p-2 text-sm">{trip.vendor?.name || 'Transitflow Own Fleet'}</td>
               </tr>
             </tbody>
           </table>
@@ -137,14 +137,14 @@ export default function LorryReceiptPrint() {
             <div className="border-t border-black pt-2 text-[12px] uppercase font-bold text-slate-600">Driver Signature</div>
           </div>
           <div className="text-center">
-            <div className="border-t border-black pt-2 text-[12px] uppercase font-bold text-slate-600">For Hitro Logistics</div>
+            <div className="border-t border-black pt-2 text-[12px] uppercase font-bold text-slate-600">For Transitflow Logistics</div>
           </div>
         </div>
 
         {/* Terms */}
         <div className="mt-10 border-t border-slate-300 pt-4">
           <p className="text-[9px] text-slate-500 uppercase text-justify leading-relaxed">
-            <strong>Terms & Conditions:</strong> 1. Goods are transported at owner's risk unless explicitly insured. 2. Hitro Logistics is not responsible for damages caused by improper packaging, natural calamities, or unforeseen circumstances. 3. All disputes are subject to local jurisdiction. 4. Demurrage will be charged after 24 hours of vehicle arrival at destination. 5. This LR must be surrendered at the time of delivery.
+            <strong>Terms & Conditions:</strong> 1. Goods are transported at owner's risk unless explicitly insured. 2. Transitflow Logistics is not responsible for damages caused by improper packaging, natural calamities, or unforeseen circumstances. 3. All disputes are subject to local jurisdiction. 4. Demurrage will be charged after 24 hours of vehicle arrival at destination. 5. This LR must be surrendered at the time of delivery.
           </p>
         </div>
 

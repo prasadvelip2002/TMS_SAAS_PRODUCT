@@ -6,7 +6,7 @@ async function seedData() {
         await fetch(`${API_BASE_URL}/auth/setup`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ tenantName: 'Hitro Logistics', adminEmail: 'admin@example.com', adminPassword: 'password123' })
+            body: JSON.stringify({ tenantName: 'Hitro Logistics', companyName: 'Hitro Logistics', adminEmail: 'admin@example.com', adminPassword: 'password123' })
         });
 
         console.log("Logging in to get token...");
@@ -27,6 +27,21 @@ async function seedData() {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${token}`
         };
+
+        // Create Platform Admin
+        console.log("Creating Platform Admin...");
+        await fetch(`${API_BASE_URL}/Users`, { 
+            method: 'POST', 
+            headers, 
+            body: JSON.stringify({ 
+                name: 'Super Admin', 
+                email: 'superadmin@transitflow.com', 
+                passwordHash: 'password123', 
+                role: 'Platform Admin',
+                tenantId: 1,
+                companyId: 1
+            }) 
+        });
 
         // Create Customers
         console.log("Creating Customers...");

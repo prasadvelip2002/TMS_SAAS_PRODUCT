@@ -2,14 +2,14 @@
 
 import { useEffect, useState } from "react";
 import { fetchApi } from "@/lib/api";
-import { ProtoTable, Td, ProtoButton } from "@/components/PrototypeUI";
+import { ProtoTable, Td } from "@/components/PrototypeUI";
+import { Search, Grid, List, Plus, Truck, X, Activity } from "lucide-react";
 
 interface Vendor {
   id: number;
   name: string;
   code: string;
   gstin: string;
-  panNumber: string; // PAN is named panNumber in original form, wait let's check API. Ah, Vendor.cs has PAN. The original UI mapped it to panNumber maybe? I'll use pan.
   pan: string;
   bankDetails: string;
   tdsInfo: string;
@@ -46,6 +46,7 @@ export default function VendorsPage() {
   const [vendors, setVendors] = useState<Vendor[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   
+  const [isFormOpen, setIsFormOpen] = useState(false);
   const [formData, setFormData] = useState(DEFAULT_FORM);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -80,6 +81,7 @@ export default function VendorsPage() {
         });
       }
       setFormData(DEFAULT_FORM);
+      setIsFormOpen(false);
       loadVendors();
     } catch (error) {
       console.error(error);
@@ -107,13 +109,13 @@ export default function VendorsPage() {
       routeRemarks: v.routeRemarks || "",
       status: v.status || "Active"
     });
+    setIsFormOpen(true);
   };
 
   const handleDelete = async (id: number) => {
     if (!confirm("Are you sure you want to delete this vendor?")) return;
     try {
       await fetchApi(`/Vendors/${id}`, { method: "DELETE" });
-      if (formData.id === id) setFormData(DEFAULT_FORM);
       loadVendors();
     } catch (error) {
       alert("Failed to delete vendor");
@@ -127,23 +129,66 @@ export default function VendorsPage() {
   };
 
   return (
-    <div className="grid grid-cols-1 xl:grid-cols-[1.4fr_0.8fr] gap-[18px] items-start">
-      <div className="bg-panel border border-line rounded-[10px] overflow-hidden">
-        <div className="px-[18px] py-[14px] border-b border-line flex items-center justify-between">
-          <h3 className="font-disp text-[14.5px] font-semibold m-0">Fleet Vendors</h3>
-          <span className="text-[11.5px] text-muted-text">Vendor management</span>
+    <div className="max-w-[1600px] mx-auto pb-10">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-8">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Fleet Vendor Management</h1>
+          <p className="text-sm font-medium text-slate-500 mt-1">Manage your transport partners, documentation, and compliance.</p>
         </div>
-        <ProtoTable headers={["CODE", "VENDOR", "PAN", "STATUS", "REMARKS", "ACTIONS"]}>
-          {isLoading ? (
-            <tr>
-              <Td className="text-center text-muted-text"><span className="col-span-6 block">Loading vendors...</span></Td>
-            </tr>
-          ) : vendors.length === 0 ? (
-            <tr>
-              <Td className="text-center text-muted-text"><span className="col-span-6 block">No vendors found.</span></Td>
-            </tr>
-          ) : (
-            vendors.map((v) => (
+        <button 
+          onClick={() => { setFormData(DEFAULT_FORM); setIsFormOpen(true); }}
+          className="bg-blue-600 hover:bg-blue-700 text-white font-medium px-5 py-2.5 rounded-xl shadow-[0_4px_14px_rgba(37,99,235,0.25)] transition-all flex items-center gap-2"
+        >
+          <Plus className="w-5 h-5" />
+          Add Vendor
+        </button>
+      </div>
+
+      {/* Search & Toolbar */}
+      <div className="bg-white rounded-2xl shadow-sm ring-1 ring-slate-200/50 p-2 mb-6 flex items-center justify-between">
+        <div className="flex items-center px-4 gap-3 flex-1">
+          <Search className="w-5 h-5 text-slate-400" />
+          <input 
+            type="text" 
+            placeholder="Search vendors by name, PAN, or route..." 
+            className="w-full bg-transparent border-none focus:outline-none text-sm text-slate-700 font-medium placeholder:text-slate-400 py-2.5"
+          />
+        </div>
+        <div className="flex items-center gap-2 pr-2">
+          <button className="flex items-center gap-2 px-4 py-2 rounded-xl bg-blue-50 text-blue-700 font-bold text-sm border border-blue-100">
+            <Grid className="w-4 h-4" /> Grid
+          </button>
+          <button className="flex items-center gap-2 px-4 py-2 rounded-xl text-slate-500 hover:bg-slate-50 font-medium text-sm">
+            <List className="w-4 h-4" /> Table
+          </button>
+        </div>
+      </div>
+
+      {/* Main Content Area */}
+      {isLoading ? (
+        <div className="flex justify-center p-16">
+          <Activity className="animate-spin text-blue-600 w-8 h-8" />
+        </div>
+      ) : vendors.length === 0 ? (
+        <div className="bg-white rounded-2xl border border-dashed border-slate-300 p-20 flex flex-col items-center justify-center text-center mt-2">
+           <div className="w-16 h-16 bg-slate-100 text-slate-400 rounded-full flex items-center justify-center mb-6">
+             <Truck className="w-8 h-8" />
+           </div>
+           <h3 className="text-xl font-bold text-slate-900 mb-2">No vendors found</h3>
+           <p className="text-slate-500 text-[14.5px] mb-8 max-w-sm">You haven't added any fleet vendors to the system yet.</p>
+           <button 
+             onClick={() => { setFormData(DEFAULT_FORM); setIsFormOpen(true); }}
+             className="bg-blue-600 hover:bg-blue-700 text-white font-medium px-6 py-3 rounded-xl shadow-[0_4px_14px_rgba(37,99,235,0.25)] transition-all flex items-center gap-2"
+           >
+             <Plus className="w-5 h-5" />
+             Add First Vendor
+           </button>
+        </div>
+      ) : (
+        <div className="bg-white rounded-2xl shadow-sm ring-1 ring-slate-200/50 overflow-hidden">
+          <ProtoTable headers={["CODE", "VENDOR", "PAN", "STATUS", "REMARKS", "ACTIONS"]}>
+            {vendors.map((v) => (
               <tr key={v.id} className="hover:bg-slate-50 transition-colors cursor-pointer group" onClick={() => handleEdit(v)}>
                 <Td className="font-mono text-[12px]">{v.code || "—"}</Td>
                 <Td>{v.name}</Td>
@@ -153,95 +198,130 @@ export default function VendorsPage() {
                 <Td>
                   <button 
                     onClick={(e) => { e.stopPropagation(); handleDelete(v.id); }}
-                    className="text-muted-text hover:text-alert text-[12px] font-medium opacity-0 group-hover:opacity-100 transition-opacity"
+                    className="text-muted-text hover:text-red-500 text-[12px] font-medium opacity-0 group-hover:opacity-100 transition-opacity"
                   >
                     Delete
                   </button>
                 </Td>
               </tr>
-            ))
-          )}
-        </ProtoTable>
-      </div>
-
-      <div className="bg-panel border border-line rounded-[10px] overflow-hidden">
-        <div className="px-[18px] py-[14px] border-b border-line flex items-center justify-between">
-          <h3 className="font-disp text-[14.5px] font-semibold m-0">
-            {formData.id > 0 ? "Edit Vendor" : "New Vendor"}
-          </h3>
-          {formData.id > 0 && (
-            <button onClick={() => setFormData(DEFAULT_FORM)} className="text-[12px] text-route hover:underline">
-              Clear
-            </button>
-          )}
+            ))}
+          </ProtoTable>
         </div>
-        <form onSubmit={handleSubmit} className="p-[16px] grid grid-cols-2 gap-[12px]">
-          <div className="col-span-2">
-            <label className="block text-[11.5px] font-semibold text-muted-text mb-[5px] uppercase tracking-[0.3px]">Vendor Name</label>
-            <input required value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className="w-full border border-line rounded-[7px] px-[11px] py-[9px] text-[13px] bg-[#FAFBFD] text-ink font-body outline-none focus:border-signal" placeholder="e.g. Ramesh Transport" />
+      )}
+
+      {/* Slide-over Form Panel */}
+      {isFormOpen && (
+        <div className="fixed inset-0 z-[100] flex justify-end">
+          {/* Backdrop */}
+          <div 
+            className="absolute inset-0 bg-slate-900/20 backdrop-blur-sm transition-opacity" 
+            onClick={() => setIsFormOpen(false)} 
+          />
+          
+          {/* Slide-over Panel */}
+          <div className="relative w-full max-w-md bg-white h-full shadow-2xl flex flex-col transform transition-transform duration-300 ease-in-out border-l border-slate-200">
+             {/* Form Header */}
+             <div className="px-6 py-5 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+               <div>
+                 <h3 className="font-bold text-lg text-slate-900 tracking-tight">{formData.id > 0 ? "Edit Vendor" : "New Vendor"}</h3>
+                 <p className="text-[13px] font-medium text-slate-500 mt-0.5">{formData.id > 0 ? "Update details" : "Onboard a new transport partner"}</p>
+               </div>
+               <button 
+                 onClick={() => setIsFormOpen(false)} 
+                 className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-200 rounded-xl transition-colors"
+               >
+                 <X className="w-5 h-5" />
+               </button>
+             </div>
+             
+             {/* Form Body - Scrollable */}
+             <div className="flex-1 overflow-y-auto p-6 scrollbar-hide">
+               <form id="vendorForm" onSubmit={handleSubmit} className="space-y-5">
+                  <div>
+                    <label className="block text-[11.5px] font-bold text-slate-500 mb-1.5 uppercase tracking-wider">Vendor Name</label>
+                    <input required value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className="w-full border border-slate-200 rounded-xl px-4 py-3 text-[14px] bg-slate-50 hover:bg-slate-100 focus:bg-white text-slate-800 font-medium outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all shadow-sm" placeholder="e.g. Ramesh Transport" />
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-[11.5px] font-bold text-slate-500 mb-1.5 uppercase tracking-wider">Code</label>
+                      <input value={formData.code} onChange={e => setFormData({...formData, code: e.target.value})} className="w-full border border-slate-200 rounded-xl px-4 py-3 text-[14px] bg-slate-50 hover:bg-slate-100 focus:bg-white text-slate-800 font-medium outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all shadow-sm" placeholder="e.g. VEND-001" />
+                    </div>
+                    <div>
+                      <label className="block text-[11.5px] font-bold text-slate-500 mb-1.5 uppercase tracking-wider">Status</label>
+                      <select value={formData.status} onChange={e => setFormData({...formData, status: e.target.value})} className="w-full border border-slate-200 rounded-xl px-4 py-3 text-[14px] bg-slate-50 hover:bg-slate-100 focus:bg-white text-slate-800 font-medium outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all shadow-sm">
+                        <option value="Active">Active</option>
+                        <option value="Blacklisted">Blacklisted</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-[11.5px] font-bold text-slate-500 mb-1.5 uppercase tracking-wider">PAN Number</label>
+                      <input required value={formData.pan} onChange={e => setFormData({...formData, pan: e.target.value})} className="w-full border border-slate-200 rounded-xl px-4 py-3 text-[14px] bg-slate-50 hover:bg-slate-100 focus:bg-white text-slate-800 font-medium outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all shadow-sm" placeholder="Required for TDS" />
+                    </div>
+                    <div>
+                      <label className="block text-[11.5px] font-bold text-slate-500 mb-1.5 uppercase tracking-wider">GSTIN</label>
+                      <input value={formData.gstin} onChange={e => setFormData({...formData, gstin: e.target.value})} className="w-full border border-slate-200 rounded-xl px-4 py-3 text-[14px] bg-slate-50 hover:bg-slate-100 focus:bg-white text-slate-800 font-medium outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all shadow-sm" placeholder="Optional" />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-[11.5px] font-bold text-slate-500 mb-1.5 uppercase tracking-wider">Phone</label>
+                      <input required value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} className="w-full border border-slate-200 rounded-xl px-4 py-3 text-[14px] bg-slate-50 hover:bg-slate-100 focus:bg-white text-slate-800 font-medium outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all shadow-sm" placeholder="Phone number" />
+                    </div>
+                    <div>
+                      <label className="block text-[11.5px] font-bold text-slate-500 mb-1.5 uppercase tracking-wider">Contact Person</label>
+                      <input value={formData.contactPerson} onChange={e => setFormData({...formData, contactPerson: e.target.value})} className="w-full border border-slate-200 rounded-xl px-4 py-3 text-[14px] bg-slate-50 hover:bg-slate-100 focus:bg-white text-slate-800 font-medium outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all shadow-sm" placeholder="e.g. Ramesh" />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-[11.5px] font-bold text-slate-500 mb-1.5 uppercase tracking-wider">Email</label>
+                    <input type="email" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} className="w-full border border-slate-200 rounded-xl px-4 py-3 text-[14px] bg-slate-50 hover:bg-slate-100 focus:bg-white text-slate-800 font-medium outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all shadow-sm" placeholder="Vendor email" />
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-[11.5px] font-bold text-slate-500 mb-1.5 uppercase tracking-wider">City</label>
+                      <input value={formData.city} onChange={e => setFormData({...formData, city: e.target.value})} className="w-full border border-slate-200 rounded-xl px-4 py-3 text-[14px] bg-slate-50 hover:bg-slate-100 focus:bg-white text-slate-800 font-medium outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all shadow-sm" placeholder="e.g. Mumbai" />
+                    </div>
+                    <div>
+                      <label className="block text-[11.5px] font-bold text-slate-500 mb-1.5 uppercase tracking-wider">State</label>
+                      <input value={formData.state} onChange={e => setFormData({...formData, state: e.target.value})} className="w-full border border-slate-200 rounded-xl px-4 py-3 text-[14px] bg-slate-50 hover:bg-slate-100 focus:bg-white text-slate-800 font-medium outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all shadow-sm" placeholder="e.g. Maharashtra" />
+                    </div>
+                  </div>
+                  <hr className="border-slate-200" />
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="col-span-2">
+                      <label className="block text-[11.5px] font-bold text-slate-500 mb-1.5 uppercase tracking-wider">Bank Details</label>
+                      <textarea value={formData.bankDetails} onChange={e => setFormData({...formData, bankDetails: e.target.value})} className="w-full border border-slate-200 rounded-xl px-4 py-3 text-[14px] bg-slate-50 hover:bg-slate-100 focus:bg-white text-slate-800 font-medium outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all shadow-sm min-h-[80px]" placeholder="Account & IFSC" />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="col-span-2">
+                      <label className="block text-[11.5px] font-bold text-slate-500 mb-1.5 uppercase tracking-wider">Route Remarks</label>
+                      <textarea value={formData.routeRemarks} onChange={e => setFormData({...formData, routeRemarks: e.target.value})} className="w-full border border-slate-200 rounded-xl px-4 py-3 text-[14px] bg-slate-50 hover:bg-slate-100 focus:bg-white text-slate-800 font-medium outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all shadow-sm min-h-[80px]" placeholder="e.g. Reliable on Blr-Mysore" />
+                    </div>
+                  </div>
+               </form>
+             </div>
+             
+             {/* Form Footer */}
+             <div className="p-6 border-t border-slate-100 bg-white">
+               <button 
+                 type="submit" 
+                 form="vendorForm" 
+                 disabled={isSubmitting}
+                 className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3.5 rounded-xl shadow-[0_4px_14px_rgba(37,99,235,0.25)] transition-all flex items-center justify-center disabled:opacity-70 disabled:cursor-not-allowed"
+               >
+                 {isSubmitting ? (
+                   <><Activity className="w-5 h-5 mr-2 animate-spin" /> Saving...</>
+                 ) : (
+                   formData.id > 0 ? "Update Vendor" : "Save Vendor"
+                 )}
+               </button>
+             </div>
           </div>
-          <div className="col-span-1">
-            <label className="block text-[11.5px] font-semibold text-muted-text mb-[5px] uppercase tracking-[0.3px]">Code</label>
-            <input value={formData.code} onChange={e => setFormData({...formData, code: e.target.value})} className="w-full border border-line rounded-[7px] px-[11px] py-[9px] text-[13px] bg-[#FAFBFD] text-ink font-body outline-none focus:border-signal" placeholder="e.g. VEND-001" />
-          </div>
-          <div className="col-span-1">
-            <label className="block text-[11.5px] font-semibold text-muted-text mb-[5px] uppercase tracking-[0.3px]">Status</label>
-            <select value={formData.status} onChange={e => setFormData({...formData, status: e.target.value})} className="w-full border border-line rounded-[7px] px-[11px] py-[9px] text-[13px] bg-[#FAFBFD] text-ink font-body outline-none focus:border-signal">
-              <option value="Active">Active</option>
-              <option value="Blacklisted">Blacklisted</option>
-            </select>
-          </div>
-          <div className="col-span-1">
-            <label className="block text-[11.5px] font-semibold text-muted-text mb-[5px] uppercase tracking-[0.3px]">PAN Number</label>
-            <input required value={formData.pan} onChange={e => setFormData({...formData, pan: e.target.value})} className="w-full border border-line rounded-[7px] px-[11px] py-[9px] text-[13px] bg-[#FAFBFD] text-ink font-body outline-none focus:border-signal" placeholder="Required for TDS" />
-          </div>
-          <div className="col-span-1">
-            <label className="block text-[11.5px] font-semibold text-muted-text mb-[5px] uppercase tracking-[0.3px]">GSTIN</label>
-            <input value={formData.gstin} onChange={e => setFormData({...formData, gstin: e.target.value})} className="w-full border border-line rounded-[7px] px-[11px] py-[9px] text-[13px] bg-[#FAFBFD] text-ink font-body outline-none focus:border-signal" placeholder="Optional" />
-          </div>
-          <div className="col-span-1">
-            <label className="block text-[11.5px] font-semibold text-muted-text mb-[5px] uppercase tracking-[0.3px]">Phone</label>
-            <input required value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} className="w-full border border-line rounded-[7px] px-[11px] py-[9px] text-[13px] bg-[#FAFBFD] text-ink font-body outline-none focus:border-signal" placeholder="Phone number" />
-          </div>
-          <div className="col-span-1">
-            <label className="block text-[11.5px] font-semibold text-muted-text mb-[5px] uppercase tracking-[0.3px]">Contact Person</label>
-            <input value={formData.contactPerson} onChange={e => setFormData({...formData, contactPerson: e.target.value})} className="w-full border border-line rounded-[7px] px-[11px] py-[9px] text-[13px] bg-[#FAFBFD] text-ink font-body outline-none focus:border-signal" placeholder="e.g. Ramesh" />
-          </div>
-          <div className="col-span-1">
-            <label className="block text-[11.5px] font-semibold text-muted-text mb-[5px] uppercase tracking-[0.3px]">Email</label>
-            <input type="email" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} className="w-full border border-line rounded-[7px] px-[11px] py-[9px] text-[13px] bg-[#FAFBFD] text-ink font-body outline-none focus:border-signal" placeholder="Vendor email" />
-          </div>
-          <div className="col-span-1">
-            <label className="block text-[11.5px] font-semibold text-muted-text mb-[5px] uppercase tracking-[0.3px]">City</label>
-            <input value={formData.city} onChange={e => setFormData({...formData, city: e.target.value})} className="w-full border border-line rounded-[7px] px-[11px] py-[9px] text-[13px] bg-[#FAFBFD] text-ink font-body outline-none focus:border-signal" placeholder="e.g. Mumbai" />
-          </div>
-          <div className="col-span-1">
-            <label className="block text-[11.5px] font-semibold text-muted-text mb-[5px] uppercase tracking-[0.3px]">State</label>
-            <input value={formData.state} onChange={e => setFormData({...formData, state: e.target.value})} className="w-full border border-line rounded-[7px] px-[11px] py-[9px] text-[13px] bg-[#FAFBFD] text-ink font-body outline-none focus:border-signal" placeholder="e.g. Maharashtra" />
-          </div>
-          <div className="col-span-1">
-            <label className="block text-[11.5px] font-semibold text-muted-text mb-[5px] uppercase tracking-[0.3px]">TDS Info</label>
-            <input value={formData.tdsInfo} onChange={e => setFormData({...formData, tdsInfo: e.target.value})} className="w-full border border-line rounded-[7px] px-[11px] py-[9px] text-[13px] bg-[#FAFBFD] text-ink font-body outline-none focus:border-signal" placeholder="e.g. 2%" />
-          </div>
-          <div className="col-span-2">
-            <label className="block text-[11.5px] font-semibold text-muted-text mb-[5px] uppercase tracking-[0.3px]">Office Address</label>
-            <textarea value={formData.address} onChange={e => setFormData({...formData, address: e.target.value})} className="w-full border border-line rounded-[7px] px-[11px] py-[9px] text-[13px] bg-[#FAFBFD] text-ink font-body outline-none focus:border-signal h-[52px]" placeholder="Full address" />
-          </div>
-          <div className="col-span-2">
-            <label className="block text-[11.5px] font-semibold text-muted-text mb-[5px] uppercase tracking-[0.3px]">Bank Details</label>
-            <textarea value={formData.bankDetails} onChange={e => setFormData({...formData, bankDetails: e.target.value})} className="w-full border border-line rounded-[7px] px-[11px] py-[9px] text-[13px] bg-[#FAFBFD] text-ink font-body outline-none focus:border-signal h-[52px]" placeholder="Account & IFSC" />
-          </div>
-          <div className="col-span-2">
-            <label className="block text-[11.5px] font-semibold text-muted-text mb-[5px] uppercase tracking-[0.3px]">Route Remarks</label>
-            <textarea value={formData.routeRemarks} onChange={e => setFormData({...formData, routeRemarks: e.target.value})} className="w-full border border-line rounded-[7px] px-[11px] py-[9px] text-[13px] bg-[#FAFBFD] text-ink font-body outline-none focus:border-signal h-[52px]" placeholder="e.g. Reliable on Blr-Mysore" />
-          </div>
-          <div className="col-span-2 mt-2">
-            <ProtoButton variant="dark" style={{ width: '100%' }}>
-              {isSubmitting ? "Saving..." : (formData.id > 0 ? "Update Vendor" : "Save Vendor")}
-            </ProtoButton>
-          </div>
-        </form>
-      </div>
+        </div>
+      )}
     </div>
   );
 }

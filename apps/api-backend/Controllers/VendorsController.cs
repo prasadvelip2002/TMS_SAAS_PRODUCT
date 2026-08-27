@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
@@ -60,7 +60,24 @@ namespace api_backend.Controllers
                 return BadRequest();
             }
 
-            _context.Entry(vendor).State = EntityState.Modified;
+            var existingVendor = await _context.Vendors.FindAsync(id);
+            if (existingVendor == null)
+            {
+                return NotFound();
+            }
+
+            // Update properties
+            existingVendor.Name = vendor.Name;
+            existingVendor.Code = vendor.Code;
+            existingVendor.GSTIN = vendor.GSTIN;
+            existingVendor.PAN = vendor.PAN;
+            existingVendor.ContactPerson = vendor.ContactPerson;
+            existingVendor.Phone = vendor.Phone;
+            existingVendor.Email = vendor.Email;
+            existingVendor.Address = vendor.Address;
+            existingVendor.City = vendor.City;
+            existingVendor.State = vendor.State;
+            existingVendor.Status = vendor.Status;
 
             try
             {

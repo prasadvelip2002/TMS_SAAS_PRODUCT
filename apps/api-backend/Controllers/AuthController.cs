@@ -6,6 +6,8 @@ using System.Text;
 using api_backend.Data;
 using Microsoft.EntityFrameworkCore;
 using api_backend.Models;
+using System;
+using System.Threading.Tasks;
 
 namespace api_backend.Controllers
 {
@@ -44,6 +46,7 @@ namespace api_backend.Controllers
                 }
 
                 var demoTenantId = driver.TenantId;
+                var demoCompanyId = driver.CompanyId;
                 var demoUserId = driver.Id;
                 
                 var demoKey = _configuration["Jwt:Key"] ?? "SuperSecretKeyForTransportManagementSystem!123";
@@ -53,8 +56,9 @@ namespace api_backend.Controllers
                 var demoClaims = new[]
                 {
                     new Claim(JwtRegisteredClaimNames.Sub, demoUserId.ToString()),
-                    new Claim("Phone", driver.Phone),
+                    new Claim("Phone", driver.Phone ?? ""),
                     new Claim("TenantId", demoTenantId.ToString()),
+                    new Claim("CompanyId", demoCompanyId.ToString()),
                     new Claim(ClaimTypes.Role, "Driver")
                 };
 
@@ -68,12 +72,10 @@ namespace api_backend.Controllers
                 return Ok(new
                 {
                     token = new JwtSecurityTokenHandler().WriteToken(demoToken),
-                    user = new { Id = demoUserId, Name = driver.Name, Phone = driver.Phone, Role = "Driver", TenantId = demoTenantId }
+                    user = new { Id = demoUserId, Name = driver.Name, Phone = driver.Phone, Role = "Driver", TenantId = demoTenantId, CompanyId = demoCompanyId }
                 });
             }
 
-            // Note: In a real app, hash the password and compare. Here we just match the plain text for the sake of the exercise, 
-            // but we named it PasswordHash in the model.
             var user = await _context.Users.IgnoreQueryFilters().FirstOrDefaultAsync(u => u.Email == request.Email && u.PasswordHash == request.Password);
 
             if (user == null)
@@ -90,6 +92,7 @@ namespace api_backend.Controllers
                 new Claim(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
                 new Claim(JwtRegisteredClaimNames.Email, user.Email),
                 new Claim("TenantId", user.TenantId.ToString()),
+                new Claim("CompanyId", user.CompanyId.ToString()),
                 new Claim(ClaimTypes.Role, user.Role)
             };
 
@@ -103,13 +106,16 @@ namespace api_backend.Controllers
             return Ok(new
             {
                 token = new JwtSecurityTokenHandler().WriteToken(token),
-                user = new { user.Id, user.Name, user.Email, user.Role, user.TenantId }
+                user = new { user.Id, user.Name, user.Email, user.Role, user.TenantId, user.CompanyId }
             });
         }
         
         public class SetupRequest
         {
             public required string TenantName { get; set; }
+            public required string CompanyName { get; set; }
+            public required string AdminName { get; set; }
+            public string? AdminPhone { get; set; }
             public required string AdminEmail { get; set; }
             public required string AdminPassword { get; set; }
         }
@@ -117,23 +123,28 @@ namespace api_backend.Controllers
         [HttpPost("setup")]
         public async Task<IActionResult> Setup([FromBody] SetupRequest request)
         {
-            // Convenience endpoint to create a Tenant and a Tenant Admin since we dropped the DB
             var tenant = new Tenant { Name = request.TenantName };
             _context.Tenants.Add(tenant);
             await _context.SaveChangesAsync();
 
+            var company = new Company { Name = request.CompanyName, TenantId = tenant.Id };
+            _context.Companies.Add(company);
+            await _context.SaveChangesAsync();
+
             var user = new User 
             { 
-                Name = "Admin", 
+                Name = request.AdminName, 
                 Email = request.AdminEmail, 
+                Phone = request.AdminPhone,
                 PasswordHash = request.AdminPassword, 
                 Role = "Tenant Admin",
-                TenantId = tenant.Id 
+                TenantId = tenant.Id,
+                CompanyId = company.Id
             };
             _context.Users.Add(user);
             await _context.SaveChangesAsync();
 
-            return Ok(new { message = "Setup complete", tenantId = tenant.Id, userId = user.Id });
+            return Ok(new { message = "Setup complete", tenantId = tenant.Id, companyId = company.Id, userId = user.Id });
         }
     }
 }

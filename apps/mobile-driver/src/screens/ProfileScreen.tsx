@@ -1,9 +1,59 @@
-import React from 'react';
-import { View, Text, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
+
+const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://10.0.2.2:5063/api';
 
 export default function ProfileScreen({ authState, onNavigate }: { authState: any, onNavigate: (screen: string) => void }) {
+  const [totalTrips, setTotalTrips] = useState(0);
+  const [license, setLicense] = useState('Pending Upload');
+  const [vehicle, setVehicle] = useState('Unassigned');
+  const [loading, setLoading] = useState(true);
+
   const driverName = authState?.user?.name || "Rajesh Kumar";
   const initials = driverName.split(' ').map((n: string) => n[0]).join('').substring(0, 2);
+
+  useEffect(() => {
+    fetchProfileData();
+  }, []);
+
+  const fetchProfileData = async () => {
+    try {
+      const headers = { 'Authorization': `Bearer ${authState.token}` };
+      
+      // Fetch Trips
+      const tripsRes = await fetch(`${API_URL}/Trips`, { headers });
+      if (tripsRes.ok) {
+        const allTrips = await tripsRes.json();
+        const myTrips = authState.user.id === 999 
+          ? allTrips 
+          : allTrips.filter((t: any) => t.driverId === authState.user.id);
+        setTotalTrips(myTrips.length);
+        
+        // Find assigned vehicle from latest active trip if any
+        if (myTrips.length > 0) {
+          const active = myTrips.find((t:any) => t.status !== 'Delivered' && t.status !== 'Closed');
+          if (active && active.vehicle) {
+            setVehicle(active.vehicle.registrationNumber || 'Assigned');
+          }
+        }
+      }
+
+      // Fetch Driver Details (if standard driver id, omit for demo 999 if it errors)
+      if (authState.user.id !== 999) {
+        const driverRes = await fetch(`${API_URL}/Drivers/${authState.user.id}`, { headers });
+        if (driverRes.ok) {
+          const driverData = await driverRes.json();
+          if (driverData.licenseNumber) {
+            setLicense(`${driverData.licenseNumber} ${driverData.licenseExpiry ? '· valid till ' + new Date(driverData.licenseExpiry).getFullYear() : ''}`);
+          }
+        }
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -14,9 +64,9 @@ export default function ProfileScreen({ authState, onNavigate }: { authState: an
             <Text style={styles.avatarText}>{initials}</Text>
           </View>
           <Text style={styles.name}>{driverName}</Text>
-          <Text style={styles.subtitle}>Driver · TransitFlow Fleet</Text>
+          <Text style={styles.subtitle}>Driver</Text>
           <View style={styles.ratingBadge}>
-            <Text style={styles.ratingText}>⭐ 4.7 · 312 trips</Text>
+            <Text style={styles.ratingText}>⭐ {totalTrips > 0 ? '4.8' : '0.0'} · {totalTrips} trips</Text>
           </View>
         </View>
 
@@ -39,7 +89,7 @@ export default function ProfileScreen({ authState, onNavigate }: { authState: an
             </View>
             <View style={styles.itemContent}>
               <Text style={styles.itemLabel}>MOBILE</Text>
-              <Text style={styles.itemValue}>+91 98765 43210</Text>
+              <Text style={styles.itemValue}>{authState?.user?.phone || 'Not provided'}</Text>
             </View>
           </View>
 
@@ -49,7 +99,7 @@ export default function ProfileScreen({ authState, onNavigate }: { authState: an
             </View>
             <View style={styles.itemContent}>
               <Text style={styles.itemLabel}>ASSIGNED VEHICLE</Text>
-              <Text style={styles.itemValue}>DL01 CE 8890</Text>
+              <Text style={styles.itemValue}>{loading ? 'Loading...' : vehicle}</Text>
             </View>
           </View>
 
@@ -59,7 +109,7 @@ export default function ProfileScreen({ authState, onNavigate }: { authState: an
             </View>
             <View style={styles.itemContent}>
               <Text style={styles.itemLabel}>LICENSE</Text>
-              <Text style={styles.itemValue}>DL-0420 · valid till 2029</Text>
+              <Text style={styles.itemValue}>{loading ? 'Loading...' : license}</Text>
             </View>
           </View>
 

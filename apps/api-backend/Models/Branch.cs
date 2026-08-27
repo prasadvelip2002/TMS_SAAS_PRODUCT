@@ -2,9 +2,8 @@ using System;
 
 namespace api_backend.Models
 {
-    public class Branch
+    public class Branch : BaseEntity, ITenantEntity, ICompanyEntity
     {
-        public int Id { get; set; }
         
         public required string Name { get; set; }
         public string? Location { get; set; } // e.g., Hubli, Pune, Bangalore, Chennai, Hyderabad
@@ -12,6 +11,7 @@ namespace api_backend.Models
         public int TenantId { get; set; }
         public Tenant? Tenant { get; set; }
 
-        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+        public int CompanyId { get; set; }
+        public Company? Company { get; set; }
     }
 }

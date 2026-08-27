@@ -3,9 +3,8 @@ using System.Collections.Generic;
 
 namespace api_backend.Models
 {
-    public class Vendor
+    public class Vendor : BaseEntity, ITenantEntity, ICompanyEntity
     {
-        public int Id { get; set; }
         public required string Name { get; set; }
         public string? ContactPerson { get; set; }
         public string? Email { get; set; }
@@ -18,13 +17,13 @@ namespace api_backend.Models
         public string? TDSInfo { get; set; }
         public string? Phone { get; set; }
         public string? RouteRemarks { get; set; }
-        public string? Code { get; set; } // e.g. VEND-001
-        public string? Status { get; set; } // e.g. Active, Blacklisted
+        public string? Code { get; set; } // e.g. VEND-001 // e.g. Active, Blacklisted
 
         public int TenantId { get; set; }
         public Tenant? Tenant { get; set; }
 
-        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+        public int CompanyId { get; set; }
+        public Company? Company { get; set; }
 
         public ICollection<Vehicle>? Vehicles { get; set; }
         public ICollection<Trip>? Trips { get; set; }

@@ -1,13 +1,53 @@
-import React from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
 
-export default function PaymentsScreen({ onBack }: { onBack?: () => void }) {
-  const payments = [
-    { id: 1, type: 'Final settlement', tripId: '2287', amount: '19,700', status: 'Paid', icon: '💳', color: '#22c55e' },
-    { id: 2, type: 'Advance', tripId: '2291', amount: '15,000', status: 'Credited', icon: '💳', color: '#22c55e' },
-    { id: 3, type: 'Unloading charge', tripId: '2287', amount: '3,200', status: 'Under review', icon: '💳', color: '#ea580c' },
-    { id: 4, type: 'Final settlement', tripId: '2240', amount: '22,400', status: 'Processing', icon: '💳', color: '#3b82f6' },
-  ];
+const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://10.0.2.2:5063/api';
+
+export default function PaymentsScreen({ authState, onBack, onNavigate }: { authState: any, onBack?: () => void, onNavigate: (screen: string) => void }) {
+  const [payments, setPayments] = useState<any[]>([]);
+  const [totalEarned, setTotalEarned] = useState(0);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchPayments();
+  }, []);
+
+  const fetchPayments = async () => {
+    try {
+      const response = await fetch(`${API_URL}/Payments`, {
+        headers: { 'Authorization': `Bearer ${authState.token}` }
+      });
+      if (response.ok) {
+        const data = await response.json();
+        
+        // Filter payments for this specific driver
+        const myPayments = authState.user.id === 999 
+          ? data 
+          : data.filter((p: any) => p.driverId === authState.user.id || (p.trip && p.trip.driverId === authState.user.id));
+        
+        let total = 0;
+        const mapped = myPayments.map((p: any) => {
+          total += p.amount;
+          return {
+            id: p.id.toString(),
+            type: p.type,
+            tripId: p.tripId.toString(),
+            amount: p.amount.toLocaleString(),
+            status: p.utrNumber ? 'Paid' : 'Processing',
+            icon: '💳',
+            color: p.utrNumber ? '#22c55e' : '#3b82f6'
+          };
+        });
+        
+        setTotalEarned(total);
+        setPayments(mapped);
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <View style={styles.container}>
@@ -21,43 +61,53 @@ export default function PaymentsScreen({ onBack }: { onBack?: () => void }) {
         <Text style={styles.headerTitle}>Payments</Text>
         <View style={styles.earningsContainer}>
           <Text style={styles.earningsLabel}>Total earned (this month)</Text>
-          <Text style={styles.earningsAmount}>₹1,24,500</Text>
+          <Text style={styles.earningsAmount}>₹{totalEarned.toLocaleString()}</Text>
         </View>
       </View>
 
-      <ScrollView contentContainerStyle={styles.listContainer}>
-        {payments.map((payment) => (
-          <View key={payment.id} style={styles.card}>
-            <View style={[styles.iconContainer, { backgroundColor: payment.color + '15' }]}>
-              <Text style={styles.icon}>{payment.icon}</Text>
+      {loading ? (
+        <View style={{flex:1, justifyContent:'center', alignItems:'center'}}>
+          <ActivityIndicator size="large" color="#1e40af" />
+        </View>
+      ) : payments.length === 0 ? (
+        <View style={{flex:1, justifyContent:'center', alignItems:'center'}}>
+          <Text style={{color: '#64748b', fontSize: 16}}>No payments yet</Text>
+        </View>
+      ) : (
+        <ScrollView contentContainerStyle={styles.listContainer}>
+          {payments.map((payment) => (
+            <View key={payment.id} style={styles.card}>
+              <View style={[styles.iconContainer, { backgroundColor: payment.color + '15' }]}>
+                <Text style={styles.icon}>{payment.icon}</Text>
+              </View>
+              <View style={styles.infoContainer}>
+                <Text style={styles.paymentType}>{payment.type}</Text>
+                <Text style={styles.tripId}>TRIP-{payment.tripId}</Text>
+              </View>
+              <View style={styles.amountContainer}>
+                <Text style={styles.amount}>₹{payment.amount}</Text>
+                <Text style={[styles.status, { color: payment.color }]}>{payment.status}</Text>
+              </View>
             </View>
-            <View style={styles.infoContainer}>
-              <Text style={styles.paymentType}>{payment.type}</Text>
-              <Text style={styles.tripId}>TRIP-{payment.tripId}</Text>
-            </View>
-            <View style={styles.amountContainer}>
-              <Text style={styles.amount}>₹{payment.amount}</Text>
-              <Text style={[styles.status, { color: payment.color }]}>{payment.status}</Text>
-            </View>
-          </View>
-        ))}
-      </ScrollView>
+          ))}
+        </ScrollView>
+      )}
 
       {/* Bottom Navigation Bar */}
       <View style={styles.bottomNav}>
-        <TouchableOpacity style={styles.navItem}>
+        <TouchableOpacity style={styles.navItem} onPress={() => onNavigate('Home')}>
           <Text style={styles.navIcon}>🏠</Text>
           <Text style={styles.navText}>Home</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.navItem}>
+        <TouchableOpacity style={styles.navItem} onPress={() => onNavigate('Home')}>
           <Text style={styles.navIcon}>🚚</Text>
           <Text style={styles.navText}>Trips</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.navItem}>
+        <TouchableOpacity style={styles.navItem} onPress={() => onNavigate('Notifications')}>
           <Text style={styles.navIcon}>🔔</Text>
           <Text style={styles.navText}>Alerts</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.navItem}>
+        <TouchableOpacity style={styles.navItem} onPress={() => onNavigate('Profile')}>
           <Text style={styles.navIcon}>👤</Text>
           <Text style={[styles.navText, styles.navActive]}>Profile</Text>
         </TouchableOpacity>

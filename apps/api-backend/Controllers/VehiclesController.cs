@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
@@ -60,7 +60,23 @@ namespace api_backend.Controllers
                 return BadRequest();
             }
 
-            _context.Entry(vehicle).State = EntityState.Modified;
+            // Update properties
+            var existingVehicle = await _context.Vehicles.FindAsync(id);
+            if (existingVehicle == null)
+            {
+                return NotFound();
+            }
+
+            existingVehicle.VehicleNumber = vehicle.VehicleNumber;
+            existingVehicle.Code = vehicle.Code;
+            existingVehicle.Type = vehicle.Type;
+            existingVehicle.Capacity = vehicle.Capacity;
+            existingVehicle.OwnerName = vehicle.OwnerName;
+            existingVehicle.RCNumber = vehicle.RCNumber;
+            existingVehicle.InsuranceExpiry = vehicle.InsuranceExpiry;
+            existingVehicle.PermitExpiry = vehicle.PermitExpiry;
+            existingVehicle.FitnessExpiry = vehicle.FitnessExpiry;
+            existingVehicle.VendorId = vehicle.VendorId;
 
             try
             {

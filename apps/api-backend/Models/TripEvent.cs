@@ -2,9 +2,8 @@ using System;
 
 namespace api_backend.Models
 {
-    public class TripEvent
+    public class TripEvent : BaseEntity, ITenantEntity, ICompanyEntity
     {
-        public int Id { get; set; }
         
         public int TripId { get; set; }
         public Trip? Trip { get; set; }
@@ -20,6 +19,7 @@ namespace api_backend.Models
         public int TenantId { get; set; }
         public Tenant? Tenant { get; set; }
 
-        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+        public int CompanyId { get; set; }
+        public Company? Company { get; set; }
     }
 }

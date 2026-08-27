@@ -44,23 +44,23 @@ export default function App() {
         {!authState ? (
           <LoginScreen onLogin={handleLogin} />
         ) : currentScreen === 'Home' ? (
-          <DriverHomeScreen authState={authState} onSelectTrip={handleSelectTrip} onNavigate={setCurrentScreen} />
+          <DriverHomeScreen authState={authState} onSelectTrip={handleSelectTrip} onNavigate={(s: any) => setCurrentScreen(s)} />
         ) : currentScreen === 'TripDetails' && selectedTrip ? (
           <TripDetailsScreen trip={selectedTrip} authState={authState} onBack={handleBackToHome} onNavigate={setCurrentScreen} />
         ) : currentScreen === 'Advance' && selectedTrip ? (
           <AdvanceRequestScreen trip={selectedTrip} onBack={() => setCurrentScreen('TripDetails')} />
         ) : currentScreen === 'Charge' && selectedTrip ? (
-          <AddChargeScreen trip={selectedTrip} onBack={() => setCurrentScreen('TripDetails')} />
+          <AddChargeScreen trip={selectedTrip} authState={authState} onBack={() => setCurrentScreen('TripDetails')} />
         ) : currentScreen === 'POD' && selectedTrip ? (
-          <PODUploadScreen trip={selectedTrip} onBack={() => setCurrentScreen('TripDetails')} onComplete={() => setCurrentScreen('DocumentUpload')} />
+          <PODUploadScreen trip={selectedTrip} authState={authState} onBack={() => setCurrentScreen('TripDetails')} onComplete={() => setCurrentScreen('DocumentUpload')} />
         ) : currentScreen === 'DocumentUpload' && selectedTrip ? (
           <DocumentUploadScreen trip={selectedTrip} onBack={() => setCurrentScreen('POD')} onComplete={() => setCurrentScreen('TripDetails')} />
         ) : currentScreen === 'Notifications' ? (
-          <NotificationsScreen onNavigate={setCurrentScreen} />
+          <NotificationsScreen authState={authState} onNavigate={(s: any) => setCurrentScreen(s)} />
         ) : currentScreen === 'Profile' ? (
-          <ProfileScreen authState={authState} onNavigate={setCurrentScreen} />
+          <ProfileScreen authState={authState} onNavigate={(s: any) => setCurrentScreen(s)} />
         ) : currentScreen === 'Payments' ? (
-          <PaymentsScreen onBack={() => setCurrentScreen('Profile')} />
+          <PaymentsScreen authState={authState} onBack={() => setCurrentScreen('Profile')} onNavigate={(s: any) => setCurrentScreen(s)} />
         ) : currentScreen === 'NewTripOffer' && selectedTrip ? (
           <NewTripOfferScreen 
             trip={selectedTrip} 

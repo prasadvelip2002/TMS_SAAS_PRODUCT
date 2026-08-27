@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
@@ -60,7 +60,24 @@ namespace api_backend.Controllers
                 return BadRequest();
             }
 
-            _context.Entry(indent).State = EntityState.Modified;
+            var existingIndent = await _context.Indents.FindAsync(id);
+            if (existingIndent == null)
+            {
+                return NotFound();
+            }
+
+            // Update properties
+            existingIndent.CustomerId = indent.CustomerId;
+            existingIndent.Source = indent.Source;
+            existingIndent.Destination = indent.Destination;
+            existingIndent.Material = indent.Material;
+            existingIndent.Weight = indent.Weight;
+            existingIndent.VehicleType = indent.VehicleType;
+            existingIndent.LoadingDate = indent.LoadingDate;
+            existingIndent.Status = indent.Status;
+            existingIndent.PricingModel = indent.PricingModel;
+            existingIndent.CustomerRate = indent.CustomerRate;
+            existingIndent.DestinationsJson = indent.DestinationsJson;
 
             try
             {

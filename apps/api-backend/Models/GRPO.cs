@@ -2,9 +2,8 @@ using System;
 
 namespace api_backend.Models
 {
-    public class GRPO
+    public class GRPO : BaseEntity, ITenantEntity, ICompanyEntity
     {
-        public int Id { get; set; }
 
         public string GRPONumber { get; set; } = string.Empty; // e.g. GRPO-5001
 
@@ -15,13 +14,12 @@ namespace api_backend.Models
         public decimal DamagedQuantity { get; set; }
         public string? Remarks { get; set; }
 
-        public string? PODDocumentUrl { get; set; }
-
-        public string Status { get; set; } = "Received"; // Received, Verified, Disputed
+        public string? PODDocumentUrl { get; set; } // Received, Verified, Disputed
 
         public int TenantId { get; set; }
         public Tenant? Tenant { get; set; }
 
-        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+        public int CompanyId { get; set; }
+        public Company? Company { get; set; }
     }
 }

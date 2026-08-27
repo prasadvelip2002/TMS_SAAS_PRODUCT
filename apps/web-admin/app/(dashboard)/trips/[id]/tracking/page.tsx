@@ -161,7 +161,7 @@ export default function TripTrackingPage() {
           <Panel title="Quick Actions">
             <div className="space-y-3">
               <button className="w-full bg-slate-50 border border-slate-200 text-slate-700 font-semibold py-2.5 rounded-xl hover:bg-slate-100 text-sm flex items-center justify-center gap-2 transition-colors">
-                <AlertTriangle className="w-4 h-4 text-orange-500" /> Report Delay / Halt
+                <AlertTriangle className="w-4 h-4 text-blue-600" /> Report Delay / Halt
               </button>
               <button className="w-full bg-slate-50 border border-slate-200 text-slate-700 font-semibold py-2.5 rounded-xl hover:bg-slate-100 text-sm flex items-center justify-center gap-2 transition-colors">
                 <MapPin className="w-4 h-4 text-indigo-500" /> Update Coordinates

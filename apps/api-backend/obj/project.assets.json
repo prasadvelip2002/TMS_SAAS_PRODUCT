@@ -2888,11 +2888,11 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "D:\\HITRO-LOGISTICS\\apps\\api-backend\\api-backend.csproj",
+      "projectUniqueName": "D:\\TMS_SAAS_PRODUCT\\apps\\api-backend\\api-backend.csproj",
       "projectName": "api-backend",
-      "projectPath": "D:\\HITRO-LOGISTICS\\apps\\api-backend\\api-backend.csproj",
+      "projectPath": "D:\\TMS_SAAS_PRODUCT\\apps\\api-backend\\api-backend.csproj",
       "packagesPath": "C:\\Users\\Administrator\\.nuget\\packages\\",
-      "outputPath": "D:\\HITRO-LOGISTICS\\apps\\api-backend\\obj\\",
+      "outputPath": "D:\\TMS_SAAS_PRODUCT\\apps\\api-backend\\obj\\",
       "projectStyle": "PackageReference",
       "fallbackFolders": [
         "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"

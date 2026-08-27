@@ -14,9 +14,9 @@ async function testFetch() {
             'Authorization': `Bearer ${token}`
         };
 
-        const res = await fetch(`${API_BASE_URL}/Customers`, { headers });
+        const res = await fetch(`${API_BASE_URL}/Trips`, { headers });
         const text = await res.text();
-        console.log("Customers Response:", text);
+        console.log("Trips Response:", res.status, text);
     } catch (e) {
         console.error(e);
     }

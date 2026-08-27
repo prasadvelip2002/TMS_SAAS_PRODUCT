@@ -18,7 +18,8 @@ export default function DashboardLayout({
   useEffect(() => {
     const userStr = localStorage.getItem("user");
     if (!userStr) {
-      router.push("/login");
+      document.cookie = 'isLoggedIn=; path=/; max-age=0';
+      window.location.href = '/login';
       return;
     }
 
@@ -46,11 +47,15 @@ export default function DashboardLayout({
       };
 
       let isAllowed = true;
-      for (const route in rules) {
-        if (pathname.startsWith(route)) {
-          if (!rules[route].includes(role)) {
-            isAllowed = false;
-            break;
+      if (role === "Platform Admin") {
+        isAllowed = true;
+      } else {
+        for (const route in rules) {
+          if (pathname.startsWith(route)) {
+            if (!rules[route].includes(role)) {
+              isAllowed = false;
+              break;
+            }
           }
         }
       }

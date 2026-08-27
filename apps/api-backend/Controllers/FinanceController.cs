@@ -30,7 +30,7 @@ namespace api_backend.Controllers
                 .Include(t => t.Vendor)
                 .Include(t => t.Indent)
                 .ThenInclude(i => i.Customer)
-                .Where(t => t.Status == "Closed" && !t.IsVendorSettled)
+                .Where(t => t.Status == "Closed")
                 .ToListAsync();
 
             return Ok(trips);
@@ -90,7 +90,7 @@ namespace api_backend.Controllers
 
             var customerId = trips.First().Indent.CustomerId;
 
-            decimal totalAmount = trips.Sum(t => t.FreightCharges + (t.TollCharges ?? 0));
+            decimal totalAmount = trips.Sum(t => (t.CustomerRate ?? t.Indent?.CustomerRate ?? t.FreightCharges) + (t.TollCharges ?? 0));
             decimal taxAmount = totalAmount * 0.18m; // Assuming 18% GST
 
             var invoice = new Invoice
@@ -144,6 +144,20 @@ namespace api_backend.Controllers
 
             if (invoice == null) return NotFound();
             return Ok(invoice);
+        }
+
+        // POST: api/Finance/invoices/{id}/pay
+        [HttpPost("invoices/{id}/pay")]
+        public async Task<IActionResult> MarkInvoiceAsPaid(int id)
+        {
+            var invoice = await _context.Invoices.FindAsync(id);
+            if (invoice == null) return NotFound("Invoice not found");
+
+            invoice.Status = "Paid";
+            _context.Entry(invoice).State = EntityState.Modified;
+            await _context.SaveChangesAsync();
+
+            return Ok(new { message = "Invoice marked as paid" });
         }
     }
 

@@ -39,12 +39,8 @@ export default function DriverHomeScreen({ authState, onSelectTrip, onNavigate }
         if (cached && cached.length > 0) {
           setTrips(cached);
         } else {
-          // Fallback fake data to match the mockup exactly
-          setTrips([
-            { id: 2291, status: 'Assigned', indent: { source: 'Mumbai', destination: 'Pune', material: 'Auto parts' } },
-            { id: 2287, status: 'InTransit', indent: { source: 'Delhi', destination: 'Jaipur', material: 'Steel' } },
-            { id: 2280, status: 'Loading', indent: { source: 'Chennai', destination: 'Bangalore', material: 'Electronics' } }
-          ]);
+          // Fallback fake data removed for production readiness
+          setTrips([]);
         }
       } catch (e) {
         console.error('Cache read failed:', e);
@@ -129,15 +125,15 @@ export default function DriverHomeScreen({ authState, onSelectTrip, onNavigate }
         {/* Stats Row */}
         <View style={styles.statsRow}>
           <View style={styles.statCard}>
-            <Text style={styles.statValue}>2</Text>
+            <Text style={styles.statValue}>{trips.filter(t => t.status === 'Started' || t.status === 'InTransit').length}</Text>
             <Text style={styles.statLabel}>Active</Text>
           </View>
           <View style={styles.statCard}>
-            <Text style={styles.statValue}>1</Text>
+            <Text style={styles.statValue}>{trips.filter(t => t.status === 'Assigned').length}</Text>
             <Text style={styles.statLabel}>New</Text>
           </View>
           <View style={styles.statCard}>
-            <Text style={styles.statValue}>₹15k</Text>
+            <Text style={styles.statValue}>₹{trips.reduce((sum, t) => sum + (t.advanceAmount || 0), 0).toLocaleString()}</Text>
             <Text style={styles.statLabel}>Advance</Text>
           </View>
         </View>

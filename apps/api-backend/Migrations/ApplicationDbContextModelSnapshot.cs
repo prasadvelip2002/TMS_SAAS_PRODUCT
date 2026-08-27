@@ -17,7 +17,7 @@ namespace api_backend.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "8.0.29")
+                .HasAnnotation("ProductVersion", "8.0.30")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
@@ -37,11 +37,16 @@ namespace api_backend.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<int>("CompanyId")
+                        .HasColumnType("integer");
+
                     b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp without time zone");
+
+                    b.Property<int?>("CreatedBy")
+                        .HasColumnType("integer");
 
                     b.Property<string>("Status")
-                        .IsRequired()
                         .HasColumnType("text");
 
                     b.Property<int>("TenantId")
@@ -50,7 +55,15 @@ namespace api_backend.Migrations
                     b.Property<int>("TripId")
                         .HasColumnType("integer");
 
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.Property<int?>("UpdatedBy")
+                        .HasColumnType("integer");
+
                     b.HasKey("Id");
+
+                    b.HasIndex("CompanyId");
 
                     b.HasIndex("TenantId");
 
@@ -67,8 +80,14 @@ namespace api_backend.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
+                    b.Property<int>("CompanyId")
+                        .HasColumnType("integer");
+
                     b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp without time zone");
+
+                    b.Property<int?>("CreatedBy")
+                        .HasColumnType("integer");
 
                     b.Property<string>("Location")
                         .HasColumnType("text");
@@ -77,14 +96,68 @@ namespace api_backend.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<string>("Status")
+                        .HasColumnType("text");
+
                     b.Property<int>("TenantId")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.Property<int?>("UpdatedBy")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CompanyId");
+
+                    b.HasIndex("TenantId");
+
+                    b.ToTable("Branches");
+                });
+
+            modelBuilder.Entity("api_backend.Models.Company", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Address")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.Property<int?>("CreatedBy")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("GSTIN")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Status")
+                        .HasColumnType("text");
+
+                    b.Property<int>("TenantId")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.Property<int?>("UpdatedBy")
                         .HasColumnType("integer");
 
                     b.HasKey("Id");
 
                     b.HasIndex("TenantId");
 
-                    b.ToTable("Branches");
+                    b.ToTable("Companies");
                 });
 
             modelBuilder.Entity("api_backend.Models.Customer", b =>
@@ -104,11 +177,17 @@ namespace api_backend.Migrations
                     b.Property<string>("Code")
                         .HasColumnType("text");
 
+                    b.Property<int>("CompanyId")
+                        .HasColumnType("integer");
+
                     b.Property<string>("ContactPerson")
                         .HasColumnType("text");
 
                     b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp without time zone");
+
+                    b.Property<int?>("CreatedBy")
+                        .HasColumnType("integer");
 
                     b.Property<decimal?>("CreditLimit")
                         .HasColumnType("numeric");
@@ -144,7 +223,15 @@ namespace api_backend.Migrations
                     b.Property<int>("TenantId")
                         .HasColumnType("integer");
 
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.Property<int?>("UpdatedBy")
+                        .HasColumnType("integer");
+
                     b.HasKey("Id");
+
+                    b.HasIndex("CompanyId");
 
                     b.HasIndex("TenantId");
 
@@ -159,8 +246,14 @@ namespace api_backend.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
+                    b.Property<int>("CompanyId")
+                        .HasColumnType("integer");
+
                     b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp without time zone");
+
+                    b.Property<int?>("CreatedBy")
+                        .HasColumnType("integer");
 
                     b.Property<int>("CustomerId")
                         .HasColumnType("integer");
@@ -170,10 +263,10 @@ namespace api_backend.Migrations
                         .HasColumnType("text");
 
                     b.Property<DateTime>("EffectiveFrom")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp without time zone");
 
                     b.Property<DateTime>("EffectiveTo")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp without time zone");
 
                     b.Property<decimal>("Rate")
                         .HasColumnType("numeric");
@@ -182,13 +275,24 @@ namespace api_backend.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<string>("Status")
+                        .HasColumnType("text");
+
                     b.Property<int>("TenantId")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.Property<int?>("UpdatedBy")
                         .HasColumnType("integer");
 
                     b.Property<string>("VehicleType")
                         .HasColumnType("text");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("CompanyId");
 
                     b.HasIndex("CustomerId");
 
@@ -205,8 +309,14 @@ namespace api_backend.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
+                    b.Property<int>("CompanyId")
+                        .HasColumnType("integer");
+
                     b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp without time zone");
+
+                    b.Property<int?>("CreatedBy")
+                        .HasColumnType("integer");
 
                     b.Property<string>("DocumentType")
                         .IsRequired()
@@ -220,16 +330,27 @@ namespace api_backend.Migrations
                         .HasColumnType("text");
 
                     b.Property<DateTime?>("ExpiryDate")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp without time zone");
 
                     b.Property<string>("FileUrl")
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<string>("Status")
+                        .HasColumnType("text");
+
                     b.Property<int>("TenantId")
                         .HasColumnType("integer");
 
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.Property<int?>("UpdatedBy")
+                        .HasColumnType("integer");
+
                     b.HasKey("Id");
+
+                    b.HasIndex("CompanyId");
 
                     b.HasIndex("TenantId");
 
@@ -247,8 +368,14 @@ namespace api_backend.Migrations
                     b.Property<string>("Aadhaar")
                         .HasColumnType("text");
 
+                    b.Property<int>("CompanyId")
+                        .HasColumnType("integer");
+
                     b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp without time zone");
+
+                    b.Property<int?>("CreatedBy")
+                        .HasColumnType("integer");
 
                     b.Property<string>("CurrentStatus")
                         .HasColumnType("text");
@@ -257,7 +384,7 @@ namespace api_backend.Migrations
                         .HasColumnType("integer");
 
                     b.Property<DateTime?>("LicenseExpiry")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp without time zone");
 
                     b.Property<string>("LicenseNumber")
                         .HasColumnType("text");
@@ -269,10 +396,21 @@ namespace api_backend.Migrations
                     b.Property<string>("Phone")
                         .HasColumnType("text");
 
+                    b.Property<string>("Status")
+                        .HasColumnType("text");
+
                     b.Property<int>("TenantId")
                         .HasColumnType("integer");
 
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.Property<int?>("UpdatedBy")
+                        .HasColumnType("integer");
+
                     b.HasKey("Id");
+
+                    b.HasIndex("CompanyId");
 
                     b.HasIndex("TenantId");
 
@@ -287,8 +425,14 @@ namespace api_backend.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
+                    b.Property<int>("CompanyId")
+                        .HasColumnType("integer");
+
                     b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp without time zone");
+
+                    b.Property<int?>("CreatedBy")
+                        .HasColumnType("integer");
 
                     b.Property<decimal>("DamagedQuantity")
                         .HasColumnType("numeric");
@@ -310,13 +454,20 @@ namespace api_backend.Migrations
                         .HasColumnType("text");
 
                     b.Property<string>("Status")
-                        .IsRequired()
                         .HasColumnType("text");
 
                     b.Property<int>("TenantId")
                         .HasColumnType("integer");
 
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.Property<int?>("UpdatedBy")
+                        .HasColumnType("integer");
+
                     b.HasKey("Id");
+
+                    b.HasIndex("CompanyId");
 
                     b.HasIndex("PurchaseOrderId");
 
@@ -336,8 +487,14 @@ namespace api_backend.Migrations
                     b.Property<int?>("BranchId")
                         .HasColumnType("integer");
 
+                    b.Property<int>("CompanyId")
+                        .HasColumnType("integer");
+
                     b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp without time zone");
+
+                    b.Property<int?>("CreatedBy")
+                        .HasColumnType("integer");
 
                     b.Property<int>("CustomerId")
                         .HasColumnType("integer");
@@ -353,7 +510,7 @@ namespace api_backend.Migrations
                         .HasColumnType("text");
 
                     b.Property<DateTime>("LoadingDate")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp without time zone");
 
                     b.Property<string>("Material")
                         .HasColumnType("text");
@@ -373,13 +530,21 @@ namespace api_backend.Migrations
                         .HasColumnType("text");
 
                     b.Property<string>("Status")
-                        .IsRequired()
                         .HasColumnType("text");
 
                     b.Property<int>("TenantId")
                         .HasColumnType("integer");
 
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.Property<int?>("UpdatedBy")
+                        .HasColumnType("integer");
+
                     b.Property<string>("VehicleType")
+                        .HasColumnType("text");
+
+                    b.Property<string>("WarehouseLocation")
                         .HasColumnType("text");
 
                     b.Property<decimal>("Weight")
@@ -388,6 +553,8 @@ namespace api_backend.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("BranchId");
+
+                    b.HasIndex("CompanyId");
 
                     b.HasIndex("CustomerId");
 
@@ -404,27 +571,32 @@ namespace api_backend.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
+                    b.Property<int>("CompanyId")
+                        .HasColumnType("integer");
+
                     b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp without time zone");
+
+                    b.Property<int?>("CreatedBy")
+                        .HasColumnType("integer");
 
                     b.Property<int>("CustomerId")
                         .HasColumnType("integer");
 
                     b.Property<DateTime>("DueDate")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp without time zone");
 
                     b.Property<decimal>("GrandTotal")
                         .HasColumnType("numeric");
 
                     b.Property<DateTime>("InvoiceDate")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp without time zone");
 
                     b.Property<string>("InvoiceNumber")
                         .IsRequired()
                         .HasColumnType("text");
 
                     b.Property<string>("Status")
-                        .IsRequired()
                         .HasColumnType("text");
 
                     b.Property<decimal>("TaxAmount")
@@ -436,7 +608,15 @@ namespace api_backend.Migrations
                     b.Property<decimal>("TotalAmount")
                         .HasColumnType("numeric");
 
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.Property<int?>("UpdatedBy")
+                        .HasColumnType("integer");
+
                     b.HasKey("Id");
+
+                    b.HasIndex("CompanyId");
 
                     b.HasIndex("CustomerId");
 
@@ -453,14 +633,23 @@ namespace api_backend.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
+                    b.Property<int>("CompanyId")
+                        .HasColumnType("integer");
+
                     b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp without time zone");
+
+                    b.Property<int?>("CreatedBy")
+                        .HasColumnType("integer");
 
                     b.Property<bool>("IsRead")
                         .HasColumnType("boolean");
 
                     b.Property<string>("Message")
                         .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Status")
                         .HasColumnType("text");
 
                     b.Property<int>("TenantId")
@@ -470,10 +659,18 @@ namespace api_backend.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.Property<int?>("UpdatedBy")
+                        .HasColumnType("integer");
+
                     b.Property<int?>("UserId")
                         .HasColumnType("integer");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("CompanyId");
 
                     b.HasIndex("TenantId");
 
@@ -497,17 +694,22 @@ namespace api_backend.Migrations
                     b.Property<string>("BeneficiaryType")
                         .HasColumnType("text");
 
+                    b.Property<int>("CompanyId")
+                        .HasColumnType("integer");
+
                     b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp without time zone");
+
+                    b.Property<int?>("CreatedBy")
+                        .HasColumnType("integer");
 
                     b.Property<int?>("DriverId")
                         .HasColumnType("integer");
 
                     b.Property<DateTime>("PaymentDate")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp without time zone");
 
                     b.Property<string>("Status")
-                        .IsRequired()
                         .HasColumnType("text");
 
                     b.Property<int>("TenantId")
@@ -523,7 +725,15 @@ namespace api_backend.Migrations
                     b.Property<string>("UTRNumber")
                         .HasColumnType("text");
 
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.Property<int?>("UpdatedBy")
+                        .HasColumnType("integer");
+
                     b.HasKey("Id");
+
+                    b.HasIndex("CompanyId");
 
                     b.HasIndex("DriverId");
 
@@ -532,6 +742,62 @@ namespace api_backend.Migrations
                     b.HasIndex("TripId");
 
                     b.ToTable("Payments");
+                });
+
+            modelBuilder.Entity("api_backend.Models.Plan", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("BillingCycle")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.Property<int?>("CreatedBy")
+                        .HasColumnType("integer");
+
+                    b.Property<bool>("HasCustomerPortal")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("HasDriverApp")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("HasVendorPortal")
+                        .HasColumnType("boolean");
+
+                    b.Property<int>("MaxBranches")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("MaxTripsPerMonth")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("MaxUsers")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<decimal>("Price")
+                        .HasColumnType("numeric");
+
+                    b.Property<string>("Status")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.Property<int?>("UpdatedBy")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Plans");
                 });
 
             modelBuilder.Entity("api_backend.Models.PurchaseOrder", b =>
@@ -545,15 +811,20 @@ namespace api_backend.Migrations
                     b.Property<decimal>("AdvancePaid")
                         .HasColumnType("numeric");
 
+                    b.Property<int>("CompanyId")
+                        .HasColumnType("integer");
+
                     b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp without time zone");
+
+                    b.Property<int?>("CreatedBy")
+                        .HasColumnType("integer");
 
                     b.Property<string>("PONumber")
                         .IsRequired()
                         .HasColumnType("text");
 
                     b.Property<string>("Status")
-                        .IsRequired()
                         .HasColumnType("text");
 
                     b.Property<int>("TenantId")
@@ -565,10 +836,18 @@ namespace api_backend.Migrations
                     b.Property<int>("TripId")
                         .HasColumnType("integer");
 
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.Property<int?>("UpdatedBy")
+                        .HasColumnType("integer");
+
                     b.Property<int>("VendorId")
                         .HasColumnType("integer");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("CompanyId");
 
                     b.HasIndex("TenantId");
 
@@ -579,7 +858,7 @@ namespace api_backend.Migrations
                     b.ToTable("PurchaseOrders");
                 });
 
-            modelBuilder.Entity("api_backend.Models.SupplierQuotation", b =>
+            modelBuilder.Entity("api_backend.Models.Subscription", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -588,7 +867,61 @@ namespace api_backend.Migrations
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
                     b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp without time zone");
+
+                    b.Property<int?>("CreatedBy")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime?>("EndDate")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.Property<int>("PlanId")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("StartDate")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.Property<string>("Status")
+                        .HasColumnType("text");
+
+                    b.Property<string>("SubscriptionStatus")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<int>("TenantId")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.Property<int?>("UpdatedBy")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PlanId");
+
+                    b.HasIndex("TenantId");
+
+                    b.ToTable("Subscriptions");
+                });
+
+            modelBuilder.Entity("api_backend.Models.SupplierQuotation", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("CompanyId")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.Property<int?>("CreatedBy")
+                        .HasColumnType("integer");
 
                     b.Property<string>("DriverName")
                         .HasColumnType("text");
@@ -603,10 +936,15 @@ namespace api_backend.Migrations
                         .HasColumnType("numeric");
 
                     b.Property<string>("Status")
-                        .IsRequired()
                         .HasColumnType("text");
 
                     b.Property<int>("TenantId")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.Property<int?>("UpdatedBy")
                         .HasColumnType("integer");
 
                     b.Property<string>("VehicleNumber")
@@ -616,6 +954,8 @@ namespace api_backend.Migrations
                         .HasColumnType("integer");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("CompanyId");
 
                     b.HasIndex("IndentId");
 
@@ -635,7 +975,7 @@ namespace api_backend.Migrations
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
                     b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp without time zone");
 
                     b.Property<string>("Name")
                         .IsRequired()
@@ -667,13 +1007,19 @@ namespace api_backend.Migrations
                     b.Property<int?>("BranchId")
                         .HasColumnType("integer");
 
+                    b.Property<int>("CompanyId")
+                        .HasColumnType("integer");
+
                     b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp without time zone");
+
+                    b.Property<int?>("CreatedBy")
+                        .HasColumnType("integer");
 
                     b.Property<decimal?>("CustomerRate")
                         .HasColumnType("numeric");
 
-                    b.Property<int>("DriverId")
+                    b.Property<int?>("DriverId")
                         .HasColumnType("integer");
 
                     b.Property<decimal?>("EndingKM")
@@ -718,10 +1064,10 @@ namespace api_backend.Migrations
                         .HasColumnType("text");
 
                     b.Property<DateTime?>("PODReceivedDate")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp without time zone");
 
                     b.Property<DateTime?>("PODUploadedDate")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp without time zone");
 
                     b.Property<int?>("ParentTripId")
                         .HasColumnType("integer");
@@ -755,12 +1101,18 @@ namespace api_backend.Migrations
                         .HasColumnType("numeric");
 
                     b.Property<DateTime?>("TripEndDate")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp without time zone");
 
                     b.Property<DateTime?>("TripStartDate")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp without time zone");
 
-                    b.Property<int>("VehicleId")
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.Property<int?>("UpdatedBy")
+                        .HasColumnType("integer");
+
+                    b.Property<int?>("VehicleId")
                         .HasColumnType("integer");
 
                     b.Property<int>("VendorId")
@@ -769,6 +1121,8 @@ namespace api_backend.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("BranchId");
+
+                    b.HasIndex("CompanyId");
 
                     b.HasIndex("DriverId");
 
@@ -795,11 +1149,17 @@ namespace api_backend.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
+                    b.Property<int>("CompanyId")
+                        .HasColumnType("integer");
+
                     b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp without time zone");
+
+                    b.Property<int?>("CreatedBy")
+                        .HasColumnType("integer");
 
                     b.Property<DateTime>("EventTime")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp without time zone");
 
                     b.Property<string>("EventType")
                         .IsRequired()
@@ -814,13 +1174,24 @@ namespace api_backend.Migrations
                     b.Property<decimal>("Longitude")
                         .HasColumnType("numeric");
 
+                    b.Property<string>("Status")
+                        .HasColumnType("text");
+
                     b.Property<int>("TenantId")
                         .HasColumnType("integer");
 
                     b.Property<int>("TripId")
                         .HasColumnType("integer");
 
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.Property<int?>("UpdatedBy")
+                        .HasColumnType("integer");
+
                     b.HasKey("Id");
+
+                    b.HasIndex("CompanyId");
 
                     b.HasIndex("TenantId");
 
@@ -840,8 +1211,14 @@ namespace api_backend.Migrations
                     b.Property<int?>("BranchId")
                         .HasColumnType("integer");
 
+                    b.Property<int>("CompanyId")
+                        .HasColumnType("integer");
+
                     b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp without time zone");
+
+                    b.Property<int?>("CreatedBy")
+                        .HasColumnType("integer");
 
                     b.Property<string>("Email")
                         .IsRequired()
@@ -855,16 +1232,30 @@ namespace api_backend.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<string>("Phone")
+                        .HasColumnType("text");
+
                     b.Property<string>("Role")
                         .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Status")
                         .HasColumnType("text");
 
                     b.Property<int>("TenantId")
                         .HasColumnType("integer");
 
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.Property<int?>("UpdatedBy")
+                        .HasColumnType("integer");
+
                     b.HasKey("Id");
 
                     b.HasIndex("BranchId");
+
+                    b.HasIndex("CompanyId");
 
                     b.HasIndex("TenantId");
 
@@ -885,20 +1276,26 @@ namespace api_backend.Migrations
                     b.Property<string>("Code")
                         .HasColumnType("text");
 
+                    b.Property<int>("CompanyId")
+                        .HasColumnType("integer");
+
                     b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp without time zone");
+
+                    b.Property<int?>("CreatedBy")
+                        .HasColumnType("integer");
 
                     b.Property<DateTime?>("FitnessExpiry")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp without time zone");
 
                     b.Property<DateTime?>("InsuranceExpiry")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp without time zone");
 
                     b.Property<string>("OwnerName")
                         .HasColumnType("text");
 
                     b.Property<DateTime?>("PermitExpiry")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp without time zone");
 
                     b.Property<string>("RCNumber")
                         .HasColumnType("text");
@@ -912,6 +1309,12 @@ namespace api_backend.Migrations
                     b.Property<string>("Type")
                         .HasColumnType("text");
 
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.Property<int?>("UpdatedBy")
+                        .HasColumnType("integer");
+
                     b.Property<string>("VehicleNumber")
                         .IsRequired()
                         .HasColumnType("text");
@@ -920,6 +1323,8 @@ namespace api_backend.Migrations
                         .HasColumnType("integer");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("CompanyId");
 
                     b.HasIndex("TenantId");
 
@@ -948,11 +1353,17 @@ namespace api_backend.Migrations
                     b.Property<string>("Code")
                         .HasColumnType("text");
 
+                    b.Property<int>("CompanyId")
+                        .HasColumnType("integer");
+
                     b.Property<string>("ContactPerson")
                         .HasColumnType("text");
 
                     b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp without time zone");
+
+                    b.Property<int?>("CreatedBy")
+                        .HasColumnType("integer");
 
                     b.Property<string>("Email")
                         .HasColumnType("text");
@@ -985,7 +1396,15 @@ namespace api_backend.Migrations
                     b.Property<int>("TenantId")
                         .HasColumnType("integer");
 
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.Property<int?>("UpdatedBy")
+                        .HasColumnType("integer");
+
                     b.HasKey("Id");
+
+                    b.HasIndex("CompanyId");
 
                     b.HasIndex("TenantId");
 
@@ -1000,8 +1419,14 @@ namespace api_backend.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
+                    b.Property<int>("CompanyId")
+                        .HasColumnType("integer");
+
                     b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp without time zone");
+
+                    b.Property<int?>("CreatedBy")
+                        .HasColumnType("integer");
 
                     b.Property<int>("IndentId")
                         .HasColumnType("integer");
@@ -1020,16 +1445,23 @@ namespace api_backend.Migrations
                         .HasColumnType("text");
 
                     b.Property<string>("Status")
-                        .IsRequired()
                         .HasColumnType("text");
 
                     b.Property<int>("TenantId")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.Property<int?>("UpdatedBy")
                         .HasColumnType("integer");
 
                     b.Property<int>("VendorId")
                         .HasColumnType("integer");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("CompanyId");
 
                     b.HasIndex("IndentId");
 
@@ -1048,15 +1480,23 @@ namespace api_backend.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
+                    b.Property<int>("CompanyId")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.Property<int?>("CreatedBy")
+                        .HasColumnType("integer");
+
                     b.Property<string>("PhoneNumber")
                         .IsRequired()
                         .HasColumnType("text");
 
                     b.Property<DateTime>("SentAt")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp without time zone");
 
                     b.Property<string>("Status")
-                        .IsRequired()
                         .HasColumnType("text");
 
                     b.Property<string>("TemplateName")
@@ -1066,7 +1506,15 @@ namespace api_backend.Migrations
                     b.Property<int>("TenantId")
                         .HasColumnType("integer");
 
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.Property<int?>("UpdatedBy")
+                        .HasColumnType("integer");
+
                     b.HasKey("Id");
+
+                    b.HasIndex("CompanyId");
 
                     b.HasIndex("TenantId");
 
@@ -1075,6 +1523,12 @@ namespace api_backend.Migrations
 
             modelBuilder.Entity("api_backend.Models.AdditionalCharge", b =>
                 {
+                    b.HasOne("api_backend.Models.Company", "Company")
+                        .WithMany()
+                        .HasForeignKey("CompanyId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
                     b.HasOne("api_backend.Models.Tenant", "Tenant")
                         .WithMany()
                         .HasForeignKey("TenantId")
@@ -1087,12 +1541,33 @@ namespace api_backend.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.Navigation("Company");
+
                     b.Navigation("Tenant");
 
                     b.Navigation("Trip");
                 });
 
             modelBuilder.Entity("api_backend.Models.Branch", b =>
+                {
+                    b.HasOne("api_backend.Models.Company", "Company")
+                        .WithMany("Branches")
+                        .HasForeignKey("CompanyId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("api_backend.Models.Tenant", "Tenant")
+                        .WithMany()
+                        .HasForeignKey("TenantId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Company");
+
+                    b.Navigation("Tenant");
+                });
+
+            modelBuilder.Entity("api_backend.Models.Company", b =>
                 {
                     b.HasOne("api_backend.Models.Tenant", "Tenant")
                         .WithMany()
@@ -1105,17 +1580,31 @@ namespace api_backend.Migrations
 
             modelBuilder.Entity("api_backend.Models.Customer", b =>
                 {
+                    b.HasOne("api_backend.Models.Company", "Company")
+                        .WithMany()
+                        .HasForeignKey("CompanyId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
                     b.HasOne("api_backend.Models.Tenant", "Tenant")
                         .WithMany()
                         .HasForeignKey("TenantId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.Navigation("Company");
+
                     b.Navigation("Tenant");
                 });
 
             modelBuilder.Entity("api_backend.Models.CustomerRateContract", b =>
                 {
+                    b.HasOne("api_backend.Models.Company", "Company")
+                        .WithMany()
+                        .HasForeignKey("CompanyId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
                     b.HasOne("api_backend.Models.Customer", "Customer")
                         .WithMany()
                         .HasForeignKey("CustomerId")
@@ -1128,6 +1617,8 @@ namespace api_backend.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.Navigation("Company");
+
                     b.Navigation("Customer");
 
                     b.Navigation("Tenant");
@@ -1135,28 +1626,50 @@ namespace api_backend.Migrations
 
             modelBuilder.Entity("api_backend.Models.Document", b =>
                 {
+                    b.HasOne("api_backend.Models.Company", "Company")
+                        .WithMany()
+                        .HasForeignKey("CompanyId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
                     b.HasOne("api_backend.Models.Tenant", "Tenant")
                         .WithMany()
                         .HasForeignKey("TenantId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.Navigation("Company");
 
                     b.Navigation("Tenant");
                 });
 
             modelBuilder.Entity("api_backend.Models.Driver", b =>
                 {
+                    b.HasOne("api_backend.Models.Company", "Company")
+                        .WithMany()
+                        .HasForeignKey("CompanyId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
                     b.HasOne("api_backend.Models.Tenant", "Tenant")
                         .WithMany()
                         .HasForeignKey("TenantId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.Navigation("Company");
+
                     b.Navigation("Tenant");
                 });
 
             modelBuilder.Entity("api_backend.Models.GRPO", b =>
                 {
+                    b.HasOne("api_backend.Models.Company", "Company")
+                        .WithMany()
+                        .HasForeignKey("CompanyId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
                     b.HasOne("api_backend.Models.PurchaseOrder", "PurchaseOrder")
                         .WithMany()
                         .HasForeignKey("PurchaseOrderId")
@@ -1169,6 +1682,8 @@ namespace api_backend.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.Navigation("Company");
+
                     b.Navigation("PurchaseOrder");
 
                     b.Navigation("Tenant");
@@ -1179,6 +1694,12 @@ namespace api_backend.Migrations
                     b.HasOne("api_backend.Models.Branch", "Branch")
                         .WithMany()
                         .HasForeignKey("BranchId");
+
+                    b.HasOne("api_backend.Models.Company", "Company")
+                        .WithMany()
+                        .HasForeignKey("CompanyId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.HasOne("api_backend.Models.Customer", "Customer")
                         .WithMany()
@@ -1194,6 +1715,8 @@ namespace api_backend.Migrations
 
                     b.Navigation("Branch");
 
+                    b.Navigation("Company");
+
                     b.Navigation("Customer");
 
                     b.Navigation("Tenant");
@@ -1201,6 +1724,12 @@ namespace api_backend.Migrations
 
             modelBuilder.Entity("api_backend.Models.Invoice", b =>
                 {
+                    b.HasOne("api_backend.Models.Company", "Company")
+                        .WithMany()
+                        .HasForeignKey("CompanyId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
                     b.HasOne("api_backend.Models.Customer", "Customer")
                         .WithMany()
                         .HasForeignKey("CustomerId")
@@ -1213,6 +1742,8 @@ namespace api_backend.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.Navigation("Company");
+
                     b.Navigation("Customer");
 
                     b.Navigation("Tenant");
@@ -1220,17 +1751,31 @@ namespace api_backend.Migrations
 
             modelBuilder.Entity("api_backend.Models.Notification", b =>
                 {
+                    b.HasOne("api_backend.Models.Company", "Company")
+                        .WithMany()
+                        .HasForeignKey("CompanyId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
                     b.HasOne("api_backend.Models.Tenant", "Tenant")
                         .WithMany()
                         .HasForeignKey("TenantId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.Navigation("Company");
+
                     b.Navigation("Tenant");
                 });
 
             modelBuilder.Entity("api_backend.Models.Payment", b =>
                 {
+                    b.HasOne("api_backend.Models.Company", "Company")
+                        .WithMany()
+                        .HasForeignKey("CompanyId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
                     b.HasOne("api_backend.Models.Driver", "Driver")
                         .WithMany()
                         .HasForeignKey("DriverId");
@@ -1247,6 +1792,8 @@ namespace api_backend.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.Navigation("Company");
+
                     b.Navigation("Driver");
 
                     b.Navigation("Tenant");
@@ -1256,6 +1803,12 @@ namespace api_backend.Migrations
 
             modelBuilder.Entity("api_backend.Models.PurchaseOrder", b =>
                 {
+                    b.HasOne("api_backend.Models.Company", "Company")
+                        .WithMany()
+                        .HasForeignKey("CompanyId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
                     b.HasOne("api_backend.Models.Tenant", "Tenant")
                         .WithMany()
                         .HasForeignKey("TenantId")
@@ -1274,6 +1827,8 @@ namespace api_backend.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.Navigation("Company");
+
                     b.Navigation("Tenant");
 
                     b.Navigation("Trip");
@@ -1281,8 +1836,33 @@ namespace api_backend.Migrations
                     b.Navigation("Vendor");
                 });
 
+            modelBuilder.Entity("api_backend.Models.Subscription", b =>
+                {
+                    b.HasOne("api_backend.Models.Plan", "Plan")
+                        .WithMany()
+                        .HasForeignKey("PlanId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("api_backend.Models.Tenant", "Tenant")
+                        .WithMany()
+                        .HasForeignKey("TenantId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Plan");
+
+                    b.Navigation("Tenant");
+                });
+
             modelBuilder.Entity("api_backend.Models.SupplierQuotation", b =>
                 {
+                    b.HasOne("api_backend.Models.Company", "Company")
+                        .WithMany()
+                        .HasForeignKey("CompanyId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
                     b.HasOne("api_backend.Models.Indent", "Indent")
                         .WithMany()
                         .HasForeignKey("IndentId")
@@ -1301,6 +1881,8 @@ namespace api_backend.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.Navigation("Company");
+
                     b.Navigation("Indent");
 
                     b.Navigation("Tenant");
@@ -1314,11 +1896,15 @@ namespace api_backend.Migrations
                         .WithMany()
                         .HasForeignKey("BranchId");
 
-                    b.HasOne("api_backend.Models.Driver", "Driver")
-                        .WithMany("Trips")
-                        .HasForeignKey("DriverId")
+                    b.HasOne("api_backend.Models.Company", "Company")
+                        .WithMany()
+                        .HasForeignKey("CompanyId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.HasOne("api_backend.Models.Driver", "Driver")
+                        .WithMany("Trips")
+                        .HasForeignKey("DriverId");
 
                     b.HasOne("api_backend.Models.Indent", "Indent")
                         .WithMany()
@@ -1342,9 +1928,7 @@ namespace api_backend.Migrations
 
                     b.HasOne("api_backend.Models.Vehicle", "Vehicle")
                         .WithMany()
-                        .HasForeignKey("VehicleId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .HasForeignKey("VehicleId");
 
                     b.HasOne("api_backend.Models.Vendor", "Vendor")
                         .WithMany("Trips")
@@ -1353,6 +1937,8 @@ namespace api_backend.Migrations
                         .IsRequired();
 
                     b.Navigation("Branch");
+
+                    b.Navigation("Company");
 
                     b.Navigation("Driver");
 
@@ -1371,6 +1957,12 @@ namespace api_backend.Migrations
 
             modelBuilder.Entity("api_backend.Models.TripEvent", b =>
                 {
+                    b.HasOne("api_backend.Models.Company", "Company")
+                        .WithMany()
+                        .HasForeignKey("CompanyId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
                     b.HasOne("api_backend.Models.Tenant", "Tenant")
                         .WithMany()
                         .HasForeignKey("TenantId")
@@ -1383,6 +1975,8 @@ namespace api_backend.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.Navigation("Company");
+
                     b.Navigation("Tenant");
 
                     b.Navigation("Trip");
@@ -1394,6 +1988,12 @@ namespace api_backend.Migrations
                         .WithMany()
                         .HasForeignKey("BranchId");
 
+                    b.HasOne("api_backend.Models.Company", "Company")
+                        .WithMany("Users")
+                        .HasForeignKey("CompanyId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
                     b.HasOne("api_backend.Models.Tenant", "Tenant")
                         .WithMany("Users")
                         .HasForeignKey("TenantId")
@@ -1402,11 +2002,19 @@ namespace api_backend.Migrations
 
                     b.Navigation("Branch");
 
+                    b.Navigation("Company");
+
                     b.Navigation("Tenant");
                 });
 
             modelBuilder.Entity("api_backend.Models.Vehicle", b =>
                 {
+                    b.HasOne("api_backend.Models.Company", "Company")
+                        .WithMany()
+                        .HasForeignKey("CompanyId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
                     b.HasOne("api_backend.Models.Tenant", "Tenant")
                         .WithMany()
                         .HasForeignKey("TenantId")
@@ -1417,6 +2025,8 @@ namespace api_backend.Migrations
                         .WithMany("Vehicles")
                         .HasForeignKey("VendorId");
 
+                    b.Navigation("Company");
+
                     b.Navigation("Tenant");
 
                     b.Navigation("Vendor");
@@ -1424,17 +2034,31 @@ namespace api_backend.Migrations
 
             modelBuilder.Entity("api_backend.Models.Vendor", b =>
                 {
+                    b.HasOne("api_backend.Models.Company", "Company")
+                        .WithMany()
+                        .HasForeignKey("CompanyId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
                     b.HasOne("api_backend.Models.Tenant", "Tenant")
                         .WithMany()
                         .HasForeignKey("TenantId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.Navigation("Company");
+
                     b.Navigation("Tenant");
                 });
 
             modelBuilder.Entity("api_backend.Models.VendorQuotation", b =>
                 {
+                    b.HasOne("api_backend.Models.Company", "Company")
+                        .WithMany()
+                        .HasForeignKey("CompanyId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
                     b.HasOne("api_backend.Models.Indent", "Indent")
                         .WithMany()
                         .HasForeignKey("IndentId")
@@ -1453,6 +2077,8 @@ namespace api_backend.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.Navigation("Company");
+
                     b.Navigation("Indent");
 
                     b.Navigation("Tenant");
@@ -1462,13 +2088,28 @@ namespace api_backend.Migrations
 
             modelBuilder.Entity("api_backend.Models.WhatsAppLog", b =>
                 {
+                    b.HasOne("api_backend.Models.Company", "Company")
+                        .WithMany()
+                        .HasForeignKey("CompanyId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
                     b.HasOne("api_backend.Models.Tenant", "Tenant")
                         .WithMany()
                         .HasForeignKey("TenantId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.Navigation("Company");
+
                     b.Navigation("Tenant");
+                });
+
+            modelBuilder.Entity("api_backend.Models.Company", b =>
+                {
+                    b.Navigation("Branches");
+
+                    b.Navigation("Users");
                 });
 
             modelBuilder.Entity("api_backend.Models.Driver", b =>

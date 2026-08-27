@@ -14,7 +14,8 @@ export default function DashboardPage() {
     activeVendors: 0
   });
   
-  // Dummy data for charts (to look awesome in the demo)
+  // Mock data (commented out for future use if needed)
+  /*
   const revenueData = [
     { name: 'Jan', revenue: 400000 },
     { name: 'Feb', revenue: 300000 },
@@ -24,7 +25,6 @@ export default function DashboardPage() {
     { name: 'Jun', revenue: 750000 },
     { name: 'Jul', revenue: 980000 },
   ];
-
   const tripsData = [
     { name: 'Mon', trips: 12 },
     { name: 'Tue', trips: 19 },
@@ -33,6 +33,28 @@ export default function DashboardPage() {
     { name: 'Fri', trips: 28 },
     { name: 'Sat', trips: 10 },
     { name: 'Sun', trips: 5 },
+  ];
+  */
+
+  // Current zeroed-out data
+  const revenueData = [
+    { name: 'Jan', revenue: 0 },
+    { name: 'Feb', revenue: 0 },
+    { name: 'Mar', revenue: 0 },
+    { name: 'Apr', revenue: 0 },
+    { name: 'May', revenue: 0 },
+    { name: 'Jun', revenue: 0 },
+    { name: 'Jul', revenue: 0 },
+  ];
+
+  const tripsData = [
+    { name: 'Mon', trips: 0 },
+    { name: 'Tue', trips: 0 },
+    { name: 'Wed', trips: 0 },
+    { name: 'Thu', trips: 0 },
+    { name: 'Fri', trips: 0 },
+    { name: 'Sat', trips: 0 },
+    { name: 'Sun', trips: 0 },
   ];
 
   useEffect(() => {
@@ -49,10 +71,10 @@ export default function DashboardPage() {
         });
 
         setStats({
-          activeTrips: active.length || 14, // Fallback to demo numbers if DB is empty
-          deliveredTrips: delivered.length || 128,
-          revenue: rev || 4250000,
-          activeVendors: 42
+          activeTrips: active.length, // Mock fallback: active.length || 14
+          deliveredTrips: delivered.length, // Mock fallback: delivered.length || 128
+          revenue: rev, // Mock fallback: rev || 4250000
+          activeVendors: 0 // Mock fallback: 42
         });
       } catch (e) {
         console.error(e);
@@ -66,7 +88,7 @@ export default function DashboardPage() {
       <div className="flex justify-between items-end">
         <div>
           <h1 className="text-3xl font-black tracking-tight text-slate-900">Platform Overview</h1>
-          <p className="text-slate-500 text-sm mt-1">Live analytics and fleet status for Hitro Logistics.</p>
+          <p className="text-slate-500 text-sm mt-1">Live analytics and fleet status for Transitflow Logistics.</p>
         </div>
         <div className="bg-green-50 text-green-700 px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2 border border-green-200">
           <span className="w-2.5 h-2.5 bg-green-500 rounded-full animate-pulse" />
@@ -130,7 +152,7 @@ export default function DashboardPage() {
                 <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: '#94a3b8', fontSize: 12}} dy={10} />
                 <YAxis axisLine={false} tickLine={false} tick={{fill: '#94a3b8', fontSize: 12}} />
                 <Tooltip cursor={{fill: '#f8fafc'}} contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 20px rgba(0,0,0,0.1)' }} />
-                <Bar dataKey="trips" fill="#f97316" radius={[6, 6, 0, 0]} barSize={30} />
+                <Bar dataKey="trips" fill="#2563EB" radius={[6, 6, 0, 0]} barSize={30} />
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -172,14 +194,14 @@ function KpiCard({ title, value, icon: Icon, color, trend }: any) {
     blue: "bg-blue-50 text-blue-600 border-blue-100",
     green: "bg-green-50 text-green-600 border-green-100",
     indigo: "bg-indigo-50 text-indigo-600 border-indigo-100",
-    orange: "bg-orange-50 text-orange-600 border-orange-100",
+    orange: "bg-blue-50 text-blue-700 border-blue-100",
   };
 
   const glowMap: any = {
     blue: "from-blue-500/20",
     green: "from-green-500/20",
     indigo: "from-indigo-500/20",
-    orange: "from-orange-500/20",
+    orange: "from-blue-600/20",
   };
 
   return (
@@ -205,7 +227,7 @@ function ActivityRow({ icon: Icon, title, time, color }: any) {
   const colorMap: any = {
     blue: "bg-blue-100 text-blue-600",
     green: "bg-green-100 text-green-600",
-    orange: "bg-orange-100 text-orange-600",
+    orange: "bg-blue-100 text-blue-700",
     indigo: "bg-indigo-100 text-indigo-600",
   };
 

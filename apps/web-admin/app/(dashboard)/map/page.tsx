@@ -112,7 +112,7 @@ export default function GlobalMapDashboard() {
                     </p>
                   </div>
                   {v.status === 'Moving' && <span className="bg-green-100 text-green-700 text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wider animate-pulse flex items-center gap-1"><span className="w-1.5 h-1.5 bg-green-500 rounded-full"/> Moving</span>}
-                  {v.status === 'Delayed' && <span className="bg-orange-100 text-orange-700 text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wider flex items-center gap-1"><span className="w-1.5 h-1.5 bg-orange-500 rounded-full"/> Delayed</span>}
+                  {v.status === 'Delayed' && <span className="bg-blue-100 text-blue-800 text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wider flex items-center gap-1"><span className="w-1.5 h-1.5 bg-blue-600 rounded-full"/> Delayed</span>}
                   {v.status === 'Halted' && <span className="bg-red-100 text-red-700 text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wider flex items-center gap-1"><span className="w-1.5 h-1.5 bg-red-500 rounded-full"/> Halted</span>}
                 </div>
 
@@ -143,7 +143,7 @@ export default function GlobalMapDashboard() {
               <span>2 Active</span>
             </div>
             <div className="bg-slate-900/95 backdrop-blur-md px-5 py-3 rounded-2xl shadow-xl border border-slate-700 font-bold text-sm text-white flex items-center gap-3">
-              <AlertTriangle className="w-5 h-5 text-orange-400" /> 
+              <AlertTriangle className="w-5 h-5 text-blue-500" /> 
               <span>2 Issues</span>
             </div>
             <div className="bg-slate-900/95 backdrop-blur-md px-5 py-3 rounded-2xl shadow-xl border border-slate-700 font-bold text-sm text-white flex items-center gap-3">

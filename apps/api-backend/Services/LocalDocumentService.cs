@@ -52,6 +52,18 @@ namespace api_backend.Services
             };
 
             _context.Documents.Add(document);
+
+            // Update Trip PODUploadedDate if applicable
+            if (entityType == "Trip" && documentType == "POD")
+            {
+                var trip = await _context.Trips.FindAsync(entityId);
+                if (trip != null && trip.PODUploadedDate == null)
+                {
+                    trip.PODUploadedDate = DateTime.UtcNow;
+                    _context.Trips.Update(trip);
+                }
+            }
+
             await _context.SaveChangesAsync();
 
             return document;

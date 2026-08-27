@@ -2,12 +2,14 @@
 
 import { useEffect, useState } from "react";
 import { fetchApi } from "@/lib/api";
-import { ProtoTable, Td, ProtoButton } from "@/components/PrototypeUI";
+import { ProtoTable, Td } from "@/components/PrototypeUI";
+import { Search, Grid, List, Plus, Users, X, Activity, UserPlus } from "lucide-react";
 
 export default function UsersPage() {
   const [users, setUsers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   
+  const [isFormOpen, setIsFormOpen] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -43,6 +45,7 @@ export default function UsersPage() {
         }),
       });
       setFormData({ name: "", email: "", passwordHash: "", role: "Internal User" });
+      setIsFormOpen(false);
       loadUsers();
     } catch (error) {
       console.error(error);
@@ -63,26 +66,69 @@ export default function UsersPage() {
   };
 
   return (
-    <div className="grid grid-cols-1 xl:grid-cols-[1fr_350px] gap-[18px] items-start">
-      <div className="bg-panel border border-line rounded-[10px] overflow-hidden">
-        <div className="px-[18px] py-[14px] border-b border-line flex items-center justify-between">
-          <h3 className="font-disp text-[14.5px] font-semibold m-0">Team & Users</h3>
-          <span className="text-[11.5px] text-muted-text">Manage access and roles</span>
+    <div className="max-w-[1600px] mx-auto pb-10">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-8">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Team & Users</h1>
+          <p className="text-sm font-medium text-slate-500 mt-1">Manage access, roles, and invite your team members.</p>
         </div>
-        <ProtoTable headers={["ID", "NAME", "EMAIL", "ROLE", "ACTIONS"]}>
-          {loading ? (
-            <tr>
-              <Td className="text-center text-muted-text"><span className="col-span-5 block">Loading users...</span></Td>
-            </tr>
-          ) : users.length === 0 ? (
-            <tr>
-              <Td className="text-center text-muted-text"><span className="col-span-5 block">No users found.</span></Td>
-            </tr>
-          ) : (
-            users.map((user) => (
+        <button 
+          onClick={() => setIsFormOpen(true)}
+          className="bg-blue-600 hover:bg-blue-700 text-white font-medium px-5 py-2.5 rounded-xl shadow-[0_4px_14px_rgba(37,99,235,0.25)] transition-all flex items-center gap-2"
+        >
+          <Plus className="w-5 h-5" />
+          Add User
+        </button>
+      </div>
+
+      {/* Search & Toolbar */}
+      <div className="bg-white rounded-2xl shadow-sm ring-1 ring-slate-200/50 p-2 mb-6 flex items-center justify-between">
+        <div className="flex items-center px-4 gap-3 flex-1">
+          <Search className="w-5 h-5 text-slate-400" />
+          <input 
+            type="text" 
+            placeholder="Search users by name, email, or role..." 
+            className="w-full bg-transparent border-none focus:outline-none text-sm text-slate-700 font-medium placeholder:text-slate-400 py-2.5"
+          />
+        </div>
+        <div className="flex items-center gap-2 pr-2">
+          <button className="flex items-center gap-2 px-4 py-2 rounded-xl bg-blue-50 text-blue-700 font-bold text-sm border border-blue-100">
+            <Grid className="w-4 h-4" /> Grid
+          </button>
+          <button className="flex items-center gap-2 px-4 py-2 rounded-xl text-slate-500 hover:bg-slate-50 font-medium text-sm">
+            <List className="w-4 h-4" /> Table
+          </button>
+        </div>
+      </div>
+
+      {/* Main Content Area */}
+      {loading ? (
+        <div className="flex justify-center p-16">
+          <Activity className="animate-spin text-blue-600 w-8 h-8" />
+        </div>
+      ) : users.length === 0 ? (
+        <div className="bg-white rounded-2xl border border-dashed border-slate-300 p-20 flex flex-col items-center justify-center text-center mt-2">
+           <div className="w-16 h-16 bg-slate-100 text-slate-400 rounded-full flex items-center justify-center mb-6">
+             <UserPlus className="w-8 h-8" />
+           </div>
+           <h3 className="text-xl font-bold text-slate-900 mb-2">No users found</h3>
+           <p className="text-slate-500 text-[14.5px] mb-8 max-w-sm">Start building your team by adding users and assigning roles.</p>
+           <button 
+             onClick={() => setIsFormOpen(true)}
+             className="bg-blue-600 hover:bg-blue-700 text-white font-medium px-6 py-3 rounded-xl shadow-[0_4px_14px_rgba(37,99,235,0.25)] transition-all flex items-center gap-2"
+           >
+             <Plus className="w-5 h-5" />
+             Add First User
+           </button>
+        </div>
+      ) : (
+        <div className="bg-white rounded-2xl shadow-sm ring-1 ring-slate-200/50 overflow-hidden">
+          <ProtoTable headers={["ID", "NAME", "EMAIL", "ROLE", "ACTIONS"]}>
+            {users.map((user) => (
               <tr key={user.id} className="hover:bg-slate-50 transition-colors group">
                 <Td className="font-mono font-semibold text-[12.5px]">{user.id}</Td>
-                <Td className="font-semibold text-ink">{user.name}</Td>
+                <Td className="font-semibold text-slate-900">{user.name}</Td>
                 <Td>{user.email}</Td>
                 <Td>
                   <span className="px-[8px] py-[3px] bg-[#e0f2fe] text-[#075985] rounded-[6px] text-[11px] font-medium border border-[#bae6fd]">
@@ -92,51 +138,87 @@ export default function UsersPage() {
                 <Td>
                   <button 
                     onClick={() => handleDelete(user.id)}
-                    className="text-muted-text hover:text-alert text-[12px] font-medium opacity-0 group-hover:opacity-100 transition-opacity"
+                    className="text-muted-text hover:text-red-500 text-[12px] font-medium opacity-0 group-hover:opacity-100 transition-opacity"
                   >
                     Delete
                   </button>
                 </Td>
               </tr>
-            ))
-          )}
-        </ProtoTable>
-      </div>
-
-      <div className="bg-panel border border-line rounded-[10px] overflow-hidden">
-        <div className="px-[18px] py-[14px] border-b border-line">
-          <h3 className="font-disp text-[14.5px] font-semibold m-0">Add New User</h3>
+            ))}
+          </ProtoTable>
         </div>
-        <form onSubmit={handleSubmit} className="p-[16px] flex flex-col gap-[12px]">
-          <div>
-            <label className="block text-[11.5px] font-semibold text-muted-text mb-[5px] uppercase tracking-[0.3px]">Name</label>
-            <input required value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className="w-full border border-line rounded-[7px] px-[11px] py-[9px] text-[13px] bg-[#FAFBFD] text-ink font-body outline-none focus:border-signal" placeholder="e.g. John Doe" />
-          </div>
-          <div>
-            <label className="block text-[11.5px] font-semibold text-muted-text mb-[5px] uppercase tracking-[0.3px]">Email / Username</label>
-            <input required type="email" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} className="w-full border border-line rounded-[7px] px-[11px] py-[9px] text-[13px] bg-[#FAFBFD] text-ink font-body outline-none focus:border-signal" placeholder="john@example.com" />
-          </div>
-          <div>
-            <label className="block text-[11.5px] font-semibold text-muted-text mb-[5px] uppercase tracking-[0.3px]">Password</label>
-            <input required type="password" value={formData.passwordHash} onChange={e => setFormData({...formData, passwordHash: e.target.value})} className="w-full border border-line rounded-[7px] px-[11px] py-[9px] text-[13px] bg-[#FAFBFD] text-ink font-body outline-none focus:border-signal" placeholder="••••••••" />
-          </div>
-          <div>
-            <label className="block text-[11.5px] font-semibold text-muted-text mb-[5px] uppercase tracking-[0.3px]">Role</label>
-            <select required value={formData.role} onChange={e => setFormData({...formData, role: e.target.value})} className="w-full border border-line rounded-[7px] px-[11px] py-[9px] text-[13px] bg-[#FAFBFD] text-ink font-body outline-none focus:border-signal">
-              <option value="Internal User">Internal User</option>
-              <option value="Accounts">Accounts</option>
-              <option value="Manager">Manager</option>
-              <option value="Tenant Admin">Tenant Admin</option>
-            </select>
-          </div>
+      )}
+
+      {/* Slide-over Form Panel */}
+      {isFormOpen && (
+        <div className="fixed inset-0 z-[100] flex justify-end">
+          {/* Backdrop */}
+          <div 
+            className="absolute inset-0 bg-slate-900/20 backdrop-blur-sm transition-opacity" 
+            onClick={() => setIsFormOpen(false)} 
+          />
           
-          <div className="mt-2">
-            <ProtoButton variant="dark" style={{ width: '100%' }}>
-              {isSubmitting ? "Adding..." : "Add User"}
-            </ProtoButton>
+          {/* Slide-over Panel */}
+          <div className="relative w-full max-w-md bg-white h-full shadow-2xl flex flex-col transform transition-transform duration-300 ease-in-out border-l border-slate-200">
+             {/* Form Header */}
+             <div className="px-6 py-5 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+               <div>
+                 <h3 className="font-bold text-lg text-slate-900 tracking-tight">Add New User</h3>
+                 <p className="text-[13px] font-medium text-slate-500 mt-0.5">Invite a team member to the platform</p>
+               </div>
+               <button 
+                 onClick={() => setIsFormOpen(false)} 
+                 className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-200 rounded-xl transition-colors"
+               >
+                 <X className="w-5 h-5" />
+               </button>
+             </div>
+             
+             {/* Form Body - Scrollable */}
+             <div className="flex-1 overflow-y-auto p-6 scrollbar-hide">
+               <form id="userForm" onSubmit={handleSubmit} className="space-y-5">
+                 <div>
+                   <label className="block text-[11.5px] font-bold text-slate-500 mb-1.5 uppercase tracking-wider">Name</label>
+                   <input required value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className="w-full border border-slate-200 rounded-xl px-4 py-3 text-[14px] bg-slate-50 hover:bg-slate-100 focus:bg-white text-slate-800 font-medium outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all shadow-sm" placeholder="e.g. John Doe" />
+                 </div>
+                 <div>
+                   <label className="block text-[11.5px] font-bold text-slate-500 mb-1.5 uppercase tracking-wider">Email / Username</label>
+                   <input required type="email" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} className="w-full border border-slate-200 rounded-xl px-4 py-3 text-[14px] bg-slate-50 hover:bg-slate-100 focus:bg-white text-slate-800 font-medium outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all shadow-sm" placeholder="john@example.com" />
+                 </div>
+                 <div>
+                   <label className="block text-[11.5px] font-bold text-slate-500 mb-1.5 uppercase tracking-wider">Password</label>
+                   <input required type="password" value={formData.passwordHash} onChange={e => setFormData({...formData, passwordHash: e.target.value})} className="w-full border border-slate-200 rounded-xl px-4 py-3 text-[14px] bg-slate-50 hover:bg-slate-100 focus:bg-white text-slate-800 font-medium outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all shadow-sm" placeholder="••••••••" />
+                 </div>
+                 <div>
+                   <label className="block text-[11.5px] font-bold text-slate-500 mb-1.5 uppercase tracking-wider">Role</label>
+                   <select required value={formData.role} onChange={e => setFormData({...formData, role: e.target.value})} className="w-full border border-slate-200 rounded-xl px-4 py-3 text-[14px] bg-slate-50 hover:bg-slate-100 focus:bg-white text-slate-800 font-medium outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all shadow-sm">
+                     <option value="Internal User">Internal User</option>
+                     <option value="Accounts">Accounts</option>
+                     <option value="Manager">Manager</option>
+                     <option value="Tenant Admin">Tenant Admin</option>
+                   </select>
+                 </div>
+               </form>
+             </div>
+             
+             {/* Form Footer */}
+             <div className="p-6 border-t border-slate-100 bg-white">
+               <button 
+                 type="submit" 
+                 form="userForm" 
+                 disabled={isSubmitting}
+                 className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3.5 rounded-xl shadow-[0_4px_14px_rgba(37,99,235,0.25)] transition-all flex items-center justify-center disabled:opacity-70 disabled:cursor-not-allowed"
+               >
+                 {isSubmitting ? (
+                   <><Activity className="w-5 h-5 mr-2 animate-spin" /> Adding...</>
+                 ) : (
+                   "Add User"
+                 )}
+               </button>
+             </div>
           </div>
-        </form>
-      </div>
+        </div>
+      )}
     </div>
   );
 }

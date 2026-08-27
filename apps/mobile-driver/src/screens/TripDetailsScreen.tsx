@@ -53,9 +53,9 @@ export default function TripDetailsScreen({ trip, authState, onBack, onNavigate 
   const source = trip.indent?.source || 'Delhi';
   const dest = trip.indent?.destination || 'Jaipur';
   const material = trip.indent?.material || 'Textiles';
-  const freight = '₹32,000';
-  const advance = '₹15,000';
-  const vehicle = 'DL01 CE 8890';
+  // const freight = `₹${(trip.supplierRate || trip.freightCharges || 0).toLocaleString()}`;
+  const advance = `₹${(trip.advanceAmount || trip.fuelAdvance || 0).toLocaleString()}`;
+  const vehicle = trip.vehicle?.vehicleNumber || 'Unassigned';
 
   // Format status for header
   const displayStatus = currentStatus === 'InTransit' ? 'In Transit' : currentStatus;
@@ -96,9 +96,15 @@ export default function TripDetailsScreen({ trip, authState, onBack, onNavigate 
           {/* 2x2 Grid */}
           <View style={styles.grid}>
             <View style={styles.gridCard}>
+              <Text style={styles.gridLabel}>TRIP ID</Text>
+              <Text style={styles.gridValue}>TRIP-{trip.id || '---'}</Text>
+            </View>
+            {/* 
+            <View style={styles.gridCard}>
               <Text style={styles.gridLabel}>FREIGHT</Text>
               <Text style={styles.gridValue}>{freight}</Text>
             </View>
+            */}
             <View style={styles.gridCard}>
               <Text style={styles.gridLabel}>ADVANCE</Text>
               <Text style={styles.gridValue}>{advance}</Text>

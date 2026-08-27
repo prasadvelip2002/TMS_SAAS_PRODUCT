@@ -22,6 +22,18 @@ namespace api_backend.Controllers
             _context = context;
         }
 
+        [HttpGet("make-platform-admin")]
+        public async Task<IActionResult> MakeAdmin()
+        {
+            var user = await _context.Users.IgnoreQueryFilters().FirstOrDefaultAsync(u => u.Email == "admin@demo.com");
+            if (user != null) {
+                user.Role = "Platform Admin";
+                await _context.SaveChangesAsync();
+                return Ok("Done");
+            }
+            return NotFound();
+        }
+
         [HttpPost("run")]
         public async Task<IActionResult> RunSeed()
         {

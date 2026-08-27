@@ -49,7 +49,7 @@ export default function VendorBiddingPage() {
             <CheckCircle className="w-8 h-8" />
           </div>
           <h1 className="text-2xl font-black text-slate-900 mb-2">Bid Submitted!</h1>
-          <p className="text-slate-500 mb-8">Your quotation has been sent to Hitro Logistics. You will be notified if your bid is approved.</p>
+          <p className="text-slate-500 mb-8">Your quotation has been sent to Transitflow Logistics. You will be notified if your bid is approved.</p>
           <button onClick={() => window.close()} className="text-slate-400 hover:text-slate-600 font-medium text-sm">
             You may close this window
           </button>
@@ -63,14 +63,14 @@ export default function VendorBiddingPage() {
       <div className="bg-white rounded-2xl shadow-xl max-w-md w-full overflow-hidden border border-slate-100">
         
         <div className="bg-[#0F172A] p-6 text-center">
-          <img src="/logo.png" alt="HITRO LOGISTICS" className="h-8 mx-auto mix-blend-multiply bg-white/90 px-3 py-1 rounded" />
+          <img src="/logo.png" alt="TRANSITFLOW LOGISTICS" className="h-8 mx-auto mix-blend-multiply bg-white/90 px-3 py-1 rounded" />
           <h2 className="text-white font-semibold mt-4">Transport RFQ Submission</h2>
         </div>
 
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           <div className="bg-blue-50 border border-blue-100 text-blue-800 p-4 rounded-xl text-sm mb-6 flex gap-3">
             <AlertTriangle className="w-5 h-5 shrink-0 text-blue-600" />
-            <p>You have been invited by Hitro Logistics to bid on a trip. Please submit your best rate below.</p>
+            <p>You have been invited by Transitflow Logistics to bid on a trip. Please submit your best rate below.</p>
           </div>
 
           <div>

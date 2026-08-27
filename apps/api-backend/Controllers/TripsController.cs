@@ -71,8 +71,10 @@ namespace api_backend.Controllers
                 IndentId = leg1Trip.IndentId,
                 LegType = "OutboundLeg2",
                 ParentTripId = leg1Trip.Id,
-                Status = "Assigned",
+                Status = "Pending Assignment",
                 TenantId = leg1Trip.TenantId,
+                CompanyId = leg1Trip.CompanyId,
+                VendorId = leg1Trip.VendorId,
                 LRGenerationType = leg1Trip.LRGenerationType,
                 BookingType = leg1Trip.BookingType,
                 RatePerTon = leg1Trip.RatePerTon,
@@ -102,6 +104,8 @@ namespace api_backend.Controllers
                 .Include(t => t.Vendor)
                 .Include(t => t.Vehicle)
                 .Include(t => t.Driver)
+                .Include(t => t.Payments)
+                .Include(t => t.Invoice)
                 .ToListAsync();
         }
 

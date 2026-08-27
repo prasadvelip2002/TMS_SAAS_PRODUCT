@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
@@ -60,7 +60,27 @@ namespace api_backend.Controllers
                 return BadRequest();
             }
 
-            _context.Entry(customer).State = EntityState.Modified;
+            var existingCustomer = await _context.Customers.FindAsync(id);
+            if (existingCustomer == null)
+            {
+                return NotFound();
+            }
+
+            // Update properties
+            existingCustomer.Name = customer.Name;
+            existingCustomer.GSTIN = customer.GSTIN;
+            existingCustomer.Address = customer.Address;
+            existingCustomer.ContactPerson = customer.ContactPerson;
+            existingCustomer.Email = customer.Email;
+            existingCustomer.Phone = customer.Phone;
+            existingCustomer.City = customer.City;
+            existingCustomer.State = customer.State;
+            existingCustomer.PAN = customer.PAN;
+            existingCustomer.CreditLimit = customer.CreditLimit;
+            existingCustomer.PaymentTerms = customer.PaymentTerms;
+            existingCustomer.Code = customer.Code;
+            existingCustomer.RateContract = customer.RateContract;
+            existingCustomer.Status = customer.Status;
 
             try
             {

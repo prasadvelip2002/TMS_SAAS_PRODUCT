@@ -1,13 +1,87 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, TextInput, Alert, ActivityIndicator, Image } from 'react-native';
+import * as ImagePicker from 'expo-image-picker';
 
-export default function AddChargeScreen({ trip, onBack }: { trip: any, onBack: () => void }) {
+const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://10.0.2.2:5063/api';
+
+export default function AddChargeScreen({ trip, authState, onBack }: { trip: any, authState: any, onBack: () => void }) {
   const [chargeType, setChargeType] = useState('Unloading');
 
-  const source = trip?.indent?.source || 'Delhi';
-  const dest = trip?.indent?.destination || 'Jaipur';
-  const tripId = trip?.id || '2287';
-  const amount = '3,200';
+  const source = trip?.indent?.source || 'Origin';
+  const dest = trip?.indent?.destination || 'Destination';
+  const tripId = trip?.id || '---';
+  const [amount, setAmount] = useState('');
+  const [receiptImage, setReceiptImage] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = async () => {
+    if (!amount || isNaN(Number(amount))) {
+      Alert.alert('Error', 'Please enter a valid amount.');
+      return;
+    }
+    
+    setLoading(true);
+    try {
+      // 1. Create Additional Charge record
+      const chargeResponse = await fetch(`${API_URL}/AdditionalCharges`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${authState.token}`
+        },
+        body: JSON.stringify({
+          tripId: trip.id,
+          chargeType: chargeType,
+          amount: parseFloat(amount),
+          tenantId: trip.tenantId,
+          companyId: trip.companyId
+        })
+      });
+
+      if (!chargeResponse.ok) {
+        throw new Error('Failed to create additional charge record');
+      }
+
+      const chargeData = await chargeResponse.json();
+
+      // 2. Upload Receipt Image if provided
+      if (receiptImage) {
+        const formData = new FormData();
+        const typeMatch = receiptImage.match(/\.(\w+)$/);
+        const mimeType = typeMatch ? `image/${typeMatch[1]}` : 'image/jpeg';
+        
+        formData.append('file', {
+          uri: receiptImage,
+          name: `receipt_${chargeData.id}.jpg`,
+          type: mimeType
+        } as any);
+        formData.append('entityType', 'AdditionalCharge');
+        formData.append('entityId', chargeData.id.toString());
+        formData.append('documentType', 'Receipt');
+
+        const uploadResponse = await fetch(`${API_URL}/Documents/Upload`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${authState.token}`
+          },
+          body: formData
+        });
+
+        if (!uploadResponse.ok) {
+          console.warn('Failed to upload receipt image.');
+          // Still proceed since charge was created
+        }
+      }
+
+      Alert.alert('Success', 'Additional charge raised successfully!');
+      onBack();
+    } catch (error) {
+      console.error(error);
+      Alert.alert('Error', 'Failed to submit the additional charge.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <View style={styles.container}>
@@ -45,17 +119,47 @@ export default function AddChargeScreen({ trip, onBack }: { trip: any, onBack: (
         {/* Amount Display Card */}
         <View style={styles.amountCard}>
           <Text style={styles.amountLabel}>Amount</Text>
-          <Text style={styles.amountValue}>₹{amount}</Text>
+          <TextInput 
+            style={[styles.amountValue, { minWidth: 150, textAlign: 'center' }]} 
+            value={amount}
+            onChangeText={setAmount}
+            placeholder="0"
+            keyboardType="number-pad"
+          />
         </View>
 
         {/* Attach proof */}
         <View style={styles.section}>
           <Text style={styles.sectionLabel}>Attach proof</Text>
-          <TouchableOpacity style={styles.uploadBoxSuccess}>
-            <View style={styles.iconCircleSuccess}>
-              <Text style={styles.iconSuccess}>✓</Text>
-            </View>
-            <Text style={styles.uploadedText}>receipt_{tripId}.jpg</Text>
+          <TouchableOpacity 
+            style={[styles.uploadBox, receiptImage && styles.uploadBoxSuccess]}
+            onPress={() => {
+              Alert.alert('Attach Receipt', 'Choose an option', [
+                { text: 'Camera', onPress: async () => {
+                    const result = await ImagePicker.launchCameraAsync({ quality: 0.8 });
+                    if (!result.canceled) setReceiptImage(result.assets[0].uri);
+                  }
+                },
+                { text: 'Gallery', onPress: async () => {
+                    const result = await ImagePicker.launchImageLibraryAsync({ quality: 0.8 });
+                    if (!result.canceled) setReceiptImage(result.assets[0].uri);
+                  }
+                },
+                { text: 'Cancel', style: 'cancel' }
+              ]);
+            }}
+          >
+            {receiptImage ? (
+              <> 
+                <Image source={{ uri: receiptImage }} style={styles.uploadedImage} />
+                <Text style={styles.uploadedText}>receipt.jpg selected</Text>
+              </>
+            ) : (
+              <>
+                <Text style={styles.cameraIcon}>📷</Text>
+                <Text style={styles.tapToCaptureText}>Tap to select</Text>
+              </>
+            )}
           </TouchableOpacity>
         </View>
 
@@ -63,8 +167,12 @@ export default function AddChargeScreen({ trip, onBack }: { trip: any, onBack: (
 
       {/* Footer Button */}
       <View style={styles.footer}>
-        <TouchableOpacity style={styles.submitBtn} onPress={onBack}>
-          <Text style={styles.submitBtnText}>+ Submit Charge</Text>
+        <TouchableOpacity style={styles.submitBtn} onPress={handleSubmit} disabled={loading}>
+          {loading ? (
+            <ActivityIndicator color="#ffffff" />
+          ) : (
+            <Text style={styles.submitBtnText}>+ Submit Charge</Text>
+          )}
         </TouchableOpacity>
       </View>
     </View>
@@ -173,35 +281,42 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     color: '#0f172a',
   },
-  uploadBoxSuccess: {
+  uploadBox: {
     height: 140,
     borderWidth: 2,
-    borderColor: '#22c55e', // Green
+    borderColor: '#cbd5e1',
     borderStyle: 'dashed',
     borderRadius: 16,
-    backgroundColor: '#f0fdf4', // Light green
+    backgroundColor: '#f8fafc',
     justifyContent: 'center',
     alignItems: 'center',
+    overflow: 'hidden',
+    padding: 16,
   },
-  iconCircleSuccess: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    borderWidth: 2,
+  uploadBoxSuccess: {
     borderColor: '#22c55e',
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: '#f0fdf4',
+  },
+  cameraIcon: {
+    fontSize: 32,
     marginBottom: 8,
   },
-  iconSuccess: {
-    color: '#22c55e',
-    fontSize: 20,
-    fontWeight: 'bold',
+  tapToCaptureText: {
+    fontSize: 14,
+    color: '#64748b',
+    fontWeight: '500',
+  },
+  uploadedImage: {
+    width: '100%',
+    height: 100,
+    resizeMode: 'cover',
+    borderRadius: 12,
   },
   uploadedText: {
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: '600',
-    color: '#15803d', // Dark green
+    color: '#15803d',
+    marginTop: 8,
   },
   footer: {
     padding: 20,

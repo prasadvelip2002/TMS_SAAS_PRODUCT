@@ -1,0 +1,50 @@
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using api_backend.Data;
+using System.Linq;
+using System.Threading.Tasks;
+
+namespace api_backend.Controllers
+{
+    [Route("api/[controller]")]
+    [ApiController]
+    [Authorize]
+    public class ReportsController : ControllerBase
+    {
+        private readonly ApplicationDbContext _context;
+
+        public ReportsController(ApplicationDbContext context)
+        {
+            _context = context;
+        }
+
+        [HttpGet("trips")]
+        public async Task<IActionResult> GetTripReport()
+        {
+            var trips = await _context.Trips
+                .Include(t => t.Indent)
+                    .ThenInclude(i => i.Customer)
+                .Include(t => t.Vendor)
+                .Include(t => t.Vehicle)
+                .OrderByDescending(t => t.CreatedAt)
+                .Select(t => new
+                {
+                    TripId = "TRP-" + (1000 + t.Id),
+                    Date = t.CreatedAt,
+                    CustomerName = t.Indent != null && t.Indent.Customer != null ? t.Indent.Customer.Name : "N/A",
+                    Source = t.Indent != null ? t.Indent.Source : "N/A",
+                    Destination = t.Indent != null ? t.Indent.Destination : "N/A",
+                    Vehicle = t.Vehicle != null ? t.Vehicle.VehicleNumber : "N/A",
+                    VendorName = t.Vendor != null ? t.Vendor.Name : (t.LegType == "Direct" ? "Own Fleet" : "N/A"),
+                    Status = t.Status,
+                    FreightCharges = t.FreightCharges,
+                    AdvanceAmount = t.AdvanceAmount,
+                    SupplierRate = t.SupplierRate ?? 0m
+                })
+                .ToListAsync();
+
+            return Ok(trips);
+        }
+    }
+}

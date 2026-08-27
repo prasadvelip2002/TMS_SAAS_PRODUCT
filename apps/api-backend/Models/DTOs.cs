@@ -18,6 +18,6 @@ namespace api_backend.Models
 
     public class UpdateTripStatusRequest
     {
-        public string Status { get; set; } = string.Empty;
+        public required string Status { get; set; }
     }
 }
