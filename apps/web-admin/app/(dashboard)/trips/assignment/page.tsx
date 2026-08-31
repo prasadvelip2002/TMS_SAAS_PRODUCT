@@ -198,9 +198,15 @@ export default function AssignmentPage() {
                   <Td className="font-mono text-[13px] font-semibold text-slate-600">IND-{1000 + indent.id}</Td>
                   <Td className="font-semibold text-slate-800">{indent.customer?.name || "Unknown"}</Td>
                   <Td>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-wrap">
                       <span className="text-[13px] font-medium text-slate-700">{indent.source}</span>
                       <span className="text-slate-300">→</span>
+                      {indent.warehouseLocation && (
+                        <>
+                          <span className="text-[13px] font-medium text-slate-700">{indent.warehouseLocation} <span className="text-blue-500 font-bold text-[10px] uppercase ml-1">(Hub)</span></span>
+                          <span className="text-slate-300">→</span>
+                        </>
+                      )}
                       <span className="text-[13px] font-medium text-slate-700">{indent.destination}</span>
                     </div>
                   </Td>
