@@ -56,6 +56,12 @@ namespace api_backend.Services
             trip.FreightCharges = freightCharges;
             trip.BalanceAmount = freightCharges - request.AdvanceAmount; // balance is freight - advance
             trip.Status = "Assigned";
+            
+            // Automatically determine LegType based on WarehouseLocation
+            if (string.IsNullOrEmpty(trip.LegType) || trip.LegType == "Direct")
+            {
+                trip.LegType = !string.IsNullOrEmpty(indent.WarehouseLocation) ? "InboundLeg1" : "Direct";
+            }
 
             indent.Status = "Assigned";
             

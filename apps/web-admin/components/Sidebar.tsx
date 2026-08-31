@@ -82,8 +82,8 @@ export function Sidebar() {
   return (
     <div className="w-[260px] shrink-0 bg-[#0F172A] text-slate-400 flex flex-col h-full border-r border-slate-800 relative z-40">
       <div className="h-[100px] shrink-0 flex items-center px-5 justify-center mb-2 border-b border-slate-800/80">
-        <div className="bg-white/95 backdrop-blur px-4 py-2.5 rounded-xl w-full flex justify-center shadow-[0_2px_10px_rgba(0,0,0,0.2)]">
-          <img src="/logo.png" alt="Transitflow LOGISTICS" className="w-[160px] h-[45px] object-contain mix-blend-multiply" />
+        <div className="h-20 flex items-center justify-center border-b border-white/5 mx-4 shrink-0 bg-white rounded-xl mt-4 px-2">
+          <img src="/logo.png" alt="Transitflow LOGISTICS" className="w-full h-[60px] object-contain mix-blend-multiply" />
         </div>
       </div>
 

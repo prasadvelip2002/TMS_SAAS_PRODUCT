@@ -17,6 +17,7 @@ interface Indent {
   loadingDate: string;
   status: string;
   destinationsJson?: string;
+  warehouseLocation?: string;
 }
 
 const DEFAULT_FORM = {
@@ -30,7 +31,8 @@ const DEFAULT_FORM = {
   loadingDate: new Date().toISOString().split('T')[0],
   status: "New",
   customerRate: "",
-  pricingModel: "CaseToCase"
+  pricingModel: "CaseToCase",
+  warehouseLocation: ""
 };
 
 export default function IndentsPage() {
@@ -73,7 +75,8 @@ export default function IndentsPage() {
         loadingDate: new Date(formData.loadingDate).toISOString(),
         destinationsJson: JSON.stringify([formData.destination]),
         customerRate: formData.customerRate ? parseFloat(formData.customerRate) : null,
-        pricingModel: formData.pricingModel
+        pricingModel: formData.pricingModel,
+        warehouseLocation: formData.warehouseLocation
       };
 
       if (formData.id > 0) {
@@ -110,7 +113,8 @@ export default function IndentsPage() {
       loadingDate: ind.loadingDate ? ind.loadingDate.split('T')[0] : "",
       status: ind.status || "New",
       customerRate: (ind as any).customerRate?.toString() || "",
-      pricingModel: (ind as any).pricingModel || "CaseToCase"
+      pricingModel: (ind as any).pricingModel || "CaseToCase",
+      warehouseLocation: ind.warehouseLocation || ""
     });
     setIsFormOpen(true);
   };
@@ -358,6 +362,12 @@ export default function IndentsPage() {
                     <div>
                       <label className="block text-[11.5px] font-bold text-slate-500 mb-1.5 uppercase tracking-wider">Loading Date</label>
                       <input required type="date" value={formData.loadingDate} onChange={e => setFormData({...formData, loadingDate: e.target.value})} className="w-full border border-slate-200 rounded-xl px-4 py-3 text-[14px] bg-slate-50 hover:bg-slate-100 focus:bg-white text-slate-800 font-medium outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all shadow-sm" />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-1 gap-4">
+                    <div>
+                      <label className="block text-[11.5px] font-bold text-slate-500 mb-1.5 uppercase tracking-wider">Intermediate Warehouse (Optional for 3PL)</label>
+                      <input value={formData.warehouseLocation} onChange={e => setFormData({...formData, warehouseLocation: e.target.value})} className="w-full border border-slate-200 rounded-xl px-4 py-3 text-[14px] bg-slate-50 hover:bg-slate-100 focus:bg-white text-slate-800 font-medium outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all shadow-sm" placeholder="e.g. Central Hub (Mumbai)" />
                     </div>
                   </div>
                   <div className="grid grid-cols-2 gap-4">

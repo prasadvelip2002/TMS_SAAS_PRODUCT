@@ -9,6 +9,7 @@ import Link from "next/link";
 export default function VendorSettlementDashboard() {
   const [trips, setTrips] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [filter, setFilter] = useState<"Pending" | "Settled" | "All">("Pending");
   
   // Settlement Panel
   const [isPanelOpen, setIsPanelOpen] = useState(false);
@@ -45,7 +46,8 @@ export default function VendorSettlementDashboard() {
     setSubmitting(true);
     
     // Calculate Final Balance
-    const balance = (selectedTrip.supplierRate || 0) + (selectedTrip.tollCharges || 0) - (selectedTrip.advanceAmount || 0);
+    const baseAmount = selectedTrip.supplierRate || selectedTrip.freightCharges || 0;
+    const balance = baseAmount + (selectedTrip.tollCharges || 0) - (selectedTrip.advanceAmount || 0);
 
     try {
       await fetchApi(`/Finance/vendor-settlement/${selectedTrip.id}`, {
@@ -73,6 +75,28 @@ export default function VendorSettlementDashboard() {
         </div>
         
         <div className="flex items-center gap-[12px]">
+          {/* Status Tabs */}
+          <div className="flex bg-slate-100 p-1 rounded-[12px] shadow-inner border border-slate-200/60 mr-2">
+            <button 
+              onClick={() => setFilter("Pending")}
+              className={`px-4 py-1.5 rounded-[8px] text-[13px] font-bold transition-all ${filter === "Pending" ? "bg-white text-slate-800 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}
+            >
+              Pending
+            </button>
+            <button 
+              onClick={() => setFilter("Settled")}
+              className={`px-4 py-1.5 rounded-[8px] text-[13px] font-bold transition-all ${filter === "Settled" ? "bg-white text-slate-800 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}
+            >
+              Settled
+            </button>
+            <button 
+              onClick={() => setFilter("All")}
+              className={`px-4 py-1.5 rounded-[8px] text-[13px] font-bold transition-all ${filter === "All" ? "bg-white text-slate-800 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}
+            >
+              All
+            </button>
+          </div>
+
           <div className="relative">
             <Search className="w-[16px] h-[16px] text-slate-400 absolute left-[14px] top-1/2 -translate-y-1/2" />
             <input 
@@ -93,32 +117,50 @@ export default function VendorSettlementDashboard() {
       <div className="bg-white border border-slate-200 rounded-[16px] overflow-hidden shadow-sm flex-1 flex flex-col">
         <div className="overflow-x-auto flex-1">
           <ProtoTable headers={["TRIP ID", "VENDOR & ROUTE", "TOTAL FREIGHT", "ADVANCE PAID", "BALANCE DUE", "ACTION"]}>
-            {loading ? (
-              <tr>
-                <Td colSpan={6} className="text-center py-16">
-                  <div className="flex flex-col items-center justify-center text-slate-400">
-                    <Loader2 className="w-10 h-10 mb-3 animate-spin text-slate-300" />
-                    <span className="text-[14px] font-medium">Loading Settlements...</span>
-                  </div>
-                </Td>
-              </tr>
-            ) : trips.length === 0 ? (
-              <tr>
-                <Td colSpan={6} className="text-center py-20">
-                  <div className="flex flex-col items-center justify-center">
-                    <div className="w-16 h-16 bg-emerald-50 rounded-full flex items-center justify-center mb-4 border border-emerald-100">
-                      <Handshake className="w-8 h-8 text-emerald-500" />
-                    </div>
-                    <h3 className="text-[16px] font-bold text-slate-800 mb-1">All Accounts Settled!</h3>
-                    <p className="text-[14px] text-slate-500 max-w-sm mx-auto">
-                      There are no pending vendor settlements at this time. Great job!
-                    </p>
-                  </div>
-                </Td>
-              </tr>
-            ) : (
-              trips.map((trip) => {
-                const balance = (trip.supplierRate || 0) + (trip.tollCharges || 0) - (trip.advanceAmount || 0);
+            {(() => {
+              // Filter logic
+              const filteredTrips = trips.filter(t => {
+                if (filter === "Pending") return !t.isVendorSettled;
+                if (filter === "Settled") return t.isVendorSettled;
+                return true;
+              });
+
+              if (loading) {
+                return (
+                  <tr>
+                    <Td colSpan={6} className="text-center py-16">
+                      <div className="flex flex-col items-center justify-center text-slate-400">
+                        <Loader2 className="w-10 h-10 mb-3 animate-spin text-slate-300" />
+                        <span className="text-[14px] font-medium">Loading Settlements...</span>
+                      </div>
+                    </Td>
+                  </tr>
+                );
+              }
+
+              if (filteredTrips.length === 0) {
+                return (
+                  <tr>
+                    <Td colSpan={6} className="text-center py-20">
+                      <div className="flex flex-col items-center justify-center">
+                        <div className="w-16 h-16 bg-emerald-50 rounded-full flex items-center justify-center mb-4 border border-emerald-100">
+                          <Handshake className="w-8 h-8 text-emerald-500" />
+                        </div>
+                        <h3 className="text-[16px] font-bold text-slate-800 mb-1">
+                          {filter === "Pending" ? "All Accounts Settled!" : filter === "Settled" ? "No Settled History" : "No Closed Trips"}
+                        </h3>
+                        <p className="text-[14px] text-slate-500 max-w-sm mx-auto">
+                          {filter === "Pending" ? "There are no pending vendor settlements at this time. Great job!" : "No trips found matching the selected status."}
+                        </p>
+                      </div>
+                    </Td>
+                  </tr>
+                );
+              }
+
+              return filteredTrips.map((trip) => {
+                const baseAmount = trip.supplierRate || trip.freightCharges || 0;
+                const balance = baseAmount + (trip.tollCharges || 0) - (trip.advanceAmount || 0);
                 return (
                   <tr key={trip.id} className="hover:bg-slate-50/80 transition-colors border-b border-slate-100 last:border-0">
                     <Td className="font-mono text-[13px] font-semibold text-slate-600">
@@ -133,7 +175,7 @@ export default function VendorSettlementDashboard() {
                       </div>
                     </Td>
                     <Td>
-                      <span className="font-semibold text-slate-700">₹{((trip.supplierRate || 0) + (trip.tollCharges || 0)).toLocaleString('en-IN')}</span>
+                      <span className="font-semibold text-slate-700">₹{(baseAmount + (trip.tollCharges || 0)).toLocaleString('en-IN')}</span>
                     </Td>
                     <Td>
                       <span className="text-amber-600 font-semibold">₹{(trip.advanceAmount || 0).toLocaleString('en-IN')}</span>
@@ -160,7 +202,7 @@ export default function VendorSettlementDashboard() {
                   </tr>
                 );
               })
-            )}
+            })()}
           </ProtoTable>
         </div>
       </div>
@@ -203,7 +245,7 @@ export default function VendorSettlementDashboard() {
                 <div className="space-y-3 text-[14px]">
                   <div className="flex justify-between items-center">
                     <span className="text-slate-600 font-medium">Base Freight</span>
-                    <span className="font-bold text-slate-800">₹{(selectedTrip.supplierRate || 0).toLocaleString('en-IN')}</span>
+                    <span className="font-bold text-slate-800">₹{(selectedTrip.supplierRate || selectedTrip.freightCharges || 0).toLocaleString('en-IN')}</span>
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-slate-600 font-medium">Toll & Extras</span>
@@ -216,7 +258,7 @@ export default function VendorSettlementDashboard() {
                   <div className="flex justify-between items-end pt-2">
                     <span className="text-slate-500 font-bold uppercase text-[11px] tracking-wider">Total Balance Payable</span>
                     <span className="font-black text-emerald-600 text-[24px] leading-none">
-                      ₹{((selectedTrip.supplierRate || 0) + (selectedTrip.tollCharges || 0) - (selectedTrip.advanceAmount || 0)).toLocaleString('en-IN')}
+                      ₹{((selectedTrip.supplierRate || selectedTrip.freightCharges || 0) + (selectedTrip.tollCharges || 0) - (selectedTrip.advanceAmount || 0)).toLocaleString('en-IN')}
                     </span>
                   </div>
                 </div>

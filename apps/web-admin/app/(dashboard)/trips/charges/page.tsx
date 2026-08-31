@@ -1,26 +1,58 @@
 "use client";
 
-import { useState } from "react";
-import { ProtoTable, Td } from "@/components/PrototypeUI";
-import { Search, Grid, List, Receipt, Plus, X, HandCoins } from "lucide-react";
+import { useState, useEffect } from "react";
+import { fetchApi } from "@/lib/api";
+import { ProtoTable, Td, Badge } from "@/components/PrototypeUI";
+import { Search, Grid, List, Receipt, Plus, X, HandCoins, Loader2 } from "lucide-react";
 
 export default function AdditionalChargesPage() {
   const [isPanelOpen, setIsPanelOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-
-  // In a real application, you would fetch these from the API.
-  // We're leaving it as an empty state array to demonstrate the premium empty state UI.
+  const [isLoading, setIsLoading] = useState(true);
   const [charges, setCharges] = useState<any[]>([]);
 
-  const handleLogCharge = async (e: React.FormEvent) => {
+  useEffect(() => {
+    loadCharges();
+  }, []);
+
+  const loadCharges = async () => {
+    setIsLoading(true);
+    try {
+      const data = await fetchApi("/AdditionalCharges");
+      setCharges(data);
+    } catch (e) {
+      console.error("Failed to load charges", e);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleLogCharge = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsSubmitting(true);
-    // Simulate API call
-    setTimeout(() => {
-      setIsSubmitting(false);
+    
+    const formData = new FormData(e.currentTarget);
+    const payload = {
+      tripId: parseInt(formData.get("tripId") as string) || 0,
+      chargeType: formData.get("chargeType"),
+      amount: parseFloat(formData.get("amount") as string) || 0,
+      description: formData.get("description")
+    };
+
+    try {
+      await fetchApi("/AdditionalCharges", {
+        method: "POST",
+        body: JSON.stringify(payload)
+      });
       setIsPanelOpen(false);
-      alert("Additional charge logged successfully! (Demo)");
-    }, 1000);
+      loadCharges();
+      alert("Additional charge logged successfully!");
+    } catch (e) {
+      console.error(e);
+      alert("Failed to log charge");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -63,7 +95,13 @@ export default function AdditionalChargesPage() {
       <div className="bg-white border border-slate-200 rounded-[16px] overflow-hidden shadow-sm flex-1 flex flex-col">
         <div className="overflow-x-auto flex-1">
           <ProtoTable headers={["CHARGE ID", "TRIP ID", "CHARGE TYPE", "AMOUNT", "DESCRIPTION", "ACTION"]}>
-            {charges.length === 0 ? (
+            {isLoading ? (
+              <tr>
+                <Td colSpan={6} className="text-center py-16">
+                  <Loader2 className="w-8 h-8 animate-spin text-slate-300 mx-auto" />
+                </Td>
+              </tr>
+            ) : charges.length === 0 ? (
               <tr>
                 <Td colSpan={6} className="text-center py-20">
                   <div className="flex flex-col items-center justify-center">
@@ -86,7 +124,18 @@ export default function AdditionalChargesPage() {
             ) : (
               charges.map(charge => (
                 <tr key={charge.id} className="hover:bg-slate-50/80 transition-colors border-b border-slate-100 last:border-0">
-                  {/* Rendering logic would go here when integrated with API */}
+                  <Td className="font-mono text-[13px] font-bold text-slate-600">CHG-{charge.id}</Td>
+                  <Td className="font-mono text-[13px] text-blue-600 font-bold hover:underline cursor-pointer">TRP-{charge.tripId}</Td>
+                  <Td>
+                    <Badge color="blue">
+                      {charge.chargeType}
+                    </Badge>
+                  </Td>
+                  <Td className="font-black text-slate-800">₹{charge.amount?.toLocaleString('en-IN')}</Td>
+                  <Td className="text-slate-500 text-[13px] max-w-[250px] truncate">{charge.description || "Posted from Mobile App"}</Td>
+                  <Td>
+                    <button className="text-slate-400 hover:text-red-500 transition-colors text-[12px] font-bold">Reject</button>
+                  </Td>
                 </tr>
               ))
             )}
@@ -125,16 +174,17 @@ export default function AdditionalChargesPage() {
             <div>
               <label className="block text-[13px] font-bold text-slate-700 mb-1.5">Trip ID</label>
               <input 
+                name="tripId"
                 required 
                 type="text"
-                placeholder="e.g. TRP-1045"
+                placeholder="e.g. 1045"
                 className="w-full border border-slate-300 rounded-xl px-4 py-3 text-[14px] bg-white text-slate-900 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all shadow-sm" 
               />
             </div>
 
             <div>
               <label className="block text-[13px] font-bold text-slate-700 mb-1.5">Charge Type</label>
-              <select required className="w-full border border-slate-300 rounded-xl px-4 py-3 text-[14px] bg-white text-slate-900 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all shadow-sm">
+              <select name="chargeType" required className="w-full border border-slate-300 rounded-xl px-4 py-3 text-[14px] bg-white text-slate-900 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all shadow-sm">
                 <option value="">Select Charge Type</option>
                 <option value="Detention">Detention Charges</option>
                 <option value="Loading">Loading/Unloading Charges (Hamali)</option>
@@ -149,6 +199,7 @@ export default function AdditionalChargesPage() {
               <div className="relative">
                 <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold">₹</span>
                 <input 
+                  name="amount"
                   required 
                   type="number" 
                   className="w-full border border-slate-300 rounded-xl pl-9 pr-4 py-3 text-[14px] bg-white text-slate-900 font-bold outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all shadow-sm" 
@@ -160,6 +211,7 @@ export default function AdditionalChargesPage() {
             <div>
               <label className="block text-[13px] font-bold text-slate-700 mb-1.5">Description & Remarks</label>
               <textarea 
+                name="description"
                 required 
                 rows={4}
                 className="w-full border border-slate-300 rounded-xl px-4 py-3 text-[14px] bg-white text-slate-900 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all shadow-sm resize-none" 

@@ -65,7 +65,7 @@ namespace api_backend.Controllers
         public async Task<ActionResult<IEnumerable<Document>>> GetDocumentsByTrip(int tripId)
         {
             return await _context.Documents
-                .Where(d => d.EntityType == "Trip" && d.EntityId == tripId)
+                .Where(d => (d.EntityType == "Trip" || d.EntityType == "POD") && d.EntityId == tripId)
                 .ToListAsync();
         }
 

@@ -12,7 +12,7 @@ export default function LandingPage() {
           <div className="flex justify-between h-20 items-center">
             {/* Logo */}
             <div className="flex-shrink-0 flex items-center group cursor-pointer">
-              <Image src="/logo.png" alt="Transitflow LOGISTICS" width={240} height={60} className="h-10 md:h-14 w-auto object-contain mix-blend-multiply transition-transform duration-300 group-hover:scale-105" />
+              <Image src="/logo.png" alt="Transitflow LOGISTICS" width={320} height={80} className="h-14 md:h-16 w-auto object-contain mix-blend-multiply transition-transform duration-300 group-hover:scale-105" />
             </div>
             
             {/* Nav Links */}

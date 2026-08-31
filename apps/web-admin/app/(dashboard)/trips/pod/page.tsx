@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { fetchApi } from "@/lib/api";
 import { ProtoTable, Td, Badge } from "@/components/PrototypeUI";
 import { Loader2, Camera, CheckCircle, Smartphone, ExternalLink, XCircle, X, Search, Grid, List, Image as ImageIcon } from "lucide-react";
@@ -15,6 +15,11 @@ export default function AdminPODDashboard() {
   const [selectedTrip, setSelectedTrip] = useState<any>(null);
   const [tripDocuments, setTripDocuments] = useState<any[]>([]);
   const [loadingDocs, setLoadingDocs] = useState(false);
+
+  // Admin Native Upload State
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploadingTrip, setUploadingTrip] = useState<any>(null);
+  const [isUploading, setIsUploading] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -62,8 +67,65 @@ export default function AdminPODDashboard() {
     }
   };
 
+  const handleAdminUploadClick = (trip: any) => {
+    setUploadingTrip(trip);
+    if (fileInputRef.current) {
+      fileInputRef.current.click();
+    }
+  };
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !uploadingTrip) return;
+
+    setIsUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("entityType", "POD");
+      formData.append("entityId", uploadingTrip.id.toString());
+      formData.append("documentType", "DeliveryReceipt");
+
+      const token = localStorage.getItem('token');
+      const uploadRes = await fetch("http://localhost:5063/api/Documents/Upload", {
+        method: "POST",
+        headers: {
+           ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        },
+        body: formData
+      });
+      
+      if (!uploadRes.ok) throw new Error("Upload failed");
+      const uploadData = await uploadRes.json();
+
+      await fetchApi(`/Documents/pod/submit/${uploadingTrip.podMagicLinkToken}`, {
+        method: "POST",
+        body: JSON.stringify({ fileUrl: uploadData.fileUrl || "/dummy-pod.jpg" })
+      });
+
+      alert("POD uploaded successfully!");
+      loadData();
+    } catch (err) {
+      console.error(err);
+      alert("Failed to upload document");
+    } finally {
+      setIsUploading(false);
+      setUploadingTrip(null);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+    }
+  };
+
   return (
     <div className="relative h-full flex flex-col">
+      <input 
+        type="file" 
+        ref={fileInputRef} 
+        onChange={handleFileChange} 
+        className="hidden" 
+        accept="image/*,.pdf" 
+      />
       {/* HEADER SECTION */}
       <div className="flex justify-between items-end mb-[20px] shrink-0">
         <div>
@@ -155,10 +217,18 @@ export default function AdminPODDashboard() {
                           <a 
                             href={`/pod/${trip.podMagicLinkToken}`} 
                             target="_blank"
-                            className="bg-slate-100 text-slate-600 border border-slate-200 px-3 py-1.5 rounded-xl text-xs font-semibold hover:bg-slate-200 transition-colors flex items-center gap-1.5 w-max"
+                            className="bg-slate-100 text-slate-600 border border-slate-200 px-3 py-1.5 rounded-xl text-xs font-semibold hover:bg-slate-200 transition-colors flex items-center gap-1.5 w-max mb-1"
                           >
                             <Smartphone className="w-3.5 h-3.5 text-slate-500" /> Open Mobile View
                           </a>
+                          <button 
+                            onClick={() => handleAdminUploadClick(trip)}
+                            disabled={isUploading && uploadingTrip?.id === trip.id}
+                            className="bg-emerald-50 text-emerald-700 border border-emerald-200 px-3 py-1.5 rounded-xl text-xs font-semibold hover:bg-emerald-100 transition-colors flex items-center gap-1.5 w-max disabled:opacity-50"
+                          >
+                            {isUploading && uploadingTrip?.id === trip.id ? <Loader2 className="w-3.5 h-3.5 animate-spin text-emerald-500" /> : <Camera className="w-3.5 h-3.5 text-emerald-500" />} 
+                            Upload for Driver
+                          </button>
                         </div>
                       ) : !trip.podReceivedDate ? (
                         <button 

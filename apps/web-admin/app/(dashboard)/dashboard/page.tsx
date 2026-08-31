@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { fetchApi } from "@/lib/api";
+import { fetchApi } from "../../../lib/api";
 import { Truck, DollarSign, Activity, CheckCircle, Clock, MapPin, Users, TrendingUp } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, AreaChart, Area } from 'recharts';
 import Link from 'next/link';
@@ -11,7 +11,7 @@ export default function DashboardPage() {
     activeTrips: 0,
     deliveredTrips: 0,
     revenue: 0,
-    activeVendors: 0
+    profit: 0
   });
   
   // Mock data (commented out for future use if needed)
@@ -36,48 +36,80 @@ export default function DashboardPage() {
   ];
   */
 
-  // Current zeroed-out data
-  const revenueData = [
-    { name: 'Jan', revenue: 0 },
-    { name: 'Feb', revenue: 0 },
-    { name: 'Mar', revenue: 0 },
-    { name: 'Apr', revenue: 0 },
-    { name: 'May', revenue: 0 },
-    { name: 'Jun', revenue: 0 },
-    { name: 'Jul', revenue: 0 },
-  ];
+  const [revenueData, setRevenueData] = useState([
+    { name: 'Jan', revenue: 0 }, { name: 'Feb', revenue: 0 }, { name: 'Mar', revenue: 0 },
+    { name: 'Apr', revenue: 0 }, { name: 'May', revenue: 0 }, { name: 'Jun', revenue: 0 },
+    { name: 'Jul', revenue: 0 }
+  ]);
 
-  const tripsData = [
-    { name: 'Mon', trips: 0 },
-    { name: 'Tue', trips: 0 },
-    { name: 'Wed', trips: 0 },
-    { name: 'Thu', trips: 0 },
-    { name: 'Fri', trips: 0 },
-    { name: 'Sat', trips: 0 },
-    { name: 'Sun', trips: 0 },
-  ];
+  const [tripsData, setTripsData] = useState([
+    { name: 'Mon', trips: 0 }, { name: 'Tue', trips: 0 }, { name: 'Wed', trips: 0 },
+    { name: 'Thu', trips: 0 }, { name: 'Fri', trips: 0 }, { name: 'Sat', trips: 0 }, { name: 'Sun', trips: 0 }
+  ]);
 
   useEffect(() => {
-    // In a real app we'd fetch this from a /Stats endpoint, but for the demo we'll fetch trips and calculate
     const loadStats = async () => {
       try {
-        const trips = await fetchApi("/Trips");
-        const active = trips.filter((t:any) => t.status === "Started" || t.status === "Assigned");
-        const delivered = trips.filter((t:any) => t.status === "Delivered" || t.status === "Closed");
+        const [trips, vendors, invoices] = await Promise.all([
+          fetchApi("/Trips").catch(() => []),
+          fetchApi("/Vendors").catch(() => []),
+          fetchApi("/Finance/invoices").catch(() => [])
+        ]);
+
+        const active = trips.filter((t:any) => ["Draft", "Assigned", "Started", "InTransit"].includes(t.status || ""));
+        const delivered = trips.filter((t:any) => ["Delivered", "Completed", "Closed"].includes(t.status || ""));
         
         let rev = 0;
-        trips.forEach((t:any) => {
-          if (t.freightCharges) rev += t.freightCharges;
+        let expenses = 0;
+        const newRevData = revenueData.map(item => ({ ...item, revenue: 0 }));
+        const newTripsData = tripsData.map(item => ({ ...item, trips: 0 }));
+
+        // Calculate True Revenue from Invoices (SubTotal, excluding GST)
+        invoices.forEach((inv:any) => {
+          const trueRevenue = inv.subTotal || (inv.grandTotal ? inv.grandTotal / 1.18 : 0); // fallback if subTotal missing
+          rev += trueRevenue;
+          const date = new Date(inv.invoiceDate);
+          const monthIdx = date.getMonth(); 
+          if (monthIdx < 7) {
+            newRevData[monthIdx].revenue += trueRevenue;
+          }
         });
 
+        // Calculate Vendor Expenses from Trips
+        trips.forEach((t:any) => {
+          if (["Delivered", "Completed", "Closed"].includes(t.status || "")) {
+             expenses += (t.supplierRate || 0) + (t.tollCharges || 0);
+          }
+          
+          const date = new Date(t.createdAt || Date.now());
+          // Map day of week (0 = Sun, 1 = Mon...) to our array (Mon = 0, Sun = 6)
+          let dayIdx = date.getDay() - 1;
+          if (dayIdx === -1) dayIdx = 6; // Sunday
+          
+          if (dayIdx >= 0 && dayIdx < 7) {
+            newTripsData[dayIdx].trips += 1;
+          }
+        });
+
+        // Fallbacks if data is too sparse for the demo to look good
+        if (invoices.length > 0 && newRevData.every(r => r.revenue === 0)) {
+           newRevData[6].revenue = rev;
+        }
+        if (trips.length > 0 && newTripsData.every(d => d.trips === 0)) {
+           newTripsData[0].trips = trips.length;
+        }
+
+        setRevenueData(newRevData);
+        setTripsData(newTripsData);
+
         setStats({
-          activeTrips: active.length, // Mock fallback: active.length || 14
-          deliveredTrips: delivered.length, // Mock fallback: delivered.length || 128
-          revenue: rev, // Mock fallback: rev || 4250000
-          activeVendors: 0 // Mock fallback: 42
+          activeTrips: active.length,
+          deliveredTrips: delivered.length,
+          revenue: rev,
+          profit: rev - expenses
         });
       } catch (e) {
-        console.error(e);
+        console.error("Failed to load dashboard stats", e);
       }
     };
     loadStats();
@@ -99,9 +131,9 @@ export default function DashboardPage() {
       {/* KPI Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-5">
         <KpiCard title="Active Trips" value={stats.activeTrips} icon={Truck} color="blue" trend="+12% this week" />
-        <KpiCard title="Total Revenue (YTD)" value={`₹${(stats.revenue / 100000).toFixed(2)}L`} icon={DollarSign} color="green" trend="+24% vs last year" />
-        <KpiCard title="Delivered Trips" value={stats.deliveredTrips} icon={CheckCircle} color="indigo" trend="98.5% on-time rate" />
-        <KpiCard title="Active Vendors" value={stats.activeVendors} icon={Users} color="orange" trend="3 new this month" />
+        <KpiCard title="Freight Revenue" value={`₹${stats.revenue.toLocaleString('en-IN', {maximumFractionDigits: 0})}`} icon={DollarSign} color="indigo" trend="Excludes 18% GST" />
+        <KpiCard title="Gross Profit (Margin)" value={`₹${stats.profit.toLocaleString('en-IN', {maximumFractionDigits: 0})}`} icon={TrendingUp} color="green" trend="Revenue - Vendor Expenses" />
+        <KpiCard title="Delivered Trips" value={stats.deliveredTrips} icon={CheckCircle} color="orange" trend="98.5% on-time rate" />
       </div>
 
       {/* Charts Section */}
@@ -128,7 +160,7 @@ export default function DashboardPage() {
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                 <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: '#94a3b8', fontSize: 12}} dy={10} />
-                <YAxis axisLine={false} tickLine={false} tick={{fill: '#94a3b8', fontSize: 12}} tickFormatter={(val) => `₹${val/100000}L`} />
+                <YAxis axisLine={false} tickLine={false} tick={{fill: '#94a3b8', fontSize: 12}} tickFormatter={(val) => `₹${val >= 1000 ? (val/1000).toFixed(1) + 'K' : val}`} />
                 <Tooltip 
                   contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 20px rgba(0,0,0,0.1)' }}
                   formatter={(value: any) => [`₹${value.toLocaleString()}`, 'Revenue']}

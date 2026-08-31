@@ -80,7 +80,7 @@ export default function AssignmentPage() {
         driverId: indent.trip.driverId?.toString() || "",
         bookingType: indent.trip.bookingType || "Fixed",
         ratePerTon: indent.trip.ratePerTon?.toString() || "0",
-        fixedRate: indent.trip.fixedRate?.toString() || "0",
+        fixedRate: (indent.trip.fixedRate || indent.trip.supplierRate || 0).toString(),
         advanceAmount: indent.trip.advanceAmount?.toString() || "0",
         startingKM: indent.trip.startingKM?.toString() || "",
         tripStartDate: indent.trip.tripStartDate ? new Date(indent.trip.tripStartDate).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],

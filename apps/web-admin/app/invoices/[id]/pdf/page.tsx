@@ -30,13 +30,13 @@ export default function InvoicePDF() {
 
   return (
     <div className="bg-slate-200 min-h-screen py-8 print:bg-white print:py-0 text-slate-800 font-sans">
-      
+
       {/* Action Bar (Hidden when printing) */}
       <div className="max-w-[210mm] mx-auto mb-4 flex justify-end gap-3 print:hidden">
         {invoice.status === "Unpaid" && (
           <Badge>Pending Payment</Badge>
         )}
-        <button 
+        <button
           onClick={() => window.print()}
           className="bg-blue-600 text-white px-4 py-2 rounded shadow flex gap-2 font-bold hover:bg-blue-700"
         >
@@ -46,7 +46,7 @@ export default function InvoicePDF() {
 
       {/* A4 Paper Container */}
       <div className="max-w-[210mm] min-h-[297mm] mx-auto bg-white shadow-xl print:shadow-none p-[20mm] box-border relative">
-        
+
         {/* Header */}
         <div className="flex justify-between items-start border-b-2 border-slate-900 pb-6 mb-6">
           <div>
@@ -66,8 +66,8 @@ export default function InvoicePDF() {
             <h3 className="font-bold text-slate-400 uppercase tracking-wider mb-2 text-xs">Billed To</h3>
             <p className="font-black text-lg text-slate-800">{invoice.customer?.name}</p>
             <p className="text-slate-600 leading-relaxed mt-1">
-              {invoice.customer?.address}<br/>
-              {invoice.customer?.city}, {invoice.customer?.state}<br/>
+              {invoice.customer?.address}<br />
+              {invoice.customer?.city}, {invoice.customer?.state}<br />
               GSTIN: <span className="font-semibold">{invoice.customer?.gstin}</span>
             </p>
           </div>
@@ -75,9 +75,9 @@ export default function InvoicePDF() {
             <h3 className="font-bold text-slate-400 uppercase tracking-wider mb-2 text-xs">Service Provider</h3>
             <p className="font-bold text-slate-800">TRANSITFLOW LOGISTICS SOLUTIONS</p>
             <p className="text-slate-600 leading-relaxed mt-1">
-              123 Transport Nagar, Sector 4<br/>
-              Mumbai, Maharashtra 400001<br/>
-              GSTIN: <span className="font-semibold">27AADCH1234D1Z5</span><br/>
+              123 Transport Nagar, Sector 4<br />
+              Mumbai, Maharashtra 400001<br />
+              GSTIN: <span className="font-semibold">27AADCH1234D1Z5</span><br />
               PAN: <span className="font-semibold">AADCH1234D</span>
             </p>
           </div>
@@ -98,8 +98,7 @@ export default function InvoicePDF() {
             </thead>
             <tbody className="divide-y divide-slate-100">
               {invoice.trips?.map((trip: any, idx: number) => {
-                const rowFreight = trip.customerRate ?? trip.indent?.customerRate ?? trip.freightCharges;
-                const rowTotal = rowFreight + (trip.tollCharges || 0);
+                const rowTotal = trip.freightCharges + (trip.tollCharges || 0);
                 return (
                   <tr key={trip.id} className="text-slate-700">
                     <td className="py-3 px-2 align-top">{idx + 1}</td>
@@ -108,7 +107,7 @@ export default function InvoicePDF() {
                       <div className="text-xs text-slate-500 mt-1">{trip.indent?.source} to {trip.indent?.destination}</div>
                     </td>
                     <td className="py-3 px-2 align-top font-mono text-xs">{trip.vehicle?.vehicleNumber}</td>
-                    <td className="py-3 px-2 align-top text-right">{rowFreight.toLocaleString('en-IN')}</td>
+                    <td className="py-3 px-2 align-top text-right">{trip.freightCharges.toLocaleString('en-IN')}</td>
                     <td className="py-3 px-2 align-top text-right">{trip.tollCharges?.toLocaleString('en-IN') || "0"}</td>
                     <td className="py-3 px-2 align-top text-right font-semibold">{rowTotal.toLocaleString('en-IN')}</td>
                   </tr>
@@ -142,9 +141,9 @@ export default function InvoicePDF() {
           <div>
             <h3 className="font-bold text-slate-800 mb-2">Bank Details</h3>
             <p className="text-slate-600">
-              Bank: <strong>HDFC Bank Ltd.</strong><br/>
-              A/c Name: <strong>TRANSITFLOW LOGISTICS SOLUTIONS</strong><br/>
-              A/c No: <strong>50200012345678</strong><br/>
+              Bank: <strong>HDFC Bank Ltd.</strong><br />
+              A/c Name: <strong>TRANSITFLOW LOGISTICS SOLUTIONS</strong><br />
+              A/c No: <strong>50200012345678</strong><br />
               IFSC: <strong>HDFC0001234</strong>
             </p>
           </div>

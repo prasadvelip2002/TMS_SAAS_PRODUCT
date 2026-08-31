@@ -61,7 +61,7 @@ export default function LoginPage() {
         <div className="flex-1 flex flex-col justify-center max-w-xl relative z-10 mx-auto text-center items-center">
           <div className="relative mb-12 -translate-y-12">
             <div className="absolute inset-0 bg-white/70 blur-[80px] rounded-full scale-150"></div>
-            <Image src="/logo.png" alt="TRANSITFLOW LOGISTICS" width={600} height={180} className="relative z-10 h-40 w-auto object-contain drop-shadow-2xl" />
+            <Image src="/logo.png" alt="TRANSITFLOW LOGISTICS" width={800} height={240} className="relative z-10 h-56 w-auto object-contain drop-shadow-2xl" />
           </div>
           <h1 className="text-4xl md:text-5xl font-bold leading-tight mb-6 tracking-tight text-white drop-shadow-lg">
             Intelligent Transport Management for Transitflow Fleet
@@ -91,7 +91,7 @@ export default function LoginPage() {
         <div className="mx-auto w-full max-w-md bg-white p-8 sm:p-10 rounded-[2rem] shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 hover:shadow-[0_8px_40px_rgb(37,99,235,0.12)] hover:border-blue-200 transition-all duration-500 relative z-10 my-auto">
           <div className="text-center lg:text-left mb-10">
             <div className="lg:hidden flex items-center justify-center h-28 mb-8">
-              <Image src="/logo.png" alt="TRANSITFLOW LOGISTICS" width={300} height={120} className="h-full w-auto max-w-[250px] object-contain mix-blend-multiply" />
+              <Image src="/logo.png" alt="TRANSITFLOW LOGISTICS" width={400} height={160} className="h-full w-auto max-w-[320px] object-contain mix-blend-multiply" />
             </div>
             <h2 className="text-3xl font-bold tracking-tight text-slate-900">Welcome back</h2>
             <p className="mt-2 text-sm text-slate-600">

@@ -95,6 +95,20 @@ export default function TripsPage() {
     }
   };
 
+  const handleUpdateStatus = async (tripId: number, newStatus: string) => {
+    if (!confirm(`Are you sure you want to manually update this trip to ${newStatus}?`)) return;
+    try {
+      await fetchApi(`/Trips/${tripId}/Status`, {
+        method: "POST",
+        body: JSON.stringify({ status: newStatus })
+      });
+      loadData();
+    } catch (e) {
+      console.error(e);
+      alert("Failed to update status");
+    }
+  };
+
   const getLegBadge = (legType: string) => {
     if (legType === "InboundLeg1") return <span className="px-2 py-0.5 bg-blue-100 text-blue-700 rounded-md text-[10px] font-bold uppercase tracking-wider ml-2">Leg 1</span>;
     if (legType === "OutboundLeg2") return <span className="px-2 py-0.5 bg-purple-100 text-purple-700 rounded-md text-[10px] font-bold uppercase tracking-wider ml-2">Leg 2</span>;
@@ -224,7 +238,23 @@ export default function TripsPage() {
                       {trip.invoice?.status === 'Paid' ? 'Paid' : trip.status}
                     </Badge>
                   </Td>
-                  <Td className="flex gap-2 items-center">
+                  <Td className="flex gap-2 items-center flex-wrap">
+                    {trip.status === "Assigned" && (
+                      <button 
+                        onClick={() => handleUpdateStatus(trip.id, "Started")}
+                        className="bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 px-3 py-1.5 rounded-lg text-[11.5px] font-bold uppercase tracking-wide transition-colors"
+                      >
+                        Start Trip
+                      </button>
+                    )}
+                    {(trip.status === "Started" || trip.status === "InTransit") && (
+                      <button 
+                        onClick={() => handleUpdateStatus(trip.id, "Delivered")}
+                        className="bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200 px-3 py-1.5 rounded-lg text-[11.5px] font-bold uppercase tracking-wide transition-colors"
+                      >
+                        Mark Delivered
+                      </button>
+                    )}
                     {(!trip.legType || trip.legType === "Direct") && (
                       <button 
                         onClick={() => handleCreateOutboundLeg(trip.id)}
