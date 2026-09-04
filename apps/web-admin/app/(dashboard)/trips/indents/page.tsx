@@ -50,11 +50,21 @@ export default function IndentsPage() {
 
   const loadData = async () => {
     try {
-      const [indData, custData] = await Promise.all([
+      const [indData, custData, tripsData] = await Promise.all([
         fetchApi("/Indents"),
-        fetchApi("/Customers")
+        fetchApi("/Customers"),
+        fetchApi("/Trips")
       ]);
-      setIndents(indData);
+      
+      const tripsByIndent = (tripsData || []).reduce((acc: any, trip: any) => {
+        acc[trip.indentId] = trip;
+        return acc;
+      }, {});
+
+      setIndents((indData || []).map((i: any) => {
+        i.trip = tripsByIndent[i.id];
+        return i;
+      }));
       setCustomers(custData);
     } catch (error) {
       console.error("Failed to fetch data:", error);
@@ -134,10 +144,50 @@ export default function IndentsPage() {
     }
   };
 
-  const getStatusBadge = (status: string) => {
-    if (status === "Assigned") return <span className="px-[8px] py-[3px] bg-[#fef3c7] text-[#92400e] rounded-[6px] text-[11px] font-medium border border-[#fde68a]">Awaiting Fleet</span>;
-    if (status === "Confirmed") return <span className="px-[8px] py-[3px] bg-[#dcfce7] text-[#166534] rounded-[6px] text-[11px] font-medium border border-[#bbf7d0]">Confirmed</span>;
-    if (status === "Pending" || status === "Open") return <span className="px-[8px] py-[3px] bg-[#ffedd5] text-[#1E40AF] rounded-[6px] text-[11px] font-medium border border-[#fdba74]">Open</span>;
+  const getStatusBadge = (indentOrStatus: any) => {
+    const indent = typeof indentOrStatus === 'object' && indentOrStatus !== null ? indentOrStatus : { status: indentOrStatus };
+    const status = indent.status;
+    const trip = indent.trip;
+
+    // 1. If associated trip exists, check actual live operational execution status first
+    if (trip) {
+      if (trip.status === "Delivered" || trip.status === "Completed" || status === "Completed") {
+        return <span className="px-[8px] py-[3px] bg-[#dcfce7] text-[#166534] rounded-[6px] text-[11px] font-bold border border-[#bbf7d0]">Completed</span>;
+      }
+      if (trip.status === "Started" || trip.status === "InTransit" || status === "InTransit") {
+        return <span className="px-[8px] py-[3px] bg-[#e0e7ff] text-[#3730a3] rounded-[6px] text-[11px] font-bold border border-[#c7d2fe]">In Transit</span>;
+      }
+      if (trip.vehicleId && trip.driverId) {
+        return <span className="px-[8px] py-[3px] bg-[#dbeafe] text-[#1e40af] rounded-[6px] text-[11px] font-bold border border-[#bfdbfe]">Fleet Assigned</span>;
+      }
+      return <span className="px-[8px] py-[3px] bg-[#fef3c7] text-[#92400e] rounded-[6px] text-[11px] font-medium border border-[#fde68a]">Awaiting Fleet</span>;
+    }
+
+    // 2. Direct Indent Lifecycle Statuses
+    if (status === "Completed" || status === "Delivered") {
+      return <span className="px-[8px] py-[3px] bg-[#dcfce7] text-[#166534] rounded-[6px] text-[11px] font-bold border border-[#bbf7d0]">Completed</span>;
+    }
+    if (status === "Started" || status === "InTransit") {
+      return <span className="px-[8px] py-[3px] bg-[#e0e7ff] text-[#3730a3] rounded-[6px] text-[11px] font-bold border border-[#c7d2fe]">In Transit</span>;
+    }
+    if (status === "Assigned") {
+      return <span className="px-[8px] py-[3px] bg-[#fef3c7] text-[#92400e] rounded-[6px] text-[11px] font-medium border border-[#fde68a]">Awaiting Fleet</span>;
+    }
+    if (status === "Supplier_Shortlisted") {
+      return <span className="px-[8px] py-[3px] bg-[#fef9c3] text-[#854d0e] rounded-[6px] text-[11px] font-medium border border-[#fef08a]">Supplier Shortlisted</span>;
+    }
+    if (status === "SQ_Generated") {
+      return <span className="px-[8px] py-[3px] bg-[#f0fdf4] text-[#15803d] rounded-[6px] text-[11px] font-medium border border-[#bbf7d0]">SQ Generated</span>;
+    }
+    if (status === "PO_Received") {
+      return <span className="px-[8px] py-[3px] bg-[#ecfdf5] text-[#047857] rounded-[6px] text-[11px] font-medium border border-[#a7f3d0]">PO Received</span>;
+    }
+    if (status === "Confirmed") {
+      return <span className="px-[8px] py-[3px] bg-[#dcfce7] text-[#166534] rounded-[6px] text-[11px] font-medium border border-[#bbf7d0]">Confirmed</span>;
+    }
+    if (status === "Pending" || status === "Open") {
+      return <span className="px-[8px] py-[3px] bg-[#ffedd5] text-[#9a3412] rounded-[6px] text-[11px] font-medium border border-[#fdba74]">Open</span>;
+    }
     return <span className="px-[8px] py-[3px] bg-[#e0f2fe] text-[#075985] rounded-[6px] text-[11px] font-medium border border-[#bae6fd]">New</span>;
   };
 
@@ -223,7 +273,7 @@ export default function IndentsPage() {
                     <div className="text-[11px] text-slate-500 font-medium mt-0.5 line-clamp-1">{ind.customer?.name || `Customer #${ind.customerId}`}</div>
                   </div>
                 </div>
-                {getStatusBadge(ind.status)}
+                {getStatusBadge(ind)}
               </div>
               
               {/* Ticket Route */}
@@ -304,7 +354,7 @@ export default function IndentsPage() {
                   <div>{new Date(ind.loadingDate).toLocaleDateString()}</div>
                   {ind.loadingTime && <div className="text-[11px] font-bold text-blue-600">@ {formatTime12H(ind.loadingTime)}</div>}
                 </Td>
-                <Td>{getStatusBadge(ind.status)}</Td>
+                <Td>{getStatusBadge(ind)}</Td>
                 <Td>
                   <button 
                     onClick={(e) => { e.stopPropagation(); handleDelete(ind.id); }}

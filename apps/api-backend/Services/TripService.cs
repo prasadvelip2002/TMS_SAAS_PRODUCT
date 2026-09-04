@@ -83,7 +83,9 @@ namespace api_backend.Services
 
         public async Task<Trip> UpdateTripStatusAsync(int tripId, string newStatus)
         {
-            var trip = await _context.Trips.FindAsync(tripId);
+            var trip = await _context.Trips
+                .Include(t => t.Indent)
+                .FirstOrDefaultAsync(t => t.Id == tripId);
             if (trip == null) throw new Exception("Trip not found.");
 
             if (newStatus == "Started" && string.IsNullOrEmpty(trip.LRNumber))
@@ -92,6 +94,20 @@ namespace api_backend.Services
             }
 
             trip.Status = newStatus;
+
+            // Keep Indent status synchronized with live trip progress
+            if (trip.Indent != null)
+            {
+                if (newStatus == "Delivered" || newStatus == "Completed")
+                {
+                    trip.Indent.Status = "Completed";
+                }
+                else if (newStatus == "Started" || newStatus == "InTransit")
+                {
+                    trip.Indent.Status = "InTransit";
+                }
+            }
+
             await _context.SaveChangesAsync();
 
             return trip;
