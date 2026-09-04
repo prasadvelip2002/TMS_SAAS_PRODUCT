@@ -134,7 +134,7 @@ export default function SalesDashboard() {
       {/* HEADER SECTION */}
       <div className="flex justify-between items-end mb-[20px] shrink-0">
         <div>
-          <h1 className="font-disp font-bold text-[28px] text-slate-900 tracking-tight leading-tight">Customer Sales & PO</h1>
+          <h1 className="font-disp font-bold text-[28px] text-slate-900 tracking-tight leading-tight">Sales</h1>
           <p className="text-[14px] text-slate-500 mt-1 font-medium">Add margin, generate Sales Quotations, and receive POs.</p>
         </div>
         

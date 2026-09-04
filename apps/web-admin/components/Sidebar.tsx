@@ -65,7 +65,7 @@ export function Sidebar() {
         { href: '/trips', label: 'All Trips & Status', icon: Truck, roles: ['Tenant Admin', 'Internal User', 'Manager', 'Accounts', 'Platform Admin'] },
         { href: '/trips/indents', label: 'Indent Management', icon: FileText, roles: ['Tenant Admin', 'Internal User', 'Manager', 'Platform Admin'] },
         { href: '/trips/procurement', label: 'Procurement (RFQ)', icon: ShoppingCart, roles: ['Tenant Admin', 'Internal User', 'Manager', 'Platform Admin'] },
-        { href: '/trips/sales', label: 'Customer Sales & PO', icon: Handshake, roles: ['Tenant Admin', 'Internal User', 'Manager', 'Platform Admin'] },
+        { href: '/trips/sales', label: 'Sales', icon: Handshake, roles: ['Tenant Admin', 'Internal User', 'Manager', 'Platform Admin'] },
         { href: '/trips/confirmation', label: 'Trip Confirmation Sheet', icon: Paperclip, roles: ['Tenant Admin', 'Internal User', 'Platform Admin'] },
         { href: '/trips/assignment', label: 'Trip Assignment', icon: Handshake, roles: ['Tenant Admin', 'Internal User', 'Manager', 'Platform Admin'] },
         { href: '/trips/pod', label: 'POD Review', icon: Camera, roles: ['Tenant Admin', 'Internal User', 'Manager', 'Platform Admin'] },
