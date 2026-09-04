@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { assignTrip, getVendors, getVehicles, getDrivers } from "@/lib/api";
 import { Button } from "@/components/ui/button";
+import { formatTime12H } from "@/lib/utils";
 
 export function TripAssignmentForm({ indent, onSuccess }: { indent: any, onSuccess: () => void }) {
   const [vendors, setVendors] = useState<any[]>([]);
@@ -56,10 +57,13 @@ export function TripAssignmentForm({ indent, onSuccess }: { indent: any, onSucce
   return (
     <form onSubmit={handleSubmit} className="space-y-4 py-4">
       
-      <div className="bg-slate-50 p-4 rounded-lg border mb-4 text-sm">
+      <div className="bg-slate-50 p-4 rounded-lg border mb-4 text-sm space-y-1">
         <p><strong>Customer:</strong> {indent.customer?.name}</p>
         <p><strong>Route:</strong> {indent.source} to {indent.destination}</p>
         <p><strong>Material:</strong> {indent.material} ({indent.weight} Tons)</p>
+        {indent.loadingDate && (
+          <p><strong>Pickup Scheduled:</strong> {new Date(indent.loadingDate).toLocaleDateString()} {indent.loadingTime ? `at ${formatTime12H(indent.loadingTime)}` : ''}</p>
+        )}
       </div>
 
       <div className="grid grid-cols-2 gap-4">

@@ -15,6 +15,7 @@ namespace api_backend.Models
         public decimal Weight { get; set; }
         public string? VehicleType { get; set; }
         public DateTime LoadingDate { get; set; } // New, Pending, Assigned
+        public string? LoadingTime { get; set; } // e.g. "10:00 AM", "14:30"
 
         public string? PricingModel { get; set; } // AnnualContract, CaseToCase
         public decimal? CustomerRate { get; set; }

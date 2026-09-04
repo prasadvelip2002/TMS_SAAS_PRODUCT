@@ -24,12 +24,21 @@ namespace api_backend.Controllers
         // POST: api/Procurement/BroadcastRFQ
         [HttpPost("BroadcastRFQ/{indentId}")]
         [Authorize]
-        public async Task<IActionResult> BroadcastRFQ(int indentId, [FromBody] List<int> vendorIds)
+        public async Task<IActionResult> BroadcastRFQ(int indentId, [FromBody] BroadcastRfqRequest request)
         {
             var indent = await _context.Indents.FindAsync(indentId);
             if (indent == null) return NotFound("Indent not found");
 
-            foreach (var vendorId in vendorIds)
+            if (!string.IsNullOrEmpty(request.LoadingTime))
+            {
+                indent.LoadingTime = request.LoadingTime;
+            }
+            if (request.LoadingDate.HasValue)
+            {
+                indent.LoadingDate = request.LoadingDate.Value;
+            }
+
+            foreach (var vendorId in request.VendorIds)
             {
                 var quotation = new VendorQuotation
                 {
@@ -89,6 +98,8 @@ namespace api_backend.Controllers
             quote.QuotedRate = request.QuotedRate;
             quote.ProposedVehicleType = request.ProposedVehicleType;
             quote.Remarks = request.Remarks;
+            quote.AvailableDate = request.AvailableDate;
+            quote.AvailableTime = request.AvailableTime;
             quote.Status = "QuotationReceived";
 
             var indent = await _context.Indents.FindAsync(quote.IndentId);
@@ -160,11 +171,20 @@ namespace api_backend.Controllers
         }
     }
 
+    public class BroadcastRfqRequest
+    {
+        public List<int> VendorIds { get; set; } = new();
+        public string? LoadingTime { get; set; }
+        public DateTime? LoadingDate { get; set; }
+    }
+
     public class BidSubmissionRequest
     {
         public decimal QuotedRate { get; set; }
         public string? ProposedVehicleType { get; set; }
         public string? Remarks { get; set; }
+        public DateTime? AvailableDate { get; set; }
+        public string? AvailableTime { get; set; }
     }
 
     public class ReceiveGRPORequest

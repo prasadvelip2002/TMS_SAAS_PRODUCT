@@ -3,7 +3,8 @@
 import { useEffect, useState } from "react";
 import { fetchApi } from "@/lib/api";
 import { ProtoTable, Td, Badge } from "@/components/PrototypeUI";
-import { Loader2, Send, CheckCircle, Truck, DollarSign, X, Search, Grid, List, MapPin, Activity, FileText } from "lucide-react";
+import { Loader2, Send, CheckCircle, Truck, DollarSign, X, Search, Grid, List, MapPin, Activity, FileText, Calendar, Clock, MessageCircle } from "lucide-react";
+import { formatTime12H } from "@/lib/utils";
 
 export default function ProcurementDashboard() {
   const [indents, setIndents] = useState<any[]>([]);
@@ -14,6 +15,8 @@ export default function ProcurementDashboard() {
   const [isRfqPanelOpen, setIsRfqPanelOpen] = useState(false);
   const [selectedIndent, setSelectedIndent] = useState<any>(null);
   const [selectedVendors, setSelectedVendors] = useState<number[]>([]);
+  const [rfqLoadingDate, setRfqLoadingDate] = useState("");
+  const [rfqLoadingTime, setRfqLoadingTime] = useState("");
   
   // View Bids State
   const [isBidsPanelOpen, setIsBidsPanelOpen] = useState(false);
@@ -46,6 +49,8 @@ export default function ProcurementDashboard() {
   const openRfqPanel = (indent: any) => {
     setSelectedIndent(indent);
     setSelectedVendors([]);
+    setRfqLoadingDate(indent.loadingDate ? indent.loadingDate.split('T')[0] : new Date().toISOString().split('T')[0]);
+    setRfqLoadingTime(indent.loadingTime || "10:00");
     setIsRfqPanelOpen(true);
     setIsBidsPanelOpen(false);
   };
@@ -55,7 +60,11 @@ export default function ProcurementDashboard() {
     try {
       await fetchApi(`/Procurement/BroadcastRFQ/${selectedIndent.id}`, {
         method: "POST",
-        body: JSON.stringify(selectedVendors),
+        body: JSON.stringify({
+          vendorIds: selectedVendors,
+          loadingDate: rfqLoadingDate ? new Date(rfqLoadingDate).toISOString() : null,
+          loadingTime: rfqLoadingTime
+        }),
       });
       setIsRfqPanelOpen(false);
       loadData();
@@ -63,6 +72,14 @@ export default function ProcurementDashboard() {
       console.error(e);
       alert("Failed to send RFQ");
     }
+  };
+
+  const copyRfqToWhatsApp = () => {
+    if (!selectedIndent) return;
+    const formattedTime = formatTime12H(rfqLoadingTime || selectedIndent.loadingTime);
+    const msg = `📢 *NEW RFQ / LOAD ENQUIRY*\n*Indent Ref*: IND-${1000 + selectedIndent.id}\n*Route*: ${selectedIndent.source} → ${selectedIndent.destination}\n*Material*: ${selectedIndent.material} (${selectedIndent.weight} Tons)\n*Vehicle Required*: ${selectedIndent.vehicleType}\n\n📅 *Pickup Date*: ${rfqLoadingDate ? new Date(rfqLoadingDate).toLocaleDateString() : (selectedIndent.loadingDate ? new Date(selectedIndent.loadingDate).toLocaleDateString() : '')}\n⏰ *Pickup Reporting Time*: ${formattedTime || 'Immediate'}\n\nPlease reply with your best freight rate and vehicle availability.`;
+    navigator.clipboard.writeText(msg);
+    alert("RFQ details copied to clipboard with Pickup Date & Time! You can paste this to vendors on WhatsApp.");
   };
 
   const openBidsPanel = async (indent: any) => {
@@ -157,6 +174,11 @@ export default function ProcurementDashboard() {
                         <span className="text-slate-300">→</span>
                         <span className="text-[13px] font-medium text-slate-700 max-w-[120px] truncate">{indent.destination}</span>
                       </div>
+                      {indent.loadingDate && (
+                        <div className="text-[11px] text-slate-500 mt-0.5">
+                          Pickup: {new Date(indent.loadingDate).toLocaleDateString()} {indent.loadingTime ? `@ ${formatTime12H(indent.loadingTime)}` : ''}
+                        </div>
+                      )}
                     </Td>
                     <Td>
                       <div className="text-[13px] font-medium text-slate-800">{indent.material}</div>
@@ -361,12 +383,59 @@ export default function ProcurementDashboard() {
         </div>
 
         <div className="flex-1 overflow-y-auto p-6 space-y-6">
-          <div className="bg-sky-50 border border-sky-100 p-4 rounded-xl text-sm">
-            You are requesting a vehicle for <br/>
-            <strong className="text-sky-800 flex items-center gap-1 mt-1"><MapPin className="w-3.5 h-3.5"/> {selectedIndent?.source} → {selectedIndent?.destination}</strong>
-            <div className="mt-2 text-sky-700/80">
-              Required: <strong>{selectedIndent?.vehicleType}</strong> ({selectedIndent?.weight} Tons)
+          <div className="bg-sky-50 border border-sky-200/80 p-5 rounded-2xl text-sm shadow-sm space-y-3">
+            <div className="text-[11px] font-bold text-sky-700 uppercase tracking-wider">Trip & Load Requirement</div>
+            <div>
+              <strong className="text-slate-900 text-[15px] flex items-center gap-1.5"><MapPin className="w-4 h-4 text-sky-600 shrink-0"/> {selectedIndent?.source} → {selectedIndent?.destination}</strong>
+              <div className="mt-1 text-slate-600 text-xs font-medium">
+                Required: <strong className="text-slate-800">{selectedIndent?.vehicleType}</strong> ({selectedIndent?.weight} Tons • {selectedIndent?.material || 'Goods'})
+              </div>
             </div>
+
+            <div className="pt-3 border-t border-sky-100">
+              <label className="text-[11px] font-bold text-slate-600 uppercase tracking-wider block mb-2 flex items-center gap-1.5">
+                <Clock className="w-3.5 h-3.5 text-blue-600" />
+                Pickup & Reporting Schedule (Sent in RFQ)
+              </label>
+              <div className="grid grid-cols-2 gap-2.5">
+                <div>
+                  <span className="text-[11px] text-slate-500 font-semibold block mb-1">📅 Pickup Date:</span>
+                  <input 
+                    type="date"
+                    value={rfqLoadingDate}
+                    onChange={(e) => setRfqLoadingDate(e.target.value)}
+                    className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs font-semibold text-slate-800 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 shadow-xs"
+                  />
+                </div>
+                <div>
+                  <div className="flex justify-between items-center mb-1">
+                    <span className="text-[11px] text-slate-500 font-semibold">⏰ Pickup Time:</span>
+                    {rfqLoadingTime && (
+                      <span className="text-[10px] font-bold text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded border border-blue-200">
+                        {formatTime12H(rfqLoadingTime)}
+                      </span>
+                    )}
+                  </div>
+                  <input 
+                    type="time"
+                    value={rfqLoadingTime}
+                    onChange={(e) => setRfqLoadingTime(e.target.value)}
+                    className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs font-semibold text-slate-800 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 shadow-xs"
+                  />
+                </div>
+              </div>
+              <p className="text-[11px] text-sky-800/80 mt-2 font-medium">
+                ⚡ Vendors will be informed of this exact reporting time before submitting quotations.
+              </p>
+            </div>
+
+            <button 
+              type="button"
+              onClick={copyRfqToWhatsApp}
+              className="w-full mt-1 bg-white hover:bg-slate-50 border border-slate-200 hover:border-slate-300 text-slate-700 py-2 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-colors shadow-xs"
+            >
+              <MessageCircle className="w-3.5 h-3.5 text-green-600" /> Copy RFQ Details for WhatsApp
+            </button>
           </div>
           
           <div>
@@ -459,6 +528,13 @@ export default function ProcurementDashboard() {
                           </button>
                         )}
                       </div>
+
+                      {bid.availableDate && (
+                        <div className="mb-3 text-[11px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-1.5 rounded-lg flex items-center gap-1.5 w-max">
+                          <Calendar className="w-3.5 h-3.5" />
+                          <span>Vehicle Available: {new Date(bid.availableDate).toLocaleDateString()}{bid.availableTime ? ` at ${formatTime12H(bid.availableTime)}` : ''}</span>
+                        </div>
+                      )}
                       
                       <div className="border-t border-slate-200 pt-3 mt-3 flex justify-between items-center">
                          <button 

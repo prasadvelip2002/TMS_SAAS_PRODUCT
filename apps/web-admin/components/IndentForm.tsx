@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { createIndent, getCustomers } from "@/lib/api";
 import { Button } from "@/components/ui/button";
+import { formatTime12H } from "@/lib/utils";
 
 export function IndentForm({ onSuccess }: { onSuccess: () => void }) {
   const [customers, setCustomers] = useState<any[]>([]);
@@ -16,6 +17,7 @@ export function IndentForm({ onSuccess }: { onSuccess: () => void }) {
     weight: "",
     vehicleType: "",
     loadingDate: new Date().toISOString().split('T')[0],
+    loadingTime: "10:00",
     customerRate: "",
     pricingModel: "CaseToCase",
     warehouseLocation: "",
@@ -34,6 +36,7 @@ export function IndentForm({ onSuccess }: { onSuccess: () => void }) {
         customerId: parseInt(formData.customerId),
         weight: parseFloat(formData.weight),
         loadingDate: new Date(formData.loadingDate).toISOString(),
+        loadingTime: formData.loadingTime || null,
         destination: formData.destinations[0] || "",
         destinationsJson: JSON.stringify(formData.destinations),
         customerRate: formData.customerRate ? parseFloat(formData.customerRate) : null,
@@ -156,6 +159,23 @@ export function IndentForm({ onSuccess }: { onSuccess: () => void }) {
             className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
             value={formData.loadingDate}
             onChange={e => setFormData({...formData, loadingDate: e.target.value})}
+          />
+        </div>
+
+        <div className="space-y-2">
+          <div className="flex justify-between items-center">
+            <label className="text-sm font-medium">Pickup Time</label>
+            {formData.loadingTime && (
+              <span className="text-[11px] font-bold text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded border border-blue-200">
+                {formatTime12H(formData.loadingTime)}
+              </span>
+            )}
+          </div>
+          <input 
+            type="time" 
+            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+            value={formData.loadingTime}
+            onChange={e => setFormData({...formData, loadingTime: e.target.value})}
           />
         </div>
 

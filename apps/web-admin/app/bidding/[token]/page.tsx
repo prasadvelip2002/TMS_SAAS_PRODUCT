@@ -3,7 +3,8 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { fetchApi } from "@/lib/api";
-import { Loader2, CheckCircle, AlertTriangle, FileText, MapPin, Truck, Calendar } from "lucide-react";
+import { Loader2, CheckCircle, AlertTriangle, FileText, MapPin, Truck, Calendar, Clock } from "lucide-react";
+import { formatTime12H } from "@/lib/utils";
 
 export default function VendorBiddingPage() {
   const params = useParams();
@@ -19,11 +20,19 @@ export default function VendorBiddingPage() {
   const [rate, setRate] = useState("");
   const [vehicle, setVehicle] = useState("");
   const [remarks, setRemarks] = useState("");
+  const [availableDate, setAvailableDate] = useState("");
+  const [availableTime, setAvailableTime] = useState("10:00");
 
   useEffect(() => {
     fetchApi(`/Procurement/RFQ/${token}`)
       .then(data => {
         setRfqDetails(data);
+        if (data?.indent?.loadingDate) {
+          setAvailableDate(new Date(data.indent.loadingDate).toISOString().split('T')[0]);
+        }
+        if (data?.indent?.loadingTime) {
+          setAvailableTime(data.indent.loadingTime);
+        }
       })
       .catch(err => {
         console.error(err);
@@ -36,6 +45,7 @@ export default function VendorBiddingPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!rate) return alert("Please enter your quoted rate");
+    if (!availableDate) return alert("Please specify when your vehicle will be available.");
     
     setLoading(true);
     try {
@@ -44,7 +54,9 @@ export default function VendorBiddingPage() {
         body: JSON.stringify({
           quotedRate: parseFloat(rate),
           proposedVehicleType: vehicle,
-          remarks: remarks
+          remarks: remarks,
+          availableDate: availableDate ? new Date(availableDate).toISOString() : null,
+          availableTime: availableTime || null
         })
       });
       setSuccess(true);
@@ -121,9 +133,12 @@ export default function VendorBiddingPage() {
                   <div className="text-[10px] text-slate-400 font-bold uppercase mb-1 flex items-center gap-1"><Truck className="w-3 h-3" /> Vehicle Req.</div>
                   <div className="text-[12px] font-semibold text-slate-800">{rfqDetails.indent?.vehicleType}</div>
                 </div>
-                <div className="bg-white p-2.5 rounded-lg border border-slate-100">
-                  <div className="text-[10px] text-slate-400 font-bold uppercase mb-1 flex items-center gap-1"><Calendar className="w-3 h-3" /> Pickup</div>
-                  <div className="text-[12px] font-semibold text-slate-800">{new Date(rfqDetails.indent?.loadingDate).toLocaleDateString()}</div>
+                <div className="bg-sky-50/80 p-2.5 rounded-lg border border-sky-100">
+                  <div className="text-[10px] text-sky-700 font-bold uppercase mb-1 flex items-center gap-1"><Clock className="w-3 h-3 text-sky-600" /> Scheduled Pickup</div>
+                  <div className="text-[12px] font-bold text-slate-900">
+                    {new Date(rfqDetails.indent?.loadingDate).toLocaleDateString()}
+                    {rfqDetails.indent?.loadingTime ? ` @ ${formatTime12H(rfqDetails.indent.loadingTime)}` : ''}
+                  </div>
                 </div>
               </div>
             </div>
@@ -134,7 +149,7 @@ export default function VendorBiddingPage() {
           )}
 
           <div>
-            <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">Your Quoted Rate (₹)</label>
+            <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">Your Quoted Rate (₹) *</label>
             <input 
               type="number" 
               required
@@ -146,7 +161,7 @@ export default function VendorBiddingPage() {
           </div>
 
           <div>
-            <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">Proposed Vehicle</label>
+            <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">Proposed Vehicle *</label>
             <input 
               type="text" 
               required
@@ -155,6 +170,36 @@ export default function VendorBiddingPage() {
               placeholder="e.g. 32ft Container or TN-01-AB-1234"
               className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">Vehicle Available Date *</label>
+              <input 
+                type="date" 
+                required
+                value={availableDate}
+                onChange={(e) => setAvailableDate(e.target.value)}
+                className="w-full px-3 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm font-semibold"
+              />
+            </div>
+            <div>
+              <div className="flex justify-between items-center mb-1.5">
+                <label className="block text-xs font-bold text-slate-500 uppercase">Available Time *</label>
+                {availableTime && (
+                  <span className="text-[10px] font-bold text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded border border-blue-200">
+                    {formatTime12H(availableTime)}
+                  </span>
+                )}
+              </div>
+              <input 
+                type="time" 
+                required
+                value={availableTime}
+                onChange={(e) => setAvailableTime(e.target.value)}
+                className="w-full px-3 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm font-semibold"
+              />
+            </div>
           </div>
 
           <div>

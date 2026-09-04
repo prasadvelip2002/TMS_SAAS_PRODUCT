@@ -4,7 +4,6 @@ namespace api_backend.Models
 {
     public class VendorQuotation : BaseEntity, ITenantEntity, ICompanyEntity
     {
-        
         public int IndentId { get; set; }
         public Indent? Indent { get; set; }
 
@@ -14,6 +13,8 @@ namespace api_backend.Models
         public decimal QuotedRate { get; set; }
         public string? ProposedVehicleType { get; set; }
         public string? Remarks { get; set; } // Pending, Approved, Rejected
+        public DateTime? AvailableDate { get; set; }
+        public string? AvailableTime { get; set; } // e.g. "14:00" or "02:00 PM"
 
         public string MagicLinkToken { get; set; } = Guid.NewGuid().ToString();
 

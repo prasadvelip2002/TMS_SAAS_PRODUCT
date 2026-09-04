@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { fetchApi } from "@/lib/api";
 import { ProtoTable, Td, Badge } from "@/components/PrototypeUI";
 import { Loader2, FileText, CheckCircle, Search, Grid, List, Plus, ShoppingCart, DollarSign, X, MessageCircle } from "lucide-react";
+import { formatTime12H } from "@/lib/utils";
 
 export default function SalesDashboard() {
   const [indents, setIndents] = useState<any[]>([]);
@@ -119,7 +120,10 @@ export default function SalesDashboard() {
   const copyToWhatsApp = () => {
     if (!salesQuotes[0]) return;
     const sq = salesQuotes[0];
-    const message = `Hello ${selectedIndent?.customer?.name},\n\nHere is our Sales Quotation for your transport request (IND-${1000 + selectedIndent.id}):\n\n*Route*: ${selectedIndent.source} to ${selectedIndent.destination}\n*Cargo*: ${selectedIndent.material} (${selectedIndent.weight} Tons)\n*Vehicle Required*: ${selectedIndent.vehicleType}\n\n*Total Quotation (Selling Price)*: ₹${sq.sellingPrice.toLocaleString('en-IN')}\n\nPlease reply with your PO Number to confirm this booking.\n\nThank you,\nTransitflow Logistics`;
+    const pickupInfo = selectedIndent?.loadingDate 
+      ? `\n*Pickup Scheduled*: ${new Date(selectedIndent.loadingDate).toLocaleDateString()}${selectedIndent.loadingTime ? ` at ${formatTime12H(selectedIndent.loadingTime)}` : ''}`
+      : '';
+    const message = `Hello ${selectedIndent?.customer?.name},\n\nHere is our Sales Quotation for your transport request (IND-${1000 + selectedIndent.id}):\n\n*Route*: ${selectedIndent.source} to ${selectedIndent.destination}${pickupInfo}\n*Cargo*: ${selectedIndent.material} (${selectedIndent.weight} Tons)\n*Vehicle Required*: ${selectedIndent.vehicleType}\n\n*Total Quotation (Selling Price)*: ₹${sq.sellingPrice.toLocaleString('en-IN')}\n\nPlease reply with your PO Number to confirm this booking.\n\nThank you,\nTransitflow Logistics`;
     
     navigator.clipboard.writeText(message);
     alert("Quotation copied to clipboard! You can now paste it into WhatsApp.");
@@ -184,6 +188,11 @@ export default function SalesDashboard() {
                       <span className="text-slate-300">→</span>
                       <span className="text-[13px] font-medium text-slate-700 max-w-[120px] truncate">{indent.destination}</span>
                     </div>
+                    {indent.loadingDate && (
+                      <div className="text-[11px] text-slate-500 mt-0.5">
+                        Pickup: {new Date(indent.loadingDate).toLocaleDateString()} {indent.loadingTime ? `@ ${formatTime12H(indent.loadingTime)}` : ''}
+                      </div>
+                    )}
                   </Td>
                   <Td>
                     <div className="text-[13px] font-medium text-slate-800">{indent.material}</div>
@@ -263,7 +272,14 @@ export default function SalesDashboard() {
                 ? "Generate Sales Quotation" 
                 : "Customer PO & Acceptance"}
             </h2>
-            <p className="text-[13px] text-slate-500 mt-1 font-medium">IND-{selectedIndent ? 1000 + selectedIndent.id : ""}</p>
+            <div className="flex items-center gap-2 mt-1">
+              <span className="text-[13px] text-slate-500 font-medium">IND-{selectedIndent ? 1000 + selectedIndent.id : ""}</span>
+              {selectedIndent?.loadingDate && (
+                <span className="text-[11px] bg-blue-50 text-blue-700 px-2 py-0.5 rounded border border-blue-100 font-semibold">
+                  Pickup: {new Date(selectedIndent.loadingDate).toLocaleDateString()} {selectedIndent.loadingTime ? `@ ${formatTime12H(selectedIndent.loadingTime)}` : ''}
+                </span>
+              )}
+            </div>
           </div>
           <button 
             onClick={() => setIsPanelOpen(false)}
@@ -331,6 +347,15 @@ export default function SalesDashboard() {
                   <div>
                     <div className="text-slate-800 font-bold">{vendorQuote.vendor?.name}</div>
                     <div className="text-sm text-slate-500">{vendorQuote.proposedVehicleType}</div>
+                    {(vendorQuote.availableDate || vendorQuote.availableTime) && (
+                      <div className="mt-2 inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 border border-emerald-200 text-[11px] font-medium">
+                        <span>Vehicle Available:</span>
+                        <span className="font-bold">
+                          {vendorQuote.availableDate ? new Date(vendorQuote.availableDate).toLocaleDateString() : 'Immediate'}
+                          {vendorQuote.availableTime ? ` at ${formatTime12H(vendorQuote.availableTime)}` : ''}
+                        </span>
+                      </div>
+                    )}
                   </div>
                   <div className="text-xl font-black text-slate-800">
                     ₹{vendorQuote.quotedRate?.toLocaleString('en-IN')}

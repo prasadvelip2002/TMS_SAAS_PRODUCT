@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { fetchApi, assignTrip } from "@/lib/api";
 import { ProtoTable, Td, ProtoButton } from "@/components/PrototypeUI";
 import { Search, Grid, List, Plus, X, Handshake, Box, Activity } from "lucide-react";
+import { formatTime12H } from "@/lib/utils";
 
 export default function AssignmentPage() {
   const [indents, setIndents] = useState<any[]>([]);
@@ -231,6 +232,11 @@ export default function AssignmentPage() {
                         )}
                         <span className="text-[13px] font-medium text-slate-700">{indent.destination}</span>
                       </div>
+                      {indent.loadingDate && (
+                        <div className="text-[11px] text-slate-500 mt-0.5">
+                          Pickup: {new Date(indent.loadingDate).toLocaleDateString()} {indent.loadingTime ? `@ ${formatTime12H(indent.loadingTime)}` : ''}
+                        </div>
+                      )}
                     </Td>
                     <Td>
                       <div className="text-[13px] font-medium text-slate-800">{indent.vehicleType}</div>
@@ -335,7 +341,13 @@ export default function AssignmentPage() {
                       <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Weight</div>
                       <div className="font-medium text-slate-700 text-[13px]">{indent.weight} Tons</div>
                     </div>
-                    <div className="col-span-2">
+                    <div>
+                      <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Pickup Scheduled</div>
+                      <div className="font-medium text-slate-700 text-[12px]">
+                        {indent.loadingDate ? `${new Date(indent.loadingDate).toLocaleDateString()} ${indent.loadingTime ? `@ ${formatTime12H(indent.loadingTime)}` : ''}` : 'Not set'}
+                      </div>
+                    </div>
+                    <div>
                       <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Requirements</div>
                       <div className="font-medium text-slate-700 text-[13px] line-clamp-1">{indent.material || 'Standard goods'}</div>
                     </div>
@@ -369,9 +381,14 @@ export default function AssignmentPage() {
         <div className="px-8 py-6 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
           <div>
             <h2 className="text-xl font-bold text-slate-800">Assign Trip</h2>
-            <p className="text-[13px] text-slate-500 mt-1 font-medium">
-              {selectedIndent ? `IND-${1000 + selectedIndent.id} • ${selectedIndent.material} (${selectedIndent.weight}T)` : ""}
-            </p>
+            <div className="text-[13px] text-slate-500 mt-1 font-medium flex items-center gap-2 flex-wrap">
+              <span>{selectedIndent ? `IND-${1000 + selectedIndent.id} • ${selectedIndent.material} (${selectedIndent.weight}T)` : ""}</span>
+              {selectedIndent?.loadingDate && (
+                <span className="bg-blue-50 text-blue-700 px-2 py-0.5 rounded text-[11px] font-semibold border border-blue-100">
+                  Pickup: {new Date(selectedIndent.loadingDate).toLocaleDateString()} {selectedIndent.loadingTime ? `@ ${formatTime12H(selectedIndent.loadingTime)}` : ''}
+                </span>
+              )}
+            </div>
           </div>
           <button 
             onClick={() => setIsSidePanelOpen(false)}

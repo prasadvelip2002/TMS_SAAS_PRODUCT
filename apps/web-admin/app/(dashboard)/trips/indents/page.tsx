@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { fetchApi } from "@/lib/api";
 import { ProtoTable, Td } from "@/components/PrototypeUI";
 import { Search, Grid, List, Plus, FileText, X, Activity, MapPin, Trash2 } from "lucide-react";
+import { formatTime12H } from "@/lib/utils";
 
 interface Indent {
   id: number;
@@ -15,6 +16,7 @@ interface Indent {
   weight: number;
   vehicleType: string;
   loadingDate: string;
+  loadingTime?: string;
   status: string;
   destinationsJson?: string;
   warehouseLocation?: string;
@@ -29,6 +31,7 @@ const DEFAULT_FORM = {
   weight: "",
   vehicleType: "",
   loadingDate: new Date().toISOString().split('T')[0],
+  loadingTime: "10:00",
   status: "New",
   customerRate: "",
   pricingModel: "CaseToCase",
@@ -73,6 +76,7 @@ export default function IndentsPage() {
         customerId: parseInt(formData.customerId),
         weight: parseFloat(formData.weight),
         loadingDate: new Date(formData.loadingDate).toISOString(),
+        loadingTime: formData.loadingTime,
         destinationsJson: JSON.stringify([formData.destination]),
         customerRate: formData.customerRate ? parseFloat(formData.customerRate) : null,
         pricingModel: formData.pricingModel,
@@ -111,6 +115,7 @@ export default function IndentsPage() {
       weight: ind.weight?.toString() || "",
       vehicleType: ind.vehicleType || "",
       loadingDate: ind.loadingDate ? ind.loadingDate.split('T')[0] : "",
+      loadingTime: ind.loadingTime || "10:00",
       status: ind.status || "New",
       customerRate: (ind as any).customerRate?.toString() || "",
       pricingModel: (ind as any).pricingModel || "CaseToCase",
@@ -253,8 +258,10 @@ export default function IndentsPage() {
                   <div className="font-medium text-slate-700 text-[13px]">{ind.weight} Tons</div>
                 </div>
                 <div>
-                  <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Date</div>
-                  <div className="font-medium text-slate-700 text-[13px]">{new Date(ind.loadingDate).toLocaleDateString()}</div>
+                  <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Pickup Schedule</div>
+                  <div className="font-medium text-slate-700 text-[12px]">
+                    {new Date(ind.loadingDate).toLocaleDateString()} {ind.loadingTime ? `@ ${formatTime12H(ind.loadingTime)}` : ''}
+                  </div>
                 </div>
                 <div>
                   <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Type</div>
@@ -293,7 +300,10 @@ export default function IndentsPage() {
                     {(ind as any).customerRate ? `₹${(ind as any).customerRate.toLocaleString()}` : 'TBD'}
                   </span>
                 </Td>
-                <Td className="text-[12px] whitespace-nowrap">{new Date(ind.loadingDate).toLocaleDateString()}</Td>
+                <Td className="text-[12px] whitespace-nowrap">
+                  <div>{new Date(ind.loadingDate).toLocaleDateString()}</div>
+                  {ind.loadingTime && <div className="text-[11px] font-bold text-blue-600">@ {formatTime12H(ind.loadingTime)}</div>}
+                </Td>
                 <Td>{getStatusBadge(ind.status)}</Td>
                 <Td>
                   <button 
@@ -409,10 +419,21 @@ export default function IndentsPage() {
                       </select>
                     </div>
                   </div>
-                  <div className="grid grid-cols-1 gap-4">
+                  <div className="grid grid-cols-2 gap-4">
                     <div>
                       <label className="block text-[11.5px] font-bold text-slate-500 mb-1.5 uppercase tracking-wider">Loading Date</label>
                       <input required type="date" value={formData.loadingDate} onChange={e => setFormData({...formData, loadingDate: e.target.value})} className="w-full border border-slate-200 rounded-xl px-4 py-3 text-[14px] bg-slate-50 hover:bg-slate-100 focus:bg-white text-slate-800 font-medium outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all shadow-sm" />
+                    </div>
+                    <div>
+                      <div className="flex justify-between items-center mb-1.5">
+                        <label className="block text-[11.5px] font-bold text-slate-500 uppercase tracking-wider">Pickup Time</label>
+                        {formData.loadingTime && (
+                          <span className="text-[10px] font-bold text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded border border-blue-200">
+                            {formatTime12H(formData.loadingTime)}
+                          </span>
+                        )}
+                      </div>
+                      <input type="time" value={formData.loadingTime} onChange={e => setFormData({...formData, loadingTime: e.target.value})} className="w-full border border-slate-200 rounded-xl px-4 py-3 text-[14px] bg-slate-50 hover:bg-slate-100 focus:bg-white text-slate-800 font-medium outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all shadow-sm" />
                     </div>
                   </div>
                   <div className="grid grid-cols-1 gap-4">

@@ -7,6 +7,7 @@ import { IndentForm } from "@/components/IndentForm";
 import { TripAssignmentForm } from "@/components/TripAssignmentForm";
 import { MapPin, X, Activity, FileText, Truck, Grid, List, Plus } from "lucide-react";
 import Link from "next/link";
+import { formatTime12H } from "@/lib/utils";
 
 function SlideOver({ isOpen, onClose, title, subtitle, children }: any) {
   if (!isOpen) return null;
@@ -201,7 +202,10 @@ export default function TripsPage() {
                     <Td>{indent.customer?.name}</Td>
                     <Td className="text-[12px]">{indent.source} &rarr; {indent.destination}</Td>
                     <Td className="text-[12px]">{indent.material} ({indent.weight}t)</Td>
-                    <Td className="text-[12px] whitespace-nowrap">{new Date(indent.loadingDate).toLocaleDateString()}</Td>
+                    <Td className="text-[12px] whitespace-nowrap">
+                      {new Date(indent.loadingDate).toLocaleDateString()}
+                      {indent.loadingTime ? ` @ ${formatTime12H(indent.loadingTime)}` : ''}
+                    </Td>
                     <Td><Badge color="orange">{indent.status}</Badge></Td>
                     <Td>
                       <button 
@@ -287,8 +291,10 @@ export default function TripsPage() {
                         <div className="font-medium text-slate-700 text-sm">{indent.weight} Tons</div>
                       </div>
                       <div>
-                        <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Loading Date</div>
-                        <div className="font-medium text-slate-700 text-sm">{new Date(indent.loadingDate).toLocaleDateString()}</div>
+                        <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Loading Date & Time</div>
+                        <div className="font-medium text-slate-700 text-sm">
+                          {new Date(indent.loadingDate).toLocaleDateString()} {indent.loadingTime ? `@ ${formatTime12H(indent.loadingTime)}` : ''}
+                        </div>
                       </div>
                       <div>
                         <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Type</div>
