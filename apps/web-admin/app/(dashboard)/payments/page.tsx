@@ -138,7 +138,7 @@ export default function PaymentsPage() {
 
       {/* FULL WIDTH TABLE */}
       <div className="bg-white border border-slate-200 rounded-[16px] overflow-hidden shadow-sm flex-1 flex flex-col">
-        <div className="overflow-x-auto flex-1">
+        <div className="overflow-auto flex-1">
           <ProtoTable headers={["DATE", "TRIP ID", "PAYMENT TYPE", "UTR NUMBER", "AMOUNT", "STATUS"]}>
             {loading ? (
               <tr>

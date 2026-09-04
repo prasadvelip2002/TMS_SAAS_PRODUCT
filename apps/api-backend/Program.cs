@@ -63,6 +63,22 @@ builder.Services.AddControllers().AddJsonOptions(options =>
 
 var app = builder.Build();
 
+// Ensure DB schema permits NULL for VendorId, VehicleId, DriverId on Trips table (for Own Fleet)
+using (var scope = app.Services.CreateScope())
+{
+    try
+    {
+        var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        db.Database.ExecuteSqlRaw("ALTER TABLE \"Trips\" ALTER COLUMN \"VendorId\" DROP NOT NULL;");
+        db.Database.ExecuteSqlRaw("ALTER TABLE \"Trips\" ALTER COLUMN \"VehicleId\" DROP NOT NULL;");
+        db.Database.ExecuteSqlRaw("ALTER TABLE \"Trips\" ALTER COLUMN \"DriverId\" DROP NOT NULL;");
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine("DB Migration Notice: " + ex.Message);
+    }
+}
+
 // Configure the HTTP request pipeline.
 // Always enable Swagger for the demo
 app.UseSwagger();

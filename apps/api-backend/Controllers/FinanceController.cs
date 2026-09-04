@@ -30,7 +30,8 @@ namespace api_backend.Controllers
                 .Include(t => t.Vendor)
                 .Include(t => t.Indent)
                 .ThenInclude(i => i.Customer)
-                .Where(t => t.Status == "Closed")
+                .Include(t => t.Payments)
+                .Where(t => t.Status == "Closed" && t.VendorId != null)
                 .ToListAsync();
 
             return Ok(trips);
@@ -68,6 +69,7 @@ namespace api_backend.Controllers
         {
             var trips = await _context.Trips
                 .Include(t => t.Indent)
+                .Include(t => t.AdditionalCharges)
                 .Where(t => t.Status == "Closed" && t.InvoiceId == null && t.Indent.CustomerId == customerId)
                 .ToListAsync();
 
@@ -83,6 +85,7 @@ namespace api_backend.Controllers
 
             var trips = await _context.Trips
                 .Include(t => t.Indent)
+                .Include(t => t.AdditionalCharges)
                 .Where(t => request.TripIds.Contains(t.Id))
                 .ToListAsync();
 
@@ -90,8 +93,24 @@ namespace api_backend.Controllers
 
             var customerId = trips.First().Indent.CustomerId;
 
-            decimal totalAmount = trips.Sum(t => (t.CustomerRate ?? t.Indent?.CustomerRate ?? t.FreightCharges) + (t.TollCharges ?? 0));
-            decimal taxAmount = totalAmount * 0.18m; // Assuming 18% GST
+            decimal totalAmount = 0;
+            foreach (var t in trips)
+            {
+                decimal rate = 0;
+                if (request.CustomRates != null && request.CustomRates.TryGetValue(t.Id, out decimal customRate) && customRate > 0)
+                {
+                    rate = customRate;
+                    t.CustomerRate = customRate;
+                }
+                else
+                {
+                    decimal addChargesSum = t.AdditionalCharges?.Sum(ac => ac.Amount) ?? 0;
+                    rate = (t.CustomerRate ?? t.Indent?.CustomerRate ?? t.FreightCharges) + (t.TollCharges ?? 0) + addChargesSum;
+                }
+                totalAmount += rate;
+            }
+
+            decimal taxAmount = totalAmount * 0.18m; // 18% GST
 
             var invoice = new Invoice
             {
@@ -170,5 +189,6 @@ namespace api_backend.Controllers
     public class GenerateInvoiceRequest
     {
         public List<int> TripIds { get; set; } = new List<int>();
+        public Dictionary<int, decimal>? CustomRates { get; set; }
     }
 }

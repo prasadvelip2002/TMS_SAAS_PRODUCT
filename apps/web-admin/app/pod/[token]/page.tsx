@@ -56,7 +56,7 @@ export default function DriverPODUpload() {
       formData.append("entityId", trip.tripId);
       formData.append("documentType", "DeliveryReceipt");
 
-      const uploadRes = await fetch("http://localhost:5000/api/Documents/upload", {
+      const uploadRes = await fetch("http://localhost:5063/api/Documents/Upload", {
         method: "POST",
         body: formData,
       });

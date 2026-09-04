@@ -53,6 +53,20 @@ namespace api_backend.Controllers
             }
         }
 
+        // POST: api/Trips/5/generate-lr
+        [HttpPost("{id}/generate-lr")]
+        public async Task<IActionResult> GenerateLR(int id)
+        {
+            var trip = await _context.Trips.FindAsync(id);
+            if (trip == null) return NotFound();
+
+            trip.LRGenerationType = "System";
+            trip.LRNumber = $"TRANSITFLOW-LR-{trip.Id.ToString().PadLeft(4, '0')}";
+            
+            await _context.SaveChangesAsync();
+            return Ok(trip);
+        }
+
         // POST: api/Trips/5/create-outbound-leg
         [HttpPost("{id}/create-outbound-leg")]
         public async Task<IActionResult> CreateOutboundLeg(int id)
@@ -98,7 +112,9 @@ namespace api_backend.Controllers
         [HttpGet]
         public async Task<ActionResult<IEnumerable<Trip>>> GetTrips()
         {
-            return await _context.Trips
+            var trips = await _context.Trips
+                .AsNoTracking()
+                .AsSplitQuery()
                 .Include(t => t.Indent)
                     .ThenInclude(i => i.Customer)
                 .Include(t => t.Vendor)
@@ -107,6 +123,25 @@ namespace api_backend.Controllers
                 .Include(t => t.Payments)
                 .Include(t => t.Invoice)
                 .ToListAsync();
+
+            if (User.IsInRole("Driver"))
+            {
+                foreach (var trip in trips)
+                {
+                    if (trip.SupplierPaymentTo != "Driver")
+                    {
+                        trip.SupplierRate = null;
+                        trip.CustomerRate = null;
+                        trip.FreightCharges = 0;
+                        trip.FixedRate = 0;
+                        trip.RatePerTon = 0;
+                        // Only show what is explicitly meant for the driver
+                        trip.AdvanceAmount = trip.FuelAdvance ?? 0;
+                    }
+                }
+            }
+
+            return trips;
         }
 
         // GET: api/Trips/5
@@ -124,6 +159,16 @@ namespace api_backend.Controllers
             if (trip == null)
             {
                 return NotFound();
+            }
+
+            if (User.IsInRole("Driver") && trip.SupplierPaymentTo != "Driver")
+            {
+                trip.SupplierRate = null;
+                trip.CustomerRate = null;
+                trip.FreightCharges = 0;
+                trip.FixedRate = 0;
+                trip.RatePerTon = 0;
+                trip.AdvanceAmount = trip.FuelAdvance ?? 0;
             }
 
             return trip;

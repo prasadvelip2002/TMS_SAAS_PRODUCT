@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { fetchApi } from "@/lib/api";
 import { ProtoTable, Td, Badge } from "@/components/PrototypeUI";
-import { Loader2, DollarSign, Wallet, CheckCircle, Search, Grid, List, X, Handshake } from "lucide-react";
+import { Loader2, DollarSign, Wallet, CheckCircle, Search, Grid, List, X, Handshake, Printer, FileText } from "lucide-react";
 import Link from "next/link";
 
 export default function VendorSettlementDashboard() {
@@ -115,7 +115,7 @@ export default function VendorSettlementDashboard() {
 
       {/* FULL WIDTH TABLE */}
       <div className="bg-white border border-slate-200 rounded-[16px] overflow-hidden shadow-sm flex-1 flex flex-col">
-        <div className="overflow-x-auto flex-1">
+        <div className="overflow-auto flex-1">
           <ProtoTable headers={["TRIP ID", "VENDOR & ROUTE", "TOTAL FREIGHT", "ADVANCE PAID", "BALANCE DUE", "ACTION"]}>
             {(() => {
               // Filter logic
@@ -242,24 +242,58 @@ export default function VendorSettlementDashboard() {
                   <span className="px-2.5 py-1 bg-emerald-100 text-emerald-800 text-[10px] font-bold uppercase tracking-wider rounded-full">Ready for Payout</span>
                 </div>
                 
-                <div className="space-y-3 text-[14px]">
-                  <div className="flex justify-between items-center">
-                    <span className="text-slate-600 font-medium">Base Freight</span>
+                <div className="space-y-4 text-[14px]">
+                  <div className="flex justify-between items-center text-slate-600 font-medium">
+                    <span>Base Freight Agreed</span>
                     <span className="font-bold text-slate-800">₹{(selectedTrip.supplierRate || selectedTrip.freightCharges || 0).toLocaleString('en-IN')}</span>
                   </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-slate-600 font-medium">Toll & Extras</span>
-                    <span className="font-bold text-blue-600">+ ₹{(selectedTrip.tollCharges || 0).toLocaleString('en-IN')}</span>
+                  
+                  {selectedTrip.tollCharges > 0 && (
+                    <div className="flex justify-between items-center text-slate-600 font-medium">
+                      <span>Toll & Extras (Reimbursement)</span>
+                      <span className="font-bold text-blue-600">+ ₹{(selectedTrip.tollCharges || 0).toLocaleString('en-IN')}</span>
+                    </div>
+                  )}
+
+                  <div className="border-t border-slate-200/60 pt-3 mt-3">
+                    <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2">Advance Payments History</div>
+                    
+                    {selectedTrip.payments && selectedTrip.payments.filter((p:any) => p.type === 'Advance').length > 0 ? (
+                      selectedTrip.payments.filter((p:any) => p.type === 'Advance').map((p:any, idx:number) => (
+                        <div key={idx} className="flex justify-between items-center mb-1.5">
+                          <span className="text-slate-600 font-medium text-[13px] flex items-center gap-1.5">
+                            <span className="w-1.5 h-1.5 rounded-full bg-slate-400"></span>
+                            Advance to {p.beneficiaryType || 'Vendor'} ({p.utrNumber || 'Cash/Fuel'})
+                          </span>
+                          <span className="font-bold text-red-600">- ₹{p.amount.toLocaleString('en-IN')}</span>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="flex justify-between items-center mb-1.5">
+                        <span className="text-slate-600 font-medium text-[13px] flex items-center gap-1.5">
+                          <span className="w-1.5 h-1.5 rounded-full bg-slate-400"></span>
+                          Total Advance Recorded
+                        </span>
+                        <span className="font-bold text-red-600">- ₹{(selectedTrip.advanceAmount || 0).toLocaleString('en-IN')}</span>
+                      </div>
+                    )}
                   </div>
-                  <div className="flex justify-between items-center border-b border-slate-200/60 pb-3">
-                    <span className="text-slate-600 font-medium">Less: Advance Paid</span>
-                    <span className="font-bold text-red-600">- ₹{(selectedTrip.advanceAmount || 0).toLocaleString('en-IN')}</span>
-                  </div>
-                  <div className="flex justify-between items-end pt-2">
-                    <span className="text-slate-500 font-bold uppercase text-[11px] tracking-wider">Total Balance Payable</span>
+
+                  <div className="flex justify-between items-end border-t border-slate-200/60 pt-3 mt-3">
+                    <span className="text-slate-500 font-bold uppercase text-[11px] tracking-wider">Final Balance Payable</span>
                     <span className="font-black text-emerald-600 text-[24px] leading-none">
                       ₹{((selectedTrip.supplierRate || selectedTrip.freightCharges || 0) + (selectedTrip.tollCharges || 0) - (selectedTrip.advanceAmount || 0)).toLocaleString('en-IN')}
                     </span>
+                  </div>
+                  
+                  <div className="mt-4 pt-4 border-t border-slate-200/60 flex gap-2">
+                    <button 
+                      type="button"
+                      onClick={() => window.print()}
+                      className="flex-1 bg-white border border-slate-200 text-slate-700 font-bold py-2 px-3 rounded-lg hover:bg-slate-50 hover:text-slate-900 transition-all text-xs flex items-center justify-center gap-1.5 shadow-sm"
+                    >
+                      <Printer className="w-3.5 h-3.5" /> Print Trip Financial Report
+                    </button>
                   </div>
                 </div>
               </div>

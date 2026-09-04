@@ -11,7 +11,9 @@ interface Vendor {
   code: string;
   gstin: string;
   pan: string;
-  bankDetails: string;
+  bankName: string;
+  bankAccountNumber: string;
+  bankIFSC: string;
   tdsInfo: string;
   contactPerson: string;
   email: string;
@@ -30,7 +32,9 @@ const DEFAULT_FORM = {
   code: "",
   gstin: "",
   pan: "",
-  bankDetails: "",
+  bankName: "",
+  bankAccountNumber: "",
+  bankIFSC: "",
   tdsInfo: "",
   contactPerson: "",
   email: "",
@@ -49,6 +53,7 @@ export default function VendorsPage() {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [formData, setFormData] = useState(DEFAULT_FORM);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
 
   const loadVendors = async () => {
     try {
@@ -98,7 +103,9 @@ export default function VendorsPage() {
       code: v.code || "",
       gstin: v.gstin || "",
       pan: v.pan || "",
-      bankDetails: v.bankDetails || "",
+      bankName: v.bankName || "",
+      bankAccountNumber: v.bankAccountNumber || "",
+      bankIFSC: v.bankIFSC || "",
       tdsInfo: v.tdsInfo || "",
       contactPerson: v.contactPerson || "",
       email: v.email || "",
@@ -156,10 +163,10 @@ export default function VendorsPage() {
           />
         </div>
         <div className="flex items-center gap-2 pr-2">
-          <button className="flex items-center gap-2 px-4 py-2 rounded-xl bg-blue-50 text-blue-700 font-bold text-sm border border-blue-100">
+          <button onClick={() => setViewMode('grid')} className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold border transition-colors ${viewMode === 'grid' ? 'bg-blue-50 text-blue-700 border-blue-100' : 'text-slate-500 border-transparent hover:bg-slate-50'}`}>
             <Grid className="w-4 h-4" /> Grid
           </button>
-          <button className="flex items-center gap-2 px-4 py-2 rounded-xl text-slate-500 hover:bg-slate-50 font-medium text-sm">
+          <button onClick={() => setViewMode('list')} className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold border transition-colors ${viewMode === 'list' ? 'bg-blue-50 text-blue-700 border-blue-100' : 'text-slate-500 border-transparent hover:bg-slate-50'}`}>
             <List className="w-4 h-4" /> Table
           </button>
         </div>
@@ -185,7 +192,7 @@ export default function VendorsPage() {
              Add First Vendor
            </button>
         </div>
-      ) : (
+      ) : viewMode === 'list' ? (
         <div className="bg-white rounded-2xl shadow-sm ring-1 ring-slate-200/50 overflow-hidden">
           <ProtoTable headers={["CODE", "VENDOR", "PAN", "STATUS", "REMARKS", "ACTIONS"]}>
             {vendors.map((v) => (
@@ -206,6 +213,50 @@ export default function VendorsPage() {
               </tr>
             ))}
           </ProtoTable>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          {vendors.map((v) => (
+            <div key={v.id} onClick={() => handleEdit(v)} className="bg-white border border-slate-200 rounded-2xl p-6 hover:shadow-lg transition-all cursor-pointer group relative flex flex-col h-full overflow-hidden">
+              <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500 to-blue-400 opacity-0 group-hover:opacity-100 transition-opacity" />
+              
+              <div className="flex justify-between items-start mb-4">
+                <div>
+                  <h3 className="font-bold text-slate-900 text-lg line-clamp-1">{v.name}</h3>
+                  <p className="text-xs font-mono text-slate-500 mt-1">{v.code || "NO-CODE"}</p>
+                </div>
+                {getStatusBadge(v.status)}
+              </div>
+              
+              <div className="flex-1 space-y-3 mb-6 mt-2">
+                <div className="flex items-center text-sm text-slate-600">
+                  <div className="w-6 h-6 rounded-full bg-slate-50 flex items-center justify-center mr-3 border border-slate-100"><span className="text-[10px]">🏢</span></div>
+                  <span className="truncate">{v.city ? `${v.city}, ${v.state}` : 'No Address Info'}</span>
+                </div>
+                <div className="flex items-center text-sm text-slate-600">
+                  <div className="w-6 h-6 rounded-full bg-slate-50 flex items-center justify-center mr-3 border border-slate-100"><span className="text-[10px]">📞</span></div>
+                  <span>{v.phone || 'No Phone'}</span>
+                </div>
+                <div className="flex items-center text-sm text-slate-600">
+                  <div className="w-6 h-6 rounded-full bg-slate-50 flex items-center justify-center mr-3 border border-slate-100"><span className="text-[10px]">👤</span></div>
+                  <span className="truncate">{v.contactPerson || 'No Contact Person'}</span>
+                </div>
+              </div>
+              
+              <div className="pt-4 border-t border-slate-100 flex items-center justify-between mt-auto">
+                <div>
+                  <div className="text-[10px] uppercase font-bold tracking-wider text-slate-400">PAN</div>
+                  <div className="text-xs font-mono font-medium text-slate-700">{v.pan || 'N/A'}</div>
+                </div>
+                <button 
+                  onClick={(e) => { e.stopPropagation(); handleDelete(v.id); }}
+                  className="text-slate-400 hover:text-red-500 p-2 rounded-lg hover:bg-red-50 transition-colors opacity-0 group-hover:opacity-100"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          ))}
         </div>
       )}
 
@@ -289,10 +340,23 @@ export default function VendorsPage() {
                     </div>
                   </div>
                   <hr className="border-slate-200" />
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="col-span-2">
-                      <label className="block text-[11.5px] font-bold text-slate-500 mb-1.5 uppercase tracking-wider">Bank Details</label>
-                      <textarea value={formData.bankDetails} onChange={e => setFormData({...formData, bankDetails: e.target.value})} className="w-full border border-slate-200 rounded-xl px-4 py-3 text-[14px] bg-slate-50 hover:bg-slate-100 focus:bg-white text-slate-800 font-medium outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all shadow-sm min-h-[80px]" placeholder="Account & IFSC" />
+                  <div>
+                    <label className="block text-[11.5px] font-bold text-slate-500 mb-2 uppercase tracking-wider">Bank Details</label>
+                    <div className="space-y-4 p-4 rounded-xl border border-slate-200 bg-slate-50/50">
+                      <div>
+                        <label className="block text-[11px] font-semibold text-slate-500 mb-1">Bank Name</label>
+                        <input value={formData.bankName} onChange={e => setFormData({...formData, bankName: e.target.value})} className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-[14px] bg-white hover:bg-slate-50 focus:bg-white text-slate-800 font-medium outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all shadow-sm" placeholder="e.g. State Bank of India" />
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-[11px] font-semibold text-slate-500 mb-1">Account Number</label>
+                          <input value={formData.bankAccountNumber} onChange={e => setFormData({...formData, bankAccountNumber: e.target.value})} className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-[14px] bg-white hover:bg-slate-50 focus:bg-white text-slate-800 font-medium outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all shadow-sm" placeholder="e.g. 123456789012" />
+                        </div>
+                        <div>
+                          <label className="block text-[11px] font-semibold text-slate-500 mb-1">IFSC Code</label>
+                          <input value={formData.bankIFSC} onChange={e => setFormData({...formData, bankIFSC: e.target.value})} className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-[14px] bg-white hover:bg-slate-50 focus:bg-white text-slate-800 font-medium outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all shadow-sm uppercase" placeholder="e.g. SBIN0001234" />
+                        </div>
+                      </div>
                     </div>
                   </div>
                   <div className="grid grid-cols-2 gap-4">

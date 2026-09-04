@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef } from "react";
 import { fetchApi } from "@/lib/api";
 import { ProtoTable, Td, Badge } from "@/components/PrototypeUI";
-import { Loader2, Camera, CheckCircle, Smartphone, ExternalLink, XCircle, X, Search, Grid, List, Image as ImageIcon } from "lucide-react";
+import { Loader2, Camera, CheckCircle, Smartphone, ExternalLink, XCircle, X, Search, Grid, List, Image as ImageIcon, FileText } from "lucide-react";
 import Link from "next/link";
 
 export default function AdminPODDashboard() {
@@ -20,6 +20,7 @@ export default function AdminPODDashboard() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploadingTrip, setUploadingTrip] = useState<any>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
 
   useEffect(() => {
     loadData();
@@ -144,63 +145,149 @@ export default function AdminPODDashboard() {
           </div>
           
           <div className="flex bg-white border border-slate-200 rounded-[12px] p-1 shadow-sm">
-            <button className="p-1.5 bg-slate-100 text-slate-800 rounded-[8px] shadow-sm"><List className="w-4 h-4" /></button>
-            <button className="p-1.5 text-slate-400 hover:text-slate-800 rounded-[8px]"><Grid className="w-4 h-4" /></button>
+            <button onClick={() => setViewMode('list')} className={`p-1.5 rounded-[8px] transition-colors ${viewMode === 'list' ? 'bg-slate-100 text-slate-800 shadow-sm' : 'text-slate-400 hover:text-slate-800'}`}><List className="w-4 h-4" /></button>
+            <button onClick={() => setViewMode('grid')} className={`p-1.5 rounded-[8px] transition-colors ${viewMode === 'grid' ? 'bg-slate-100 text-slate-800 shadow-sm' : 'text-slate-400 hover:text-slate-800'}`}><Grid className="w-4 h-4" /></button>
           </div>
         </div>
       </div>
 
-      {/* FULL WIDTH TABLE */}
-      <div className="bg-white border border-slate-200 rounded-[16px] overflow-hidden shadow-sm flex-1 flex flex-col">
-        <div className="overflow-x-auto flex-1">
-          <ProtoTable headers={["TRIP ID", "CUSTOMER & ROUTE", "DRIVER & VEHICLE", "TRIP STATUS", "POD STATUS", "ACTIONS"]}>
-            {loading ? (
-              <tr>
-                <Td colSpan={6} className="text-center py-16">
-                  <div className="flex flex-col items-center justify-center text-slate-400">
-                    <Loader2 className="w-10 h-10 mb-3 animate-spin text-slate-300" />
-                    <span className="text-[14px] font-medium">Loading POD Data...</span>
-                  </div>
-                </Td>
-              </tr>
-            ) : trips.length === 0 ? (
-              <tr>
-                <Td colSpan={6} className="text-center py-20">
-                  <div className="flex flex-col items-center justify-center">
-                    <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mb-4 border border-slate-100">
-                      <Camera className="w-8 h-8 text-slate-300" />
-                    </div>
-                    <h3 className="text-[16px] font-bold text-slate-800 mb-1">No Active Trips</h3>
-                    <p className="text-[14px] text-slate-500 max-w-sm mx-auto">
-                      There are no active trips requiring POD review right now.
-                    </p>
-                  </div>
-                </Td>
-              </tr>
-            ) : (
-              trips.map((trip) => (
-                <tr key={trip.id} className="hover:bg-slate-50/80 transition-colors border-b border-slate-100 last:border-0">
-                  <Td className="font-mono text-[13px] font-semibold text-slate-600">
-                    <Link href={`/trips/${trip.id}/lr`} className="hover:text-blue-600 hover:underline">
-                      TRP-{trip.id}
-                    </Link>
-                  </Td>
-                  <Td>
-                    <div className="font-semibold text-slate-800">{trip.indent?.customer?.name}</div>
-                    <div className="text-[11px] text-slate-500 mt-0.5 truncate max-w-[200px]">
-                      {trip.indent?.source} → {trip.indent?.destination}
+      {viewMode === 'list' ? (
+        <div className="bg-white border border-slate-200 rounded-[16px] overflow-hidden shadow-sm flex-1 flex flex-col">
+          <div className="overflow-auto flex-1">
+            <ProtoTable headers={["TRIP ID", "CUSTOMER & ROUTE", "DRIVER & VEHICLE", "TRIP STATUS", "POD STATUS", "ACTIONS"]}>
+              {loading ? (
+                <tr>
+                  <Td colSpan={6} className="text-center py-16">
+                    <div className="flex flex-col items-center justify-center text-slate-400">
+                      <Loader2 className="w-10 h-10 mb-3 animate-spin text-slate-300" />
+                      <span className="text-[14px] font-medium">Loading POD Data...</span>
                     </div>
                   </Td>
-                  <Td>
-                    <div className="font-semibold text-slate-700">{trip.driver?.name}</div>
-                    <div className="text-[11px] font-mono text-slate-500 mt-0.5">{trip.vehicle?.registrationNumber}</div>
+                </tr>
+              ) : trips.length === 0 ? (
+                <tr>
+                  <Td colSpan={6} className="text-center py-20">
+                    <div className="flex flex-col items-center justify-center">
+                      <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mb-4 border border-slate-100">
+                        <Camera className="w-8 h-8 text-slate-300" />
+                      </div>
+                      <h3 className="text-[16px] font-bold text-slate-800 mb-1">No Active Trips</h3>
+                      <p className="text-[14px] text-slate-500 max-w-sm mx-auto">
+                        There are no active trips requiring POD review right now.
+                      </p>
+                    </div>
                   </Td>
-                  <Td>
-                    <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider ${trip.status === "Delivered" ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' : 'bg-sky-50 text-sky-700 border border-sky-100'}`}>
-                      {trip.status}
-                    </span>
-                  </Td>
-                  <Td>
+                </tr>
+              ) : (
+                trips.map((trip) => (
+                  <tr key={trip.id} className="hover:bg-slate-50/80 transition-colors border-b border-slate-100 last:border-0">
+                    <Td className="font-mono text-[13px] font-semibold text-slate-600">
+                      <Link href={`/trips/${trip.id}/lr`} className="hover:text-blue-600 hover:underline">
+                        TRP-{trip.id}
+                      </Link>
+                    </Td>
+                    <Td>
+                      <div className="font-semibold text-slate-800">{trip.indent?.customer?.name}</div>
+                      <div className="text-[11px] text-slate-500 mt-0.5 truncate max-w-[200px]">
+                        {trip.indent?.source} → {trip.indent?.destination}
+                      </div>
+                    </Td>
+                    <Td>
+                      <div className="font-semibold text-slate-700">{trip.driver?.name}</div>
+                      <div className="text-[11px] font-mono text-slate-500 mt-0.5">{trip.vehicle?.registrationNumber}</div>
+                    </Td>
+                    <Td>
+                      <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider ${trip.status === "Delivered" ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' : 'bg-sky-50 text-sky-700 border border-sky-100'}`}>
+                        {trip.status}
+                      </span>
+                    </Td>
+                    <Td>
+                      {trip.podReceivedDate ? (
+                        <Badge color="green">Verified & Closed</Badge>
+                      ) : trip.podUploadedDate ? (
+                        <Badge color="orange">Pending Review</Badge>
+                      ) : (
+                        <Badge color="grey">Awaiting Upload</Badge>
+                      )}
+                    </Td>
+                    <Td>
+                      <div className="flex gap-2">
+                        {!trip.podUploadedDate ? (
+                          <div className="flex flex-col gap-1">
+                            <span className="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Driver Upload Link:</span>
+                            <a 
+                              href={`/pod/${trip.podMagicLinkToken}`} 
+                              target="_blank"
+                              className="bg-slate-100 text-slate-600 border border-slate-200 px-3 py-1.5 rounded-xl text-xs font-semibold hover:bg-slate-200 transition-colors flex items-center gap-1.5 w-max mb-1"
+                            >
+                              <Smartphone className="w-3.5 h-3.5 text-slate-500" /> Open Mobile View
+                            </a>
+                            <button 
+                              onClick={() => handleAdminUploadClick(trip)}
+                              disabled={isUploading && uploadingTrip?.id === trip.id}
+                              className="bg-emerald-50 text-emerald-700 border border-emerald-200 px-3 py-1.5 rounded-xl text-xs font-semibold hover:bg-emerald-100 transition-colors flex items-center gap-1.5 w-max disabled:opacity-50"
+                            >
+                              {isUploading && uploadingTrip?.id === trip.id ? <Loader2 className="w-3.5 h-3.5 animate-spin text-emerald-500" /> : <Camera className="w-3.5 h-3.5 text-emerald-500" />} 
+                              Upload for Driver
+                            </button>
+                          </div>
+                        ) : !trip.podReceivedDate ? (
+                          <button 
+                            onClick={() => openVerifyPanel(trip)}
+                            className="bg-amber-50 text-amber-700 border border-amber-200 px-4 py-2 rounded-xl text-[12px] font-bold hover:bg-amber-100 transition-colors flex items-center gap-2 relative shadow-sm"
+                          >
+                            <ImageIcon className="w-4 h-4" /> Review Image
+                            <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-red-500 rounded-full animate-pulse shadow-sm border border-white" />
+                          </button>
+                        ) : (
+                          <button 
+                            onClick={() => openVerifyPanel(trip)}
+                            className="bg-slate-100 text-slate-600 border border-slate-200 px-4 py-2 rounded-xl text-[12px] font-bold flex items-center gap-1.5 hover:bg-slate-200 transition-colors"
+                          >
+                            <CheckCircle className="w-4 h-4 text-emerald-500" /> View POD
+                          </button>
+                        )}
+                      </div>
+                    </Td>
+                  </tr>
+                ))
+              )}
+            </ProtoTable>
+          </div>
+        </div>
+      ) : (
+        <div className="flex flex-col min-h-0 flex-1">
+          {loading ? (
+            <div className="flex justify-center p-16">
+              <Loader2 className="animate-spin text-blue-600 w-8 h-8" />
+            </div>
+          ) : trips.length === 0 ? (
+            <div className="bg-white rounded-2xl border border-dashed border-slate-300 p-20 flex flex-col items-center justify-center text-center mt-2">
+              <div className="w-16 h-16 bg-slate-100 text-slate-400 rounded-full flex items-center justify-center mb-6">
+                <Camera className="w-8 h-8 text-slate-300" />
+              </div>
+              <h3 className="text-[16px] font-bold text-slate-800 mb-1">No Active Trips</h3>
+              <p className="text-[14px] text-slate-500 max-w-sm mx-auto">
+                There are no active trips requiring POD review right now.
+              </p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+              {trips.map(trip => (
+                <div key={trip.id} className="bg-white rounded-2xl p-0 shadow-sm border border-slate-200 overflow-hidden flex flex-col">
+                  {/* Ticket Header */}
+                  <div className="bg-slate-50/80 p-4 border-b border-slate-100 flex justify-between items-center">
+                    <div className="flex items-center gap-3">
+                      <div className="bg-blue-100 text-blue-700 p-1.5 rounded-lg">
+                        <FileText className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <div className="font-mono font-bold text-slate-900 text-sm">
+                          <Link href={`/trips/${trip.id}/lr`} className="hover:text-blue-600 hover:underline">TRP-{trip.id}</Link>
+                        </div>
+                        <div className="text-[11px] text-slate-500 font-medium mt-0.5 line-clamp-1">{trip.indent?.customer?.name}</div>
+                      </div>
+                    </div>
                     {trip.podReceivedDate ? (
                       <Badge color="green">Verified & Closed</Badge>
                     ) : trip.podUploadedDate ? (
@@ -208,49 +295,88 @@ export default function AdminPODDashboard() {
                     ) : (
                       <Badge color="grey">Awaiting Upload</Badge>
                     )}
-                  </Td>
-                  <Td>
-                    <div className="flex gap-2">
-                      {!trip.podUploadedDate ? (
-                        <div className="flex flex-col gap-1">
-                          <span className="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Driver Upload Link:</span>
-                          <a 
-                            href={`/pod/${trip.podMagicLinkToken}`} 
-                            target="_blank"
-                            className="bg-slate-100 text-slate-600 border border-slate-200 px-3 py-1.5 rounded-xl text-xs font-semibold hover:bg-slate-200 transition-colors flex items-center gap-1.5 w-max mb-1"
-                          >
-                            <Smartphone className="w-3.5 h-3.5 text-slate-500" /> Open Mobile View
-                          </a>
-                          <button 
-                            onClick={() => handleAdminUploadClick(trip)}
-                            disabled={isUploading && uploadingTrip?.id === trip.id}
-                            className="bg-emerald-50 text-emerald-700 border border-emerald-200 px-3 py-1.5 rounded-xl text-xs font-semibold hover:bg-emerald-100 transition-colors flex items-center gap-1.5 w-max disabled:opacity-50"
-                          >
-                            {isUploading && uploadingTrip?.id === trip.id ? <Loader2 className="w-3.5 h-3.5 animate-spin text-emerald-500" /> : <Camera className="w-3.5 h-3.5 text-emerald-500" />} 
-                            Upload for Driver
-                          </button>
+                  </div>
+                  
+                  {/* Ticket Route */}
+                  <div className="px-5 py-5 border-b border-slate-100 border-dashed relative">
+                    <div className="flex items-center gap-4">
+                      <div className="flex-1">
+                        <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Source</div>
+                        <div className="font-semibold text-slate-800 text-sm truncate" title={trip.indent?.source}>{trip.indent?.source}</div>
+                      </div>
+                      <div className="flex-shrink-0 flex items-center justify-center">
+                        <div className="w-8 h-px bg-slate-300"></div>
+                        <div className="w-6 h-6 rounded-full border border-slate-200 flex items-center justify-center mx-1 bg-white shadow-sm z-10">
+                          <span className="text-[10px]">→</span>
                         </div>
-                      ) : !trip.podReceivedDate ? (
-                        <button 
-                          onClick={() => openVerifyPanel(trip)}
-                          className="bg-amber-50 text-amber-700 border border-amber-200 px-4 py-2 rounded-xl text-[12px] font-bold hover:bg-amber-100 transition-colors flex items-center gap-2 relative shadow-sm"
-                        >
-                          <ImageIcon className="w-4 h-4" /> Review Image
-                          <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-red-500 rounded-full animate-pulse shadow-sm border border-white" />
-                        </button>
-                      ) : (
-                        <button className="bg-emerald-50 text-emerald-700 border border-emerald-200 px-4 py-2 rounded-xl text-[12px] font-bold flex items-center gap-1.5 cursor-not-allowed opacity-70">
-                          <CheckCircle className="w-4 h-4" /> Billing Ready
-                        </button>
-                      )}
+                        <div className="w-8 h-px bg-slate-300"></div>
+                      </div>
+                      <div className="flex-1 text-right">
+                        <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Destination</div>
+                        <div className="font-semibold text-slate-800 text-sm truncate" title={trip.indent?.destination}>{trip.indent?.destination}</div>
+                      </div>
                     </div>
-                  </Td>
-                </tr>
-              ))
-            )}
-          </ProtoTable>
+                  </div>
+                  
+                  {/* Ticket Details */}
+                  <div className="px-5 py-4 bg-slate-50/30 flex-1 grid grid-cols-2 gap-y-4 gap-x-2">
+                    <div>
+                      <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Driver</div>
+                      <div className="font-medium text-slate-700 text-[13px]">{trip.driver?.name}</div>
+                    </div>
+                    <div>
+                      <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Vehicle</div>
+                      <div className="font-medium text-slate-700 text-[13px]">{trip.vehicle?.registrationNumber}</div>
+                    </div>
+                    <div>
+                      <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Trip Status</div>
+                      <div className="font-medium text-slate-700 text-[13px]">{trip.status}</div>
+                    </div>
+                  </div>
+                  
+                  {/* Ticket Action */}
+                  <div className="p-4 bg-white border-t border-slate-100 flex flex-col gap-2">
+                    {!trip.podUploadedDate ? (
+                      <>
+                        <a 
+                          href={`/pod/${trip.podMagicLinkToken}`} 
+                          target="_blank"
+                          className="w-full bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold py-2.5 rounded-xl transition-all text-sm flex items-center justify-center gap-2"
+                        >
+                          <Smartphone className="w-4 h-4" /> Open Mobile View
+                        </a>
+                        <button 
+                          onClick={() => handleAdminUploadClick(trip)}
+                          disabled={isUploading && uploadingTrip?.id === trip.id}
+                          className="w-full bg-emerald-50 hover:bg-emerald-600 hover:text-white text-emerald-700 font-bold py-2.5 rounded-xl transition-all text-sm flex items-center justify-center gap-2 disabled:opacity-50"
+                        >
+                          {isUploading && uploadingTrip?.id === trip.id ? <Loader2 className="w-4 h-4 animate-spin text-emerald-500" /> : <Camera className="w-4 h-4 text-emerald-500" />} 
+                          Upload for Driver
+                        </button>
+                      </>
+                    ) : !trip.podReceivedDate ? (
+                      <button 
+                        onClick={() => openVerifyPanel(trip)}
+                        className="w-full bg-amber-50 hover:bg-amber-600 hover:text-white text-amber-700 font-bold py-2.5 rounded-xl transition-all text-sm flex items-center justify-center gap-2 relative shadow-sm"
+                      >
+                        <ImageIcon className="w-4 h-4" /> Review Image
+                        <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-red-500 rounded-full animate-pulse shadow-sm border border-white" />
+                      </button>
+                    ) : (
+                      <button 
+                        onClick={() => openVerifyPanel(trip)}
+                        className="w-full bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold py-2.5 rounded-xl transition-all text-sm flex items-center justify-center gap-2"
+                      >
+                        <CheckCircle className="w-4 h-4 text-emerald-500" /> View POD
+                      </button>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
-      </div>
+      )}
 
       {/* OVERLAY FOR SLIDE PANEL */}
       <div 
@@ -285,13 +411,23 @@ export default function AdminPODDashboard() {
             </div>
           ) : (
             <div className="space-y-6">
-              <div className="bg-amber-50 border border-amber-200 text-amber-800 p-4 rounded-xl text-sm flex gap-3 shadow-sm">
-                <CheckCircle className="w-5 h-5 shrink-0 text-amber-600" />
-                <div>
-                  <p className="font-bold mb-1">Verify Delivery Signatures</p>
-                  <p className="text-amber-700/80 text-[13px]">Please verify the image is clear and contains the required receiving signatures or stamps before approving. Once approved, the trip is closed and ready for billing.</p>
+              {selectedTrip?.podReceivedDate ? (
+                <div className="bg-emerald-50 border border-emerald-200 text-emerald-800 p-4 rounded-xl text-sm flex gap-3 shadow-sm mb-6">
+                  <CheckCircle className="w-5 h-5 shrink-0 text-emerald-600" />
+                  <div>
+                    <p className="font-bold mb-1">POD Verified & Approved</p>
+                    <p className="text-emerald-700/80 text-[13px]">This Proof of Delivery has been verified and approved. The trip is closed and ready for final billing.</p>
+                  </div>
                 </div>
-              </div>
+              ) : (
+                <div className="bg-amber-50 border border-amber-200 text-amber-800 p-4 rounded-xl text-sm flex gap-3 shadow-sm mb-6">
+                  <CheckCircle className="w-5 h-5 shrink-0 text-amber-600" />
+                  <div>
+                    <p className="font-bold mb-1">Verify Delivery Signatures</p>
+                    <p className="text-amber-700/80 text-[13px]">Please verify the image is clear and contains the required receiving signatures or stamps before approving. Once approved, the trip is closed and ready for billing.</p>
+                  </div>
+                </div>
+              )}
 
               <div className="grid grid-cols-1 gap-6">
                 {tripDocuments.length > 0 ? tripDocuments.map((doc: any) => (
@@ -334,14 +470,16 @@ export default function AdminPODDashboard() {
               onClick={() => setIsVerifyPanelOpen(false)}
               className="flex-1 bg-white border border-slate-200 text-slate-700 font-bold py-3.5 rounded-xl hover:bg-slate-50 transition-colors shadow-sm"
             >
-              Cancel
+              {selectedTrip?.podReceivedDate ? 'Close' : 'Cancel'}
             </button>
-            <button 
-              onClick={() => handleApprove(selectedTrip.id)}
-              className="flex-[2] bg-emerald-600 text-white font-bold py-3.5 rounded-xl hover:bg-emerald-700 transition-colors shadow-sm shadow-emerald-600/20 flex justify-center items-center gap-2"
-            >
-              <CheckCircle className="w-5 h-5" /> Verify & Close Trip
-            </button>
+            {!selectedTrip?.podReceivedDate && (
+              <button 
+                onClick={() => handleApprove(selectedTrip.id)}
+                className="flex-[2] bg-emerald-600 text-white font-bold py-3.5 rounded-xl hover:bg-emerald-700 transition-colors shadow-sm shadow-emerald-600/20 flex justify-center items-center gap-2"
+              >
+                <CheckCircle className="w-5 h-5" /> Verify & Close Trip
+              </button>
+            )}
           </div>
         )}
       </div>

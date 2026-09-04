@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { fetchApi } from "@/lib/api";
-import { Loader2, CheckCircle, AlertTriangle } from "lucide-react";
+import { Loader2, CheckCircle, AlertTriangle, FileText, MapPin, Truck, Calendar } from "lucide-react";
 
 export default function VendorBiddingPage() {
   const params = useParams();
@@ -11,12 +11,27 @@ export default function VendorBiddingPage() {
   const router = useRouter();
 
   const [loading, setLoading] = useState(false);
+  const [fetching, setFetching] = useState(true);
   const [success, setSuccess] = useState(false);
+  const [rfqDetails, setRfqDetails] = useState<any>(null);
   
   // Form State
   const [rate, setRate] = useState("");
   const [vehicle, setVehicle] = useState("");
   const [remarks, setRemarks] = useState("");
+
+  useEffect(() => {
+    fetchApi(`/Procurement/RFQ/${token}`)
+      .then(data => {
+        setRfqDetails(data);
+      })
+      .catch(err => {
+        console.error(err);
+      })
+      .finally(() => {
+        setFetching(false);
+      });
+  }, [token]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -70,8 +85,53 @@ export default function VendorBiddingPage() {
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           <div className="bg-blue-50 border border-blue-100 text-blue-800 p-4 rounded-xl text-sm mb-6 flex gap-3">
             <AlertTriangle className="w-5 h-5 shrink-0 text-blue-600" />
-            <p>You have been invited by Transitflow Logistics to bid on a trip. Please submit your best rate below.</p>
+            <p>You have been invited by Transitflow Logistics to bid on a trip. Please review the details and submit your best rate.</p>
           </div>
+
+          {fetching ? (
+            <div className="flex justify-center p-8">
+              <Loader2 className="w-6 h-6 animate-spin text-slate-300" />
+            </div>
+          ) : rfqDetails ? (
+            <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 mb-6 space-y-3">
+              <div className="flex items-center gap-2 mb-2">
+                <FileText className="w-4 h-4 text-slate-400" />
+                <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Trip Details</span>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-3">
+                <div className="bg-white p-2.5 rounded-lg border border-slate-100">
+                  <div className="text-[10px] text-slate-400 font-bold uppercase mb-1">Route</div>
+                  <div className="text-[13px] font-semibold text-slate-800 flex flex-col">
+                    <span>{rfqDetails.indent?.source}</span>
+                    <span className="text-slate-300">↓</span>
+                    <span>{rfqDetails.indent?.destination}</span>
+                  </div>
+                </div>
+                
+                <div className="bg-white p-2.5 rounded-lg border border-slate-100">
+                  <div className="text-[10px] text-slate-400 font-bold uppercase mb-1">Cargo</div>
+                  <div className="text-[13px] font-semibold text-slate-800">{rfqDetails.indent?.material}</div>
+                  <div className="text-[11px] text-slate-500">{rfqDetails.indent?.weight} Tons</div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="bg-white p-2.5 rounded-lg border border-slate-100">
+                  <div className="text-[10px] text-slate-400 font-bold uppercase mb-1 flex items-center gap-1"><Truck className="w-3 h-3" /> Vehicle Req.</div>
+                  <div className="text-[12px] font-semibold text-slate-800">{rfqDetails.indent?.vehicleType}</div>
+                </div>
+                <div className="bg-white p-2.5 rounded-lg border border-slate-100">
+                  <div className="text-[10px] text-slate-400 font-bold uppercase mb-1 flex items-center gap-1"><Calendar className="w-3 h-3" /> Pickup</div>
+                  <div className="text-[12px] font-semibold text-slate-800">{new Date(rfqDetails.indent?.loadingDate).toLocaleDateString()}</div>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="bg-red-50 text-red-600 p-3 rounded-lg text-sm mb-4">
+              Unable to load trip details. Link may be invalid or expired.
+            </div>
+          )}
 
           <div>
             <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">Your Quoted Rate (₹)</label>

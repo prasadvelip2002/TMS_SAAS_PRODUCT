@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
@@ -22,9 +22,21 @@ namespace api_backend.Controllers
 
         // GET: api/Drivers
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Driver>>> GetDrivers()
+        public async Task<ActionResult<IEnumerable<Driver>>> GetDrivers([FromQuery] bool? isOwnFleet)
         {
-            return await _context.Drivers.ToListAsync();
+            var query = _context.Drivers.Include(d => d.Vendor).AsQueryable();
+            if (isOwnFleet.HasValue)
+            {
+                if (isOwnFleet.Value)
+                {
+                    query = query.Where(d => d.VendorId == null);
+                }
+                else
+                {
+                    query = query.Where(d => d.VendorId != null);
+                }
+            }
+            return await query.ToListAsync();
         }
 
         // GET: api/Drivers/5
@@ -60,7 +72,20 @@ namespace api_backend.Controllers
                 return BadRequest();
             }
 
-            _context.Entry(driver).State = EntityState.Modified;
+            var existingDriver = await _context.Drivers.FindAsync(id);
+            if (existingDriver == null)
+            {
+                return NotFound();
+            }
+            
+            existingDriver.Name = driver.Name;
+            existingDriver.Phone = driver.Phone;
+            existingDriver.LicenseNumber = driver.LicenseNumber;
+            existingDriver.LicenseExpiry = driver.LicenseExpiry;
+            existingDriver.Aadhaar = driver.Aadhaar;
+            existingDriver.ExperienceYears = driver.ExperienceYears;
+            existingDriver.CurrentStatus = driver.CurrentStatus;
+            existingDriver.VendorId = driver.VendorId;
 
             try
             {
@@ -100,6 +125,23 @@ namespace api_backend.Controllers
         private bool DriverExists(int id)
         {
             return _context.Drivers.Any(e => e.Id == id);
+        }
+
+        [HttpPost("fix-vendors")]
+        [AllowAnonymous]
+        public async Task<IActionResult> FixVendors()
+        {
+            var vendor = await _context.Vendors.FirstOrDefaultAsync();
+            if (vendor == null) return NotFound("No vendors exist.");
+
+            var drivers = await _context.Drivers.Where(d => d.VendorId == null).ToListAsync();
+            foreach (var d in drivers) d.VendorId = vendor.Id;
+
+            var vehicles = await _context.Vehicles.Where(v => v.VendorId == null).ToListAsync();
+            foreach (var v in vehicles) v.VendorId = vendor.Id;
+
+            await _context.SaveChangesAsync();
+            return Ok($"Assigned {drivers.Count} drivers and {vehicles.Count} vehicles to vendor {vendor.Name}.");
         }
     }
 }

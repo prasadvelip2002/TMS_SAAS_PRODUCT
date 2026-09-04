@@ -49,6 +49,7 @@ export default function CustomersPage() {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [formData, setFormData] = useState(DEFAULT_FORM);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
 
   const loadCustomers = async () => {
     try {
@@ -159,10 +160,10 @@ export default function CustomersPage() {
           />
         </div>
         <div className="flex items-center gap-2 pr-2">
-          <button className="flex items-center gap-2 px-4 py-2 rounded-xl bg-blue-50 text-blue-700 font-bold text-sm border border-blue-100">
+          <button onClick={() => setViewMode('grid')} className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold border transition-colors ${viewMode === 'grid' ? 'bg-blue-50 text-blue-700 border-blue-100' : 'text-slate-500 border-transparent hover:bg-slate-50'}`}>
             <Grid className="w-4 h-4" /> Grid
           </button>
-          <button className="flex items-center gap-2 px-4 py-2 rounded-xl text-slate-500 hover:bg-slate-50 font-medium text-sm">
+          <button onClick={() => setViewMode('list')} className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold border transition-colors ${viewMode === 'list' ? 'bg-blue-50 text-blue-700 border-blue-100' : 'text-slate-500 border-transparent hover:bg-slate-50'}`}>
             <List className="w-4 h-4" /> Table
           </button>
         </div>
@@ -188,7 +189,7 @@ export default function CustomersPage() {
              Add First Customer
            </button>
         </div>
-      ) : (
+      ) : viewMode === 'list' ? (
         <div className="bg-white rounded-2xl shadow-sm ring-1 ring-slate-200/50 overflow-hidden">
           <ProtoTable headers={["CODE", "CUSTOMER", "GSTIN", "RATE CONTRACT", "STATUS", "ACTIONS"]}>
             {customers.map((c) => (
@@ -209,6 +210,50 @@ export default function CustomersPage() {
               </tr>
             ))}
           </ProtoTable>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          {customers.map((c) => (
+            <div key={c.id} onClick={() => handleEdit(c)} className="bg-white border border-slate-200 rounded-2xl p-6 hover:shadow-lg transition-all cursor-pointer group relative flex flex-col h-full overflow-hidden">
+              <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500 to-blue-400 opacity-0 group-hover:opacity-100 transition-opacity" />
+              
+              <div className="flex justify-between items-start mb-4">
+                <div>
+                  <h3 className="font-bold text-slate-900 text-lg line-clamp-1">{c.name}</h3>
+                  <p className="text-xs font-mono text-slate-500 mt-1">{c.code || "NO-CODE"}</p>
+                </div>
+                {getStatusBadge(c.status)}
+              </div>
+              
+              <div className="flex-1 space-y-3 mb-6 mt-2">
+                <div className="flex items-center text-sm text-slate-600">
+                  <div className="w-6 h-6 rounded-full bg-slate-50 flex items-center justify-center mr-3 border border-slate-100"><span className="text-[10px]">🏢</span></div>
+                  <span className="truncate">{c.city ? `${c.city}, ${c.state}` : 'No Address Info'}</span>
+                </div>
+                <div className="flex items-center text-sm text-slate-600">
+                  <div className="w-6 h-6 rounded-full bg-slate-50 flex items-center justify-center mr-3 border border-slate-100"><span className="text-[10px]">📞</span></div>
+                  <span>{c.phone || 'No Phone'}</span>
+                </div>
+                <div className="flex items-center text-sm text-slate-600">
+                  <div className="w-6 h-6 rounded-full bg-slate-50 flex items-center justify-center mr-3 border border-slate-100"><span className="text-[10px]">✉️</span></div>
+                  <span className="truncate">{c.email || 'No Email'}</span>
+                </div>
+              </div>
+              
+              <div className="pt-4 border-t border-slate-100 flex items-center justify-between mt-auto">
+                <div>
+                  <div className="text-[10px] uppercase font-bold tracking-wider text-slate-400">GSTIN</div>
+                  <div className="text-xs font-mono font-medium text-slate-700">{c.gstin || 'N/A'}</div>
+                </div>
+                <button 
+                  onClick={(e) => { e.stopPropagation(); handleDelete(c.id); }}
+                  className="text-slate-400 hover:text-red-500 p-2 rounded-lg hover:bg-red-50 transition-colors opacity-0 group-hover:opacity-100"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          ))}
         </div>
       )}
 

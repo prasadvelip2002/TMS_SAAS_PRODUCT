@@ -38,12 +38,25 @@ export function Sidebar() {
       ]
     },
     {
-      group: 'Masters',
+      group: 'Customer Masters',
       items: [
-        { href: '/customers', label: 'Customer Master', icon: Users, roles: ['Tenant Admin', 'Internal User', 'Accounts', 'Platform Admin'] },
-        { href: '/fleet', label: 'Fleet Vendor Master', icon: Truck, roles: ['Tenant Admin', 'Internal User', 'Accounts', 'Platform Admin'] },
-        { href: '/vehicles', label: 'Vehicle Master', icon: CreditCard, roles: ['Tenant Admin', 'Internal User', 'Accounts', 'Platform Admin'] },
-        { href: '/drivers', label: 'Driver Master', icon: Users, roles: ['Tenant Admin', 'Internal User', 'Accounts', 'Platform Admin'] },
+        { href: '/customers/contract', label: 'Contract Customers', icon: Users, roles: ['Tenant Admin', 'Internal User', 'Accounts', 'Platform Admin'] },
+        { href: '/customers/spot', label: 'Spot Customers', icon: Users, roles: ['Tenant Admin', 'Internal User', 'Accounts', 'Platform Admin'] }
+      ]
+    },
+    {
+      group: 'Vendor Masters',
+      items: [
+        { href: '/fleet', label: 'Vendor Directory', icon: Handshake, roles: ['Tenant Admin', 'Internal User', 'Accounts', 'Platform Admin'] },
+        { href: '/vehicles/vendor', label: 'Vendor Vehicles', icon: Truck, roles: ['Tenant Admin', 'Internal User', 'Accounts', 'Platform Admin'] },
+        { href: '/drivers/vendor', label: 'Vendor Drivers', icon: Users, roles: ['Tenant Admin', 'Internal User', 'Accounts', 'Platform Admin'] },
+      ]
+    },
+    {
+      group: 'Own Fleet Masters',
+      items: [
+        { href: '/vehicles/own', label: 'Own Vehicles', icon: Truck, roles: ['Tenant Admin', 'Internal User', 'Accounts', 'Platform Admin'] },
+        { href: '/drivers/own', label: 'Own Drivers', icon: Users, roles: ['Tenant Admin', 'Internal User', 'Accounts', 'Platform Admin'] },
       ]
     },
     {
@@ -52,6 +65,7 @@ export function Sidebar() {
         { href: '/trips', label: 'All Trips & Status', icon: Truck, roles: ['Tenant Admin', 'Internal User', 'Manager', 'Accounts', 'Platform Admin'] },
         { href: '/trips/indents', label: 'Indent Management', icon: FileText, roles: ['Tenant Admin', 'Internal User', 'Manager', 'Platform Admin'] },
         { href: '/trips/procurement', label: 'Procurement (RFQ)', icon: ShoppingCart, roles: ['Tenant Admin', 'Internal User', 'Manager', 'Platform Admin'] },
+        { href: '/trips/sales', label: 'Customer Sales & PO', icon: Handshake, roles: ['Tenant Admin', 'Internal User', 'Manager', 'Platform Admin'] },
         { href: '/trips/confirmation', label: 'Trip Confirmation Sheet', icon: Paperclip, roles: ['Tenant Admin', 'Internal User', 'Platform Admin'] },
         { href: '/trips/assignment', label: 'Trip Assignment', icon: Handshake, roles: ['Tenant Admin', 'Internal User', 'Manager', 'Platform Admin'] },
         { href: '/trips/pod', label: 'POD Review', icon: Camera, roles: ['Tenant Admin', 'Internal User', 'Manager', 'Platform Admin'] },

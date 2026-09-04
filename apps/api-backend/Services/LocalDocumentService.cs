@@ -3,6 +3,7 @@ using System.IO;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.EntityFrameworkCore;
 using api_backend.Data;
 using api_backend.Models;
 using api_backend.Services.Interfaces;
@@ -51,18 +52,24 @@ namespace api_backend.Services
                 CreatedAt = DateTime.UtcNow
             };
 
-            _context.Documents.Add(document);
-
-            // Update Trip PODUploadedDate if applicable
-            if (entityType == "Trip" && documentType == "POD")
+            // Fetch trip to get TenantId and update POD status
+            if (entityType == "Trip" || entityType == "POD")
             {
-                var trip = await _context.Trips.FindAsync(entityId);
-                if (trip != null && trip.PODUploadedDate == null)
+                var trip = await _context.Trips.IgnoreQueryFilters().FirstOrDefaultAsync(t => t.Id == entityId);
+                if (trip != null)
                 {
-                    trip.PODUploadedDate = DateTime.UtcNow;
-                    _context.Trips.Update(trip);
+                    document.TenantId = trip.TenantId;
+                    document.CompanyId = trip.CompanyId;
+                    
+                    if (trip.PODUploadedDate == null && (documentType == "POD" || entityType == "POD" || documentType == "DeliveryReceipt"))
+                    {
+                        trip.PODUploadedDate = DateTime.UtcNow;
+                        _context.Trips.Update(trip);
+                    }
                 }
             }
+
+            _context.Documents.Add(document);
 
             await _context.SaveChangesAsync();
 

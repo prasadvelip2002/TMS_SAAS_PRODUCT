@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { fetchApi } from "@/lib/api";
 import { ProtoTable, Td, Badge } from "@/components/PrototypeUI";
-import { Loader2, Send, CheckCircle, Truck, DollarSign, X, Search, Grid, List, MapPin } from "lucide-react";
+import { Loader2, Send, CheckCircle, Truck, DollarSign, X, Search, Grid, List, MapPin, Activity, FileText } from "lucide-react";
 
 export default function ProcurementDashboard() {
   const [indents, setIndents] = useState<any[]>([]);
@@ -19,6 +19,8 @@ export default function ProcurementDashboard() {
   const [isBidsPanelOpen, setIsBidsPanelOpen] = useState(false);
   const [bids, setBids] = useState<any[]>([]);
   const [loadingBids, setLoadingBids] = useState(false);
+  const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
+  const [expandedBidId, setExpandedBidId] = useState<number | null>(null);
 
   useEffect(() => {
     loadData();
@@ -79,10 +81,10 @@ export default function ProcurementDashboard() {
   };
 
   const handleApproveBid = async (quotationId: number) => {
-    if (!confirm("Are you sure you want to approve this rate? It will generate a Trip and Purchase Order automatically.")) return;
+    if (!confirm("Are you sure you want to approve this rate?")) return;
     try {
       const res = await fetchApi(`/Procurement/ApproveBid/${quotationId}`, { method: "POST" });
-      alert(`Success! Generated Trip #${res.tripId} and ${res.poNumber}`);
+      alert(`Success! ${res.message}`);
       setIsBidsPanelOpen(false);
       loadData();
     } catch (e) {
@@ -111,61 +113,140 @@ export default function ProcurementDashboard() {
           </div>
           
           <div className="flex bg-white border border-slate-200 rounded-[12px] p-1 shadow-sm">
-            <button className="p-1.5 bg-slate-100 text-slate-800 rounded-[8px] shadow-sm"><List className="w-4 h-4" /></button>
-            <button className="p-1.5 text-slate-400 hover:text-slate-800 rounded-[8px]"><Grid className="w-4 h-4" /></button>
+            <button onClick={() => setViewMode('list')} className={`p-1.5 rounded-[8px] transition-colors ${viewMode === 'list' ? 'bg-slate-100 text-slate-800 shadow-sm' : 'text-slate-400 hover:text-slate-800'}`}><List className="w-4 h-4" /></button>
+            <button onClick={() => setViewMode('grid')} className={`p-1.5 rounded-[8px] transition-colors ${viewMode === 'grid' ? 'bg-slate-100 text-slate-800 shadow-sm' : 'text-slate-400 hover:text-slate-800'}`}><Grid className="w-4 h-4" /></button>
           </div>
         </div>
       </div>
 
-      {/* FULL WIDTH TABLE */}
-      <div className="bg-white border border-slate-200 rounded-[16px] overflow-hidden shadow-sm flex-1 flex flex-col">
-        <div className="overflow-x-auto flex-1">
-          <ProtoTable headers={["ID", "CUSTOMER", "ROUTE", "MATERIAL", "STATUS", "RFQ STATUS", "ACTIONS"]}>
-            {loading ? (
-              <tr>
-                <Td colSpan={7} className="text-center py-16">
-                  <div className="flex flex-col items-center justify-center text-slate-400">
-                    <Loader2 className="w-10 h-10 mb-3 animate-spin text-slate-300" />
-                    <span className="text-[14px] font-medium">Loading Procurement Data...</span>
-                  </div>
-                </Td>
-              </tr>
-            ) : indents.length === 0 ? (
-              <tr>
-                <Td colSpan={7} className="text-center py-20">
-                  <div className="flex flex-col items-center justify-center">
-                    <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mb-4 border border-slate-100">
-                      <Send className="w-8 h-8 text-slate-300" />
-                    </div>
-                    <h3 className="text-[16px] font-bold text-slate-800 mb-1">No Active Procurements</h3>
-                    <p className="text-[14px] text-slate-500 max-w-sm mx-auto">
-                      There are no active indents requiring vendor bidding right now.
-                    </p>
-                  </div>
-                </Td>
-              </tr>
-            ) : (
-              indents.map((indent) => (
-                <tr key={indent.id} className="hover:bg-slate-50/80 transition-colors border-b border-slate-100 last:border-0">
-                  <Td className="font-mono text-[13px] font-semibold text-slate-600">IND-{1000 + indent.id}</Td>
-                  <Td className="font-semibold text-slate-800">{indent.customer?.name}</Td>
-                  <Td>
-                    <div className="flex items-center gap-2">
-                      <span className="text-[13px] font-medium text-slate-700 max-w-[120px] truncate">{indent.source}</span>
-                      <span className="text-slate-300">→</span>
-                      <span className="text-[13px] font-medium text-slate-700 max-w-[120px] truncate">{indent.destination}</span>
+      {viewMode === 'list' ? (
+        <div className="bg-white border border-slate-200 rounded-[16px] overflow-hidden shadow-sm flex-1 flex flex-col">
+          <div className="overflow-auto flex-1">
+            <ProtoTable headers={["ID", "CUSTOMER", "ROUTE", "MATERIAL", "STATUS", "RFQ STATUS", "ACTIONS"]}>
+              {loading ? (
+                <tr>
+                  <Td colSpan={7} className="text-center py-16">
+                    <div className="flex flex-col items-center justify-center text-slate-400">
+                      <Loader2 className="w-10 h-10 mb-3 animate-spin text-slate-300" />
+                      <span className="text-[14px] font-medium">Loading Procurement Data...</span>
                     </div>
                   </Td>
-                  <Td>
-                    <div className="text-[13px] font-medium text-slate-800">{indent.material}</div>
-                    <div className="text-[11px] text-slate-500">{indent.weight} Tons • {indent.vehicleType}</div>
+                </tr>
+              ) : indents.length === 0 ? (
+                <tr>
+                  <Td colSpan={7} className="text-center py-20">
+                    <div className="flex flex-col items-center justify-center">
+                      <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mb-4 border border-slate-100">
+                        <Send className="w-8 h-8 text-slate-300" />
+                      </div>
+                      <h3 className="text-[16px] font-bold text-slate-800 mb-1">No Active Procurements</h3>
+                      <p className="text-[14px] text-slate-500 max-w-sm mx-auto">
+                        There are no active indents requiring vendor bidding right now.
+                      </p>
+                    </div>
                   </Td>
-                  <Td>
-                    <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider ${indent.status === "Assigned" ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' : 'bg-slate-100 text-slate-600 border border-slate-200'}`}>
-                      {indent.status}
-                    </span>
-                  </Td>
-                  <Td>
+                </tr>
+              ) : (
+                indents.map((indent) => (
+                  <tr key={indent.id} className="hover:bg-slate-50/80 transition-colors border-b border-slate-100 last:border-0">
+                    <Td className="font-mono text-[13px] font-semibold text-slate-600">IND-{1000 + indent.id}</Td>
+                    <Td className="font-semibold text-slate-800">{indent.customer?.name}</Td>
+                    <Td>
+                      <div className="flex items-center gap-2">
+                        <span className="text-[13px] font-medium text-slate-700 max-w-[120px] truncate">{indent.source}</span>
+                        <span className="text-slate-300">→</span>
+                        <span className="text-[13px] font-medium text-slate-700 max-w-[120px] truncate">{indent.destination}</span>
+                      </div>
+                    </Td>
+                    <Td>
+                      <div className="text-[13px] font-medium text-slate-800">{indent.material}</div>
+                      <div className="text-[11px] text-slate-500">{indent.weight} Tons • {indent.vehicleType}</div>
+                    </Td>
+                    <Td>
+                      <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider ${indent.status === "Assigned" ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' : 'bg-slate-100 text-slate-600 border border-slate-200'}`}>
+                        {indent.status}
+                      </span>
+                    </Td>
+                    <Td>
+                      <Badge 
+                        color={
+                          indent.rfqStatus === "Pending" ? "grey" :
+                          indent.rfqStatus === "Sent" ? "blue" :
+                          indent.rfqStatus === "QuotationReceived" ? "orange" :
+                          "green"
+                        }
+                      >
+                        {indent.rfqStatus}
+                      </Badge>
+                    </Td>
+                    <Td>
+                      <div className="flex gap-2">
+                        {indent.rfqStatus === "Pending" && (
+                          <button 
+                            onClick={() => openRfqPanel(indent)}
+                            className="bg-blue-50 text-blue-700 border border-blue-200 px-3 py-1.5 rounded-xl text-[12px] font-bold hover:bg-blue-100 transition-colors flex items-center gap-1.5"
+                          >
+                            <Send className="w-3.5 h-3.5" /> Broadcast RFQ
+                          </button>
+                        )}
+                        {(indent.rfqStatus === "Sent" || indent.rfqStatus === "QuotationReceived") && (
+                          <button 
+                            onClick={() => openBidsPanel(indent)}
+                            className="bg-amber-50 text-amber-700 border border-amber-200 px-3 py-1.5 rounded-xl text-[12px] font-bold hover:bg-amber-100 transition-colors flex items-center gap-1.5 relative"
+                          >
+                            <DollarSign className="w-3.5 h-3.5" /> View Bids
+                            {indent.rfqStatus === "QuotationReceived" && (
+                              <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-red-500 rounded-full animate-pulse shadow-sm border border-white" />
+                            )}
+                          </button>
+                        )}
+                        {indent.rfqStatus === "Approved" && (
+                          <button 
+                            onClick={() => openBidsPanel(indent)}
+                            className="bg-slate-100 text-slate-600 border border-slate-200 px-3 py-1.5 rounded-xl text-[12px] font-bold hover:bg-slate-200 transition-colors flex items-center gap-1.5"
+                          >
+                            <CheckCircle className="w-3.5 h-3.5" /> View Approved Bid
+                          </button>
+                        )}
+                      </div>
+                    </Td>
+                  </tr>
+                ))
+              )}
+            </ProtoTable>
+          </div>
+        </div>
+      ) : (
+        <div className="flex flex-col min-h-0 flex-1">
+          {loading ? (
+            <div className="flex justify-center p-16">
+              <Activity className="animate-spin text-blue-600 w-8 h-8" />
+            </div>
+          ) : indents.length === 0 ? (
+            <div className="bg-white rounded-2xl border border-dashed border-slate-300 p-20 flex flex-col items-center justify-center text-center mt-2">
+              <div className="w-16 h-16 bg-slate-100 text-slate-400 rounded-full flex items-center justify-center mb-6">
+                <Send className="w-8 h-8 text-slate-300" />
+              </div>
+              <h3 className="text-[16px] font-bold text-slate-800 mb-1">No Active Procurements</h3>
+              <p className="text-[14px] text-slate-500 max-w-sm mx-auto">
+                There are no active indents requiring vendor bidding right now.
+              </p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+              {indents.map(indent => (
+                <div key={indent.id} className="bg-white rounded-2xl p-0 shadow-sm border border-slate-200 overflow-hidden flex flex-col">
+                  {/* Ticket Header */}
+                  <div className="bg-slate-50/80 p-4 border-b border-slate-100 flex justify-between items-center">
+                    <div className="flex items-center gap-3">
+                      <div className="bg-blue-100 text-blue-700 p-1.5 rounded-lg">
+                        <FileText className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <div className="font-mono font-bold text-slate-900 text-sm">IND-{1000 + indent.id}</div>
+                        <div className="text-[11px] text-slate-500 font-medium mt-0.5 line-clamp-1">{indent.customer?.name}</div>
+                      </div>
+                    </div>
                     <Badge 
                       color={
                         indent.rfqStatus === "Pending" ? "grey" :
@@ -176,41 +257,85 @@ export default function ProcurementDashboard() {
                     >
                       {indent.rfqStatus}
                     </Badge>
-                  </Td>
-                  <Td>
-                    <div className="flex gap-2">
-                      {indent.rfqStatus === "Pending" && (
-                        <button 
-                          onClick={() => openRfqPanel(indent)}
-                          className="bg-blue-50 text-blue-700 border border-blue-200 px-3 py-1.5 rounded-xl text-[12px] font-bold hover:bg-blue-100 transition-colors flex items-center gap-1.5"
-                        >
-                          <Send className="w-3.5 h-3.5" /> Broadcast RFQ
-                        </button>
-                      )}
-                      {(indent.rfqStatus === "Sent" || indent.rfqStatus === "QuotationReceived") && (
-                        <button 
-                          onClick={() => openBidsPanel(indent)}
-                          className="bg-amber-50 text-amber-700 border border-amber-200 px-3 py-1.5 rounded-xl text-[12px] font-bold hover:bg-amber-100 transition-colors flex items-center gap-1.5 relative"
-                        >
-                          <DollarSign className="w-3.5 h-3.5" /> View Bids
-                          {indent.rfqStatus === "QuotationReceived" && (
-                            <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-red-500 rounded-full animate-pulse shadow-sm border border-white" />
-                          )}
-                        </button>
-                      )}
-                      {indent.rfqStatus === "Approved" && (
-                        <button className="bg-slate-100 text-slate-400 border border-slate-200 px-3 py-1.5 rounded-xl text-[12px] font-bold cursor-not-allowed flex items-center gap-1.5">
-                          <CheckCircle className="w-3.5 h-3.5" /> PO Generated
-                        </button>
-                      )}
+                  </div>
+                  
+                  {/* Ticket Route */}
+                  <div className="px-5 py-5 border-b border-slate-100 border-dashed relative">
+                    <div className="flex items-center gap-4">
+                      <div className="flex-1">
+                        <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Source</div>
+                        <div className="font-semibold text-slate-800 text-sm truncate" title={indent.source}>{indent.source}</div>
+                      </div>
+                      <div className="flex-shrink-0 flex items-center justify-center">
+                        <div className="w-8 h-px bg-slate-300"></div>
+                        <div className="w-6 h-6 rounded-full border border-slate-200 flex items-center justify-center mx-1 bg-white shadow-sm z-10">
+                          <MapPin className="w-3 h-3 text-blue-500" />
+                        </div>
+                        <div className="w-8 h-px bg-slate-300"></div>
+                      </div>
+                      <div className="flex-1 text-right">
+                        <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Destination</div>
+                        <div className="font-semibold text-slate-800 text-sm truncate" title={indent.destination}>{indent.destination}</div>
+                      </div>
                     </div>
-                  </Td>
-                </tr>
-              ))
-            )}
-          </ProtoTable>
+                  </div>
+                  
+                  {/* Ticket Details */}
+                  <div className="px-5 py-4 bg-slate-50/30 flex-1 grid grid-cols-2 gap-y-4 gap-x-2">
+                    <div>
+                      <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Material</div>
+                      <div className="font-medium text-slate-700 text-[13px]">{indent.material}</div>
+                    </div>
+                    <div>
+                      <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Weight</div>
+                      <div className="font-medium text-slate-700 text-[13px]">{indent.weight} Tons</div>
+                    </div>
+                    <div>
+                      <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Date</div>
+                      <div className="font-medium text-slate-700 text-[13px]">{new Date(indent.loadingDate).toLocaleDateString()}</div>
+                    </div>
+                    <div>
+                      <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Type</div>
+                      <div className="font-medium text-slate-700 text-[13px]">{indent.truckType || indent.vehicleType}</div>
+                    </div>
+                  </div>
+                  
+                  {/* Ticket Action */}
+                  <div className="p-4 bg-white border-t border-slate-100 flex items-center gap-2">
+                    {indent.rfqStatus === "Pending" && (
+                      <button 
+                        onClick={() => openRfqPanel(indent)}
+                        className="w-full bg-blue-50 hover:bg-blue-600 hover:text-white text-blue-700 font-bold py-2.5 rounded-xl transition-all text-sm flex items-center justify-center gap-2"
+                      >
+                        <Send className="w-4 h-4" /> Broadcast RFQ
+                      </button>
+                    )}
+                    {(indent.rfqStatus === "Sent" || indent.rfqStatus === "QuotationReceived") && (
+                      <button 
+                        onClick={() => openBidsPanel(indent)}
+                        className="w-full bg-amber-50 hover:bg-amber-600 hover:text-white text-amber-700 font-bold py-2.5 rounded-xl transition-all text-sm flex items-center justify-center gap-2 relative"
+                      >
+                        <DollarSign className="w-4 h-4" /> View Bids
+                        {indent.rfqStatus === "QuotationReceived" && (
+                          <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-red-500 rounded-full animate-pulse shadow-sm border border-white" />
+                        )}
+                      </button>
+                    )}
+                    {indent.rfqStatus === "Approved" && (
+                      <button 
+                        onClick={() => openBidsPanel(indent)}
+                        className="w-full bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold py-2.5 rounded-xl transition-all text-sm flex items-center justify-center gap-2"
+                      >
+                        <CheckCircle className="w-4 h-4" /> View Approved Bid
+                      </button>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
-      </div>
+      )}
 
       {/* OVERLAYS FOR SLIDE PANELS */}
       <div 
@@ -317,22 +442,48 @@ export default function ProcurementDashboard() {
                       {bid.status}
                     </Badge>
                   </div>
-                  
                   {bid.status !== "Pending" ? (
-                    <div className="mt-4 bg-slate-50 p-4 rounded-xl border border-slate-100 flex justify-between items-center">
-                      <div>
-                        <div className="text-[11px] uppercase font-bold text-slate-400 mb-0.5 tracking-wider">Quoted Rate</div>
-                        <div className="text-xl font-black text-slate-800">₹{bid.quotedRate?.toLocaleString('en-IN')}</div>
+                    <div className="mt-4 bg-slate-50 p-4 rounded-xl border border-slate-100">
+                      <div className="flex justify-between items-center mb-3">
+                        <div>
+                          <div className="text-[11px] uppercase font-bold text-slate-400 mb-0.5 tracking-wider">Quoted Rate</div>
+                          <div className="text-xl font-black text-slate-800">₹{bid.quotedRate?.toLocaleString('en-IN')}</div>
+                        </div>
+                        
+                        {bid.status === "QuotationReceived" && (
+                          <button 
+                            onClick={() => handleApproveBid(bid.id)}
+                            className="bg-green-600 hover:bg-green-700 text-white px-5 py-2.5 rounded-xl text-[13px] font-bold shadow-sm shadow-green-600/20 transition-all"
+                          >
+                            Shortlist Supplier
+                          </button>
+                        )}
                       </div>
                       
-                      {bid.status === "QuotationReceived" && (
-                        <button 
-                          onClick={() => handleApproveBid(bid.id)}
-                          className="bg-green-600 hover:bg-green-700 text-white px-5 py-2.5 rounded-xl text-[13px] font-bold shadow-sm shadow-green-600/20 transition-all"
-                        >
-                          Approve & Generate PO
-                        </button>
+                      <div className="border-t border-slate-200 pt-3 mt-3 flex justify-between items-center">
+                         <button 
+                           onClick={() => setExpandedBidId(expandedBidId === bid.id ? null : bid.id)}
+                           className="text-blue-600 hover:text-blue-800 text-[12px] font-bold flex items-center gap-1"
+                         >
+                           {expandedBidId === bid.id ? 'Hide Details' : 'View Details'}
+                         </button>
+                      </div>
+
+                      {expandedBidId === bid.id && (
+                        <div className="mt-4 p-3 bg-white border border-slate-200 rounded-lg shadow-sm">
+                          <div className="mb-3">
+                             <div className="text-[10px] uppercase font-bold text-slate-400 mb-1">Proposed Vehicle</div>
+                             <div className="text-[13px] text-slate-800 font-medium">{bid.proposedVehicleType || "Not Specified"}</div>
+                          </div>
+                          <div>
+                             <div className="text-[10px] uppercase font-bold text-slate-400 mb-1">Vendor Remarks</div>
+                             <div className="text-[13px] text-slate-700 bg-slate-50 p-2 rounded border border-slate-100 whitespace-pre-wrap">
+                               {bid.remarks || "No remarks provided."}
+                             </div>
+                          </div>
+                        </div>
                       )}
+
                     </div>
                   ) : (
                     <div className="mt-4 text-[13px] text-slate-400 font-medium italic bg-slate-50 p-4 rounded-xl text-center border border-slate-100">

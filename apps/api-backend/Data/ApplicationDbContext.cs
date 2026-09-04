@@ -43,6 +43,8 @@ namespace api_backend.Data
         public DbSet<Invoice> Invoices { get; set; }
         public DbSet<Plan> Plans { get; set; }
         public DbSet<Subscription> Subscriptions { get; set; }
+        public DbSet<SalesQuotation> SalesQuotations { get; set; }
+        public DbSet<CustomerPurchaseOrder> CustomerPurchaseOrders { get; set; }
 
         public int CurrentTenantId 
         { 
@@ -99,6 +101,8 @@ namespace api_backend.Data
             modelBuilder.Entity<Invoice>().HasQueryFilter(x => x.TenantId == CurrentTenantId && x.CompanyId == CurrentCompanyId);
             modelBuilder.Entity<User>().HasQueryFilter(x => x.TenantId == CurrentTenantId && x.CompanyId == CurrentCompanyId);
             modelBuilder.Entity<Company>().HasQueryFilter(x => x.TenantId == CurrentTenantId);
+            modelBuilder.Entity<SalesQuotation>().HasQueryFilter(x => x.TenantId == CurrentTenantId && x.CompanyId == CurrentCompanyId);
+            modelBuilder.Entity<CustomerPurchaseOrder>().HasQueryFilter(x => x.TenantId == CurrentTenantId && x.CompanyId == CurrentCompanyId);
         }
 
         public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)

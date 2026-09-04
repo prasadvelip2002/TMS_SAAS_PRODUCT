@@ -13,3 +13,8 @@ __v0_jsx-dev-runtime.ts
 node_modules
 .next/
 .DS_Store
+
+# Temporary scripts and uploads
+apps/TempFix/
+apps/api-backend/wwwroot/uploads/*
+!apps/api-backend/wwwroot/uploads/.gitkeep

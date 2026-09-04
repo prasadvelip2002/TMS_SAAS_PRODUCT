@@ -65,6 +65,7 @@ export function ProtoButton({ children, variant = "primary", onClick, style }: {
 }
 
 export function RouteTrack({ stages, currentIdx }: { stages: string[], currentIdx: number }) {
+  const isFinal = currentIdx >= stages.length - 1;
   return (
     <div className="flex flex-col">
       <div className="flex items-center mx-0 h-[16px] mt-2">
@@ -75,7 +76,7 @@ export function RouteTrack({ stages, currentIdx }: { stages: string[], currentId
               <div 
                 className={`rounded-full shrink-0 transition-all ${
                   i === currentIdx 
-                    ? 'bg-amber-400 w-[14px] h-[14px] ring-4 ring-amber-100 z-10' 
+                    ? isFinal ? 'bg-emerald-500 w-[14px] h-[14px] ring-4 ring-emerald-100 z-10' : 'bg-amber-400 w-[14px] h-[14px] ring-4 ring-amber-100 z-10' 
                     : i < currentIdx 
                       ? 'bg-blue-500 w-[8px] h-[8px] z-10' 
                       : 'bg-slate-200 w-[8px] h-[8px] z-10'
@@ -102,7 +103,7 @@ export function RouteTrack({ stages, currentIdx }: { stages: string[], currentId
       
       {/* Current Stage Label */}
       <div className="mt-2 text-[10.5px] font-bold text-slate-500 uppercase tracking-wide">
-        Current: <span className="text-amber-600">{stages[currentIdx] || 'Unknown'}</span>
+        Current: <span className={isFinal ? 'text-emerald-600 font-bold' : 'text-amber-600'}>{stages[currentIdx] || 'Unknown'}</span>
       </div>
     </div>
   );
@@ -111,10 +112,10 @@ export function RouteTrack({ stages, currentIdx }: { stages: string[], currentId
 export function ProtoTable({ headers, children }: { headers: React.ReactNode[], children: React.ReactNode }) {
   return (
     <table className="w-full border-collapse text-[12.8px]">
-      <thead>
+      <thead className="sticky top-0 z-10">
         <tr>
           {headers.map((h, i) => (
-            <th key={i} className="text-left font-body font-semibold text-[11px] tracking-[0.3px] uppercase text-muted-text px-[18px] py-[10px] border-b border-line bg-[#FAFBFD]">
+            <th key={i} className="text-left font-body font-semibold text-[11px] tracking-[0.3px] uppercase text-muted-text px-[18px] py-[10px] border-b border-line bg-[#FAFBFD] shadow-sm">
               {h}
             </th>
           ))}

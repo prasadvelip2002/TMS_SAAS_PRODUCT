@@ -26,6 +26,7 @@ namespace api_backend.Controllers
 
         // POST: api/Documents/Upload
         [HttpPost("Upload")]
+        [AllowAnonymous]
         public async Task<ActionResult<Document>> UploadDocument([FromForm] IFormFile file, [FromForm] string entityType, [FromForm] int entityId, [FromForm] string documentType)
         {
             try
@@ -136,6 +137,7 @@ namespace api_backend.Controllers
         public async Task<IActionResult> GetTripByPODToken(string token)
         {
             var trip = await _context.Trips
+                .IgnoreQueryFilters()
                 .Include(t => t.Indent)
                 .ThenInclude(i => i.Customer)
                 .Include(t => t.Vehicle)
@@ -159,7 +161,7 @@ namespace api_backend.Controllers
         [AllowAnonymous]
         public async Task<IActionResult> SubmitPOD(string token, [FromBody] SubmitPODRequest request)
         {
-            var trip = await _context.Trips.FirstOrDefaultAsync(t => t.PODMagicLinkToken == token);
+            var trip = await _context.Trips.IgnoreQueryFilters().FirstOrDefaultAsync(t => t.PODMagicLinkToken == token);
             if (trip == null) return NotFound("Invalid token.");
 
             // Create Document record
@@ -169,7 +171,8 @@ namespace api_backend.Controllers
                 EntityId = trip.Id,
                 DocumentType = "DeliveryReceipt",
                 FileUrl = request.FileUrl,
-                TenantId = trip.TenantId
+                TenantId = trip.TenantId,
+                CompanyId = trip.CompanyId
             };
             _context.Documents.Add(doc);
 

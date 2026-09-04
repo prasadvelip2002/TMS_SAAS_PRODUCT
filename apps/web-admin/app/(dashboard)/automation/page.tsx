@@ -83,7 +83,7 @@ export default function AutomationPage() {
           </div>
         )}
         
-        <div className="overflow-x-auto flex-1">
+        <div className="overflow-auto flex-1">
           <ProtoTable headers={["TIMESTAMP", "CATEGORY", "TITLE", "MESSAGE", "ENTITY ID", "STATUS"]}>
             {loading && logs.length === 0 ? (
               <tr>

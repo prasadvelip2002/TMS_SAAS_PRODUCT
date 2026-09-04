@@ -93,7 +93,7 @@ export default function AdditionalChargesPage() {
 
       {/* FULL WIDTH TABLE */}
       <div className="bg-white border border-slate-200 rounded-[16px] overflow-hidden shadow-sm flex-1 flex flex-col">
-        <div className="overflow-x-auto flex-1">
+        <div className="overflow-auto flex-1">
           <ProtoTable headers={["CHARGE ID", "TRIP ID", "CHARGE TYPE", "AMOUNT", "DESCRIPTION", "ACTION"]}>
             {isLoading ? (
               <tr>

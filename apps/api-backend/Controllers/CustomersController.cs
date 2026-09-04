@@ -22,9 +22,14 @@ namespace api_backend.Controllers
 
         // GET: api/Customers
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Customer>>> GetCustomers()
+        public async Task<ActionResult<IEnumerable<Customer>>> GetCustomers([FromQuery] string? customerType)
         {
-            return await _context.Customers.ToListAsync();
+            var query = _context.Customers.AsQueryable();
+            if (!string.IsNullOrEmpty(customerType))
+            {
+                query = query.Where(c => c.CustomerType == customerType);
+            }
+            return await query.ToListAsync();
         }
 
         // GET: api/Customers/5
@@ -81,6 +86,7 @@ namespace api_backend.Controllers
             existingCustomer.Code = customer.Code;
             existingCustomer.RateContract = customer.RateContract;
             existingCustomer.Status = customer.Status;
+            existingCustomer.CustomerType = customer.CustomerType;
 
             try
             {

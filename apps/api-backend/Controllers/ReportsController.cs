@@ -23,6 +23,7 @@ namespace api_backend.Controllers
         public async Task<IActionResult> GetTripReport()
         {
             var trips = await _context.Trips
+                .AsNoTracking()
                 .Include(t => t.Indent)
                     .ThenInclude(i => i.Customer)
                 .Include(t => t.Vendor)
@@ -38,9 +39,11 @@ namespace api_backend.Controllers
                     Vehicle = t.Vehicle != null ? t.Vehicle.VehicleNumber : "N/A",
                     VendorName = t.Vendor != null ? t.Vendor.Name : (t.LegType == "Direct" ? "Own Fleet" : "N/A"),
                     Status = t.Status,
-                    FreightCharges = t.FreightCharges,
-                    AdvanceAmount = t.AdvanceAmount,
-                    SupplierRate = t.SupplierRate ?? 0m
+                    CustomerRate = t.CustomerRate ?? t.Indent.CustomerRate ?? t.FreightCharges,
+                    SupplierRate = t.SupplierRate ?? 0m,
+                    FuelAdvance = t.FuelAdvance ?? 0m,
+                    TollCharges = t.TollCharges ?? 0m,
+                    Margin = (t.CustomerRate ?? t.Indent.CustomerRate ?? t.FreightCharges) - (t.SupplierRate ?? 0m) - (t.FuelAdvance ?? 0m) - (t.TollCharges ?? 0m)
                 })
                 .ToListAsync();
 

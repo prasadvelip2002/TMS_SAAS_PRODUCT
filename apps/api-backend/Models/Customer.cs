@@ -17,6 +17,7 @@ namespace api_backend.Models
         public string? PaymentTerms { get; set; }
         public string? Code { get; set; }
         public string? RateContract { get; set; }
+        public string CustomerType { get; set; } = "Spot"; // Spot, Contract
         public int TenantId { get; set; }
         public Tenant? Tenant { get; set; }
 

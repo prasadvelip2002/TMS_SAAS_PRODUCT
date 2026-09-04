@@ -15,6 +15,7 @@ export default function CustomerInvoicingDashboard() {
   const [selectedCustomer, setSelectedCustomer] = useState<number | "">("");
   const [unbilledTrips, setUnbilledTrips] = useState<any[]>([]);
   const [selectedTrips, setSelectedTrips] = useState<number[]>([]);
+  const [customRates, setCustomRates] = useState<Record<number, number>>({});
   const [generating, setGenerating] = useState(false);
 
   useEffect(() => {
@@ -51,6 +52,14 @@ export default function CustomerInvoicingDashboard() {
       const data = await fetchApi(`/Finance/unbilled-trips/${custId}`);
       setUnbilledTrips(data);
       setSelectedTrips([]); // reset selection
+
+      const ratesMap: Record<number, number> = {};
+      data.forEach((t: any) => {
+        const base = t.customerRate ?? t.indent?.customerRate ?? t.freightCharges ?? 0;
+        const addChargesSum = (t.additionalCharges || []).reduce((acc: number, c: any) => acc + (c.amount || 0), 0);
+        ratesMap[t.id] = base + (t.tollCharges || 0) + addChargesSum;
+      });
+      setCustomRates(ratesMap);
     } catch (e) {
       console.error(e);
     }
@@ -78,7 +87,10 @@ export default function CustomerInvoicingDashboard() {
     try {
       await fetchApi("/Finance/invoice", {
         method: "POST",
-        body: JSON.stringify({ tripIds: selectedTrips })
+        body: JSON.stringify({ 
+          tripIds: selectedTrips,
+          customRates: customRates 
+        })
       });
       setIsPanelOpen(false);
       setSelectedCustomer("");
@@ -146,7 +158,7 @@ export default function CustomerInvoicingDashboard() {
 
       {/* FULL WIDTH TABLE */}
       <div className="bg-white border border-slate-200 rounded-[16px] overflow-hidden shadow-sm flex-1 flex flex-col">
-        <div className="overflow-x-auto flex-1">
+        <div className="overflow-auto flex-1">
           <ProtoTable headers={["INVOICE NO.", "DATE", "CUSTOMER", "AMOUNT (INC. TAX)", "STATUS", "ACTION"]}>
             {loading ? (
               <tr>
@@ -217,14 +229,14 @@ export default function CustomerInvoicingDashboard() {
 
       {/* SLIDE-OVER PANEL: GENERATE INVOICE */}
       <div 
-        className={`fixed top-0 right-0 h-full w-[600px] bg-white shadow-2xl z-50 transform transition-transform duration-300 ease-in-out flex flex-col border-l border-slate-200 ${isPanelOpen ? 'translate-x-0' : 'translate-x-full'}`}
+        className={`fixed top-0 right-0 h-full w-[650px] bg-white shadow-2xl z-50 transform transition-transform duration-300 ease-in-out flex flex-col border-l border-slate-200 ${isPanelOpen ? 'translate-x-0' : 'translate-x-full'}`}
       >
         <div className="px-8 py-6 border-b border-slate-100 flex items-center justify-between bg-slate-50/50 shrink-0">
           <div>
             <h2 className="text-xl font-bold text-slate-800 flex items-center gap-2">
-              <FilePlus className="w-5 h-5 text-slate-400" /> Generate New Invoice
+              <FilePlus className="w-5 h-5 text-slate-400" /> Generate New Customer Invoice
             </h2>
-            <p className="text-[13px] text-slate-500 mt-1 font-medium">Select a customer and group their unbilled trips.</p>
+            <p className="text-[13px] text-slate-500 mt-1 font-medium">Select a customer, verify trip & driver charges, and manually adjust invoice price.</p>
           </div>
           <button 
             onClick={() => setIsPanelOpen(false)}
@@ -253,7 +265,10 @@ export default function CustomerInvoicingDashboard() {
           </div>
 
           <div className="p-8 flex-1 flex flex-col">
-            <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-3">2. Select Unbilled Trips</label>
+            <div className="flex justify-between items-center mb-3">
+              <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider">2. Select Unbilled Trips & Adjust Rates</label>
+              <span className="text-[11px] text-blue-600 font-semibold bg-blue-50 px-2 py-0.5 rounded">Manual Price Override Enabled</span>
+            </div>
             
             {selectedCustomer === "" ? (
               <div className="flex-1 flex flex-col items-center justify-center text-slate-400">
@@ -282,31 +297,77 @@ export default function CustomerInvoicingDashboard() {
                 </div>
                 
                 <div className="flex-1 overflow-y-auto divide-y divide-slate-100 bg-white">
-                  {unbilledTrips.map(trip => (
-                    <label key={trip.id} className="flex items-start gap-4 p-4 hover:bg-slate-50 cursor-pointer transition-colors group">
-                      <div className="mt-0.5">
-                        <input 
-                          type="checkbox" 
-                          className="hidden"
-                          checked={selectedTrips.includes(trip.id)}
-                          onChange={() => toggleTripSelection(trip.id)}
-                        />
-                        {selectedTrips.includes(trip.id) ? (
-                          <CheckSquare className="w-5 h-5 text-blue-600" />
-                        ) : (
-                          <Square className="w-5 h-5 text-slate-300 group-hover:text-slate-400" />
-                        )}
-                      </div>
-                      <div className="flex-1">
-                        <div className="flex justify-between items-start mb-1">
-                          <span className="font-mono text-[13px] font-bold text-slate-700 group-hover:text-blue-600 transition-colors">TRP-{trip.id}</span>
-                          <span className="font-black text-slate-800">₹{((trip.customerRate ?? trip.indent?.customerRate ?? trip.freightCharges) + (trip.tollCharges || 0)).toLocaleString('en-IN')}</span>
+                  {unbilledTrips.map(trip => {
+                    const baseFreight = trip.customerRate ?? trip.indent?.customerRate ?? trip.freightCharges ?? 0;
+                    const addCharges = trip.additionalCharges || [];
+                    const addChargesTotal = addCharges.reduce((acc: number, c: any) => acc + (c.amount || 0), 0);
+
+                    return (
+                      <label key={trip.id} className="flex items-start gap-4 p-4 hover:bg-slate-50/80 cursor-pointer transition-colors group">
+                        <div className="mt-1">
+                          <input 
+                            type="checkbox" 
+                            className="hidden"
+                            checked={selectedTrips.includes(trip.id)}
+                            onChange={() => toggleTripSelection(trip.id)}
+                          />
+                          {selectedTrips.includes(trip.id) ? (
+                            <CheckSquare className="w-5 h-5 text-blue-600" />
+                          ) : (
+                            <Square className="w-5 h-5 text-slate-300 group-hover:text-slate-400" />
+                          )}
                         </div>
-                        <div className="text-[12px] font-medium text-slate-500">{trip.indent?.source} → {trip.indent?.destination}</div>
-                        <div className="text-[11px] text-slate-400 mt-1">Delivered: {new Date(trip.podReceivedDate).toLocaleDateString()}</div>
-                      </div>
-                    </label>
-                  ))}
+                        <div className="flex-1">
+                          <div className="flex justify-between items-center mb-1 gap-2">
+                            <div className="flex items-center gap-2">
+                              <span className="font-mono text-[13px] font-bold text-slate-800 group-hover:text-blue-600 transition-colors">TRP-{trip.id}</span>
+                              {!trip.vendorId && (
+                                <span className="bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-bold px-1.5 py-0.5 rounded">
+                                  Own Fleet
+                                </span>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-1.5 bg-white border-2 border-blue-200 rounded-lg px-2.5 py-1 shadow-sm" onClick={(e) => e.stopPropagation()}>
+                              <span className="text-[12px] font-bold text-blue-600">Billable ₹</span>
+                              <input 
+                                type="number"
+                                value={customRates[trip.id] ?? 0}
+                                onChange={(e) => {
+                                  const val = parseFloat(e.target.value) || 0;
+                                  setCustomRates(prev => ({ ...prev, [trip.id]: val }));
+                                }}
+                                className="w-28 bg-transparent font-black text-slate-900 text-[13px] text-right outline-none focus:text-blue-700"
+                                placeholder="Final Rate"
+                              />
+                            </div>
+                          </div>
+                          <div className="text-[12px] font-medium text-slate-600">{trip.indent?.source} → {trip.indent?.destination}</div>
+                          
+                          {/* CHARGES BREAKDOWN PILLS */}
+                          <div className="mt-2 pt-2 border-t border-slate-100 flex flex-wrap gap-1.5 text-[11px]">
+                            <span className="bg-slate-100 text-slate-600 px-2 py-0.5 rounded font-medium">
+                              Base: ₹{baseFreight.toLocaleString('en-IN')}
+                            </span>
+                            {trip.tollCharges > 0 && (
+                              <span className="bg-amber-50 text-amber-700 border border-amber-200 px-2 py-0.5 rounded font-medium">
+                                Toll: +₹{trip.tollCharges}
+                              </span>
+                            )}
+                            {addCharges.map((ac: any, idx: number) => (
+                              <span key={idx} className="bg-purple-50 text-purple-700 border border-purple-200 px-2 py-0.5 rounded font-medium">
+                                {ac.chargeType || 'Extra'}: +₹{ac.amount}
+                              </span>
+                            ))}
+                            {addCharges.length === 0 && !trip.tollCharges && (
+                              <span className="text-slate-400 text-[11px] italic">No extra charges logged</span>
+                            )}
+                          </div>
+
+                          <div className="text-[10px] text-slate-400 mt-1.5">Delivered: {new Date(trip.podReceivedDate || trip.updatedAt).toLocaleDateString()}</div>
+                        </div>
+                      </label>
+                    );
+                  })}
                 </div>
               </div>
             )}
@@ -320,7 +381,7 @@ export default function CustomerInvoicingDashboard() {
             className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3.5 px-6 rounded-xl transition-all shadow-lg shadow-blue-600/20 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {generating ? <Loader2 className="w-5 h-5 animate-spin" /> : <FilePlus className="w-5 h-5" />}
-            Generate Invoice for {selectedTrips.length} Trips
+            Generate Invoice for {selectedTrips.length} Trips (₹{selectedTrips.reduce((sum, id) => sum + (customRates[id] || 0), 0).toLocaleString('en-IN')})
           </button>
         </div>
       </div>

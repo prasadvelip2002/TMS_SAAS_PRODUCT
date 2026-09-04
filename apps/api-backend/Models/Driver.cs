@@ -12,6 +12,10 @@ namespace api_backend.Models
         public string? Aadhaar { get; set; }
         public int? ExperienceYears { get; set; }
         public string? CurrentStatus { get; set; }
+
+        public int? VendorId { get; set; }
+        public Vendor? Vendor { get; set; }
+
         public int TenantId { get; set; }
         public Tenant? Tenant { get; set; }
 

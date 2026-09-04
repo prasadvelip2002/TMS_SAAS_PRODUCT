@@ -9,7 +9,7 @@ namespace api_backend.Models
         public int IndentId { get; set; }
         public Indent? Indent { get; set; }
 
-        public int VendorId { get; set; }
+        public int? VendorId { get; set; }
         public Vendor? Vendor { get; set; }
 
         public int? VehicleId { get; set; }

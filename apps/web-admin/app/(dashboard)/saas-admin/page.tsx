@@ -131,7 +131,7 @@ export default function SaaSAdminPage() {
         <div className="p-6 border-b border-slate-100">
           <h2 className="text-lg font-bold text-slate-800">Tenant Directory</h2>
         </div>
-        <div className="overflow-x-auto">
+        <div className="overflow-auto">
           <table className="w-full text-left text-sm">
             <thead className="bg-slate-50 text-slate-500 uppercase font-medium text-xs">
               <tr>

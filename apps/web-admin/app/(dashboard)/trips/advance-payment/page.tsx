@@ -18,8 +18,8 @@ export default function AdvancePaymentPage() {
     setLoading(true);
     try {
       const data = await fetchApi("/Trips");
-      // Filter for trips that have an advance amount setup but might not be fully paid yet
-      setTrips(data.filter((t: any) => t.advanceAmount > 0));
+      // Filter for trips that have an advance amount setup and belong to a vendor (exclude Own Fleet)
+      setTrips(data.filter((t: any) => t.advanceAmount > 0 && t.vendorId));
     } catch (error) {
       console.error(error);
     } finally {
@@ -93,7 +93,7 @@ export default function AdvancePaymentPage() {
 
       {/* FULL WIDTH TABLE */}
       <div className="bg-white border border-slate-200 rounded-[16px] overflow-hidden shadow-sm flex-1 flex flex-col">
-        <div className="overflow-x-auto flex-1">
+        <div className="overflow-auto flex-1">
           <ProtoTable headers={["TRIP ID", "VENDOR & BANK DETAILS", "ADVANCE REQ.", "STATUS", "ACTION"]}>
             {loading ? (
               <tr>
@@ -127,7 +127,9 @@ export default function AdvancePaymentPage() {
                     <Td className="font-mono text-[13px] font-semibold text-slate-600">TRP-{1000 + trip.id}</Td>
                     <Td>
                       <div className="font-semibold text-slate-800">{trip.vendor?.name || `Vendor #${trip.vendorId}`}</div>
-                      <div className="text-[11px] font-mono text-slate-500 mt-0.5">{trip.vendor?.bankDetails || "No Bank Details"}</div>
+                      <div className="text-[11px] font-mono text-slate-500 mt-0.5">
+                        {trip.vendor?.bankAccountNumber ? `${trip.vendor.bankName || 'Bank'}: ${trip.vendor.bankAccountNumber} (${trip.vendor.bankIFSC})` : "No Bank Details"}
+                      </div>
                     </Td>
                     <Td>
                       <span className="text-[15px] font-black text-slate-800">₹{trip.advanceAmount?.toLocaleString()}</span>
@@ -212,7 +214,9 @@ export default function AdvancePaymentPage() {
                 </div>
                 <div className="flex justify-between items-center pt-3 border-t border-slate-200/60">
                   <span className="text-[12px] font-medium text-slate-500 flex items-center gap-1.5"><Banknote className="w-3.5 h-3.5"/> Bank A/C</span>
-                  <span className="text-[13px] font-mono font-bold text-slate-800">{selectedTrip?.vendor?.bankDetails || "Not Provided"}</span>
+                  <span className="text-[13px] font-mono font-bold text-slate-800">
+                    {selectedTrip?.vendor?.bankAccountNumber ? `${selectedTrip.vendor.bankName || 'Bank'}: ${selectedTrip.vendor.bankAccountNumber} (${selectedTrip.vendor.bankIFSC})` : "Not Provided"}
+                  </span>
                 </div>
               </div>
             </div>

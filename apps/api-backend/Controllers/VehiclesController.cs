@@ -22,9 +22,21 @@ namespace api_backend.Controllers
 
         // GET: api/Vehicles
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Vehicle>>> GetVehicles()
+        public async Task<ActionResult<IEnumerable<Vehicle>>> GetVehicles([FromQuery] bool? isOwnFleet)
         {
-            return await _context.Vehicles.Include(v => v.Vendor).ToListAsync();
+            var query = _context.Vehicles.Include(v => v.Vendor).AsQueryable();
+            if (isOwnFleet.HasValue)
+            {
+                if (isOwnFleet.Value)
+                {
+                    query = query.Where(v => v.VendorId == null);
+                }
+                else
+                {
+                    query = query.Where(v => v.VendorId != null);
+                }
+            }
+            return await query.ToListAsync();
         }
 
         // GET: api/Vehicles/5

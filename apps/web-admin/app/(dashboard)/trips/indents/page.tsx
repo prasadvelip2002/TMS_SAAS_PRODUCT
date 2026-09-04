@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { fetchApi } from "@/lib/api";
 import { ProtoTable, Td } from "@/components/PrototypeUI";
-import { Search, Grid, List, Plus, FileText, X, Activity } from "lucide-react";
+import { Search, Grid, List, Plus, FileText, X, Activity, MapPin, Trash2 } from "lucide-react";
 
 interface Indent {
   id: number;
@@ -130,7 +130,7 @@ export default function IndentsPage() {
   };
 
   const getStatusBadge = (status: string) => {
-    if (status === "Assigned") return <span className="px-[8px] py-[3px] bg-[#dcfce7] text-[#166534] rounded-[6px] text-[11px] font-medium border border-[#bbf7d0]">Assigned</span>;
+    if (status === "Assigned") return <span className="px-[8px] py-[3px] bg-[#fef3c7] text-[#92400e] rounded-[6px] text-[11px] font-medium border border-[#fde68a]">Awaiting Fleet</span>;
     if (status === "Confirmed") return <span className="px-[8px] py-[3px] bg-[#dcfce7] text-[#166534] rounded-[6px] text-[11px] font-medium border border-[#bbf7d0]">Confirmed</span>;
     if (status === "Pending" || status === "Open") return <span className="px-[8px] py-[3px] bg-[#ffedd5] text-[#1E40AF] rounded-[6px] text-[11px] font-medium border border-[#fdba74]">Open</span>;
     return <span className="px-[8px] py-[3px] bg-[#e0f2fe] text-[#075985] rounded-[6px] text-[11px] font-medium border border-[#bae6fd]">New</span>;
@@ -205,52 +205,74 @@ export default function IndentsPage() {
             <div 
               key={ind.id} 
               onClick={() => handleEdit(ind)}
-              className="bg-white rounded-2xl shadow-sm ring-1 ring-slate-200/50 p-5 hover:shadow-md transition-all cursor-pointer group relative overflow-hidden"
+              className="bg-white rounded-2xl p-0 shadow-sm border border-slate-200 overflow-hidden flex flex-col hover:shadow-md transition-all cursor-pointer group"
             >
-              <div className="flex items-start justify-between mb-4">
-                <div>
-                  <div className="font-mono font-bold text-slate-900 text-[13px] mb-1">IND-{1000 + ind.id}</div>
-                  <div className="text-[13px] font-medium text-slate-600 line-clamp-1">{ind.customer?.name || `Customer #${ind.customerId}`}</div>
+              {/* Ticket Header */}
+              <div className="bg-slate-50/80 p-4 border-b border-slate-100 flex justify-between items-center">
+                <div className="flex items-center gap-3">
+                  <div className="bg-blue-100 text-blue-700 p-1.5 rounded-lg">
+                    <FileText className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <div className="font-mono font-bold text-slate-900 text-sm">IND-{1000 + ind.id}</div>
+                    <div className="text-[11px] text-slate-500 font-medium mt-0.5 line-clamp-1">{ind.customer?.name || `Customer #${ind.customerId}`}</div>
+                  </div>
                 </div>
                 {getStatusBadge(ind.status)}
               </div>
               
-              <div className="space-y-3 mb-5">
-                <div className="bg-slate-50 rounded-xl p-3 border border-slate-100">
-                  <div className="flex items-center text-[12px] text-slate-700 font-medium mb-1.5">
-                    <div className="w-1.5 h-1.5 rounded-full bg-blue-500 mr-2"></div>
-                    {ind.source}
+              {/* Ticket Route */}
+              <div className="px-5 py-5 border-b border-slate-100 border-dashed relative">
+                <div className="flex items-center gap-4">
+                  <div className="flex-1">
+                    <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Source</div>
+                    <div className="font-semibold text-slate-800 text-sm truncate" title={ind.source}>{ind.source}</div>
                   </div>
-                  <div className="flex items-center text-[12px] text-slate-700 font-medium">
-                    <div className="w-1.5 h-1.5 rounded-full bg-green-500 mr-2"></div>
-                    {ind.destination}
-                  </div>
-                </div>
-                
-                <div className="grid grid-cols-2 gap-2 text-[12px]">
-                  <div className="bg-slate-50 rounded-lg p-2 border border-slate-100">
-                    <div className="text-slate-400 font-medium text-[10px] uppercase tracking-wider mb-0.5">Vehicle</div>
-                    <div className="font-semibold text-slate-700 line-clamp-1">{ind.vehicleType}</div>
-                  </div>
-                  <div className="bg-slate-50 rounded-lg p-2 border border-slate-100">
-                    <div className="text-slate-400 font-medium text-[10px] uppercase tracking-wider mb-0.5">Rate</div>
-                    <div className="font-semibold text-slate-700 line-clamp-1">
-                      {(ind as any).customerRate ? `₹${(ind as any).customerRate.toLocaleString()}` : 'TBD'}
+                  <div className="flex-shrink-0 flex items-center justify-center">
+                    <div className="w-8 h-px bg-slate-300"></div>
+                    <div className="w-6 h-6 rounded-full border border-slate-200 flex items-center justify-center mx-1 bg-white shadow-sm z-10">
+                      <MapPin className="w-3 h-3 text-blue-500" />
                     </div>
+                    <div className="w-8 h-px bg-slate-300"></div>
+                  </div>
+                  <div className="flex-1 text-right">
+                    <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Destination</div>
+                    <div className="font-semibold text-slate-800 text-sm truncate" title={ind.destination}>{ind.destination}</div>
                   </div>
                 </div>
               </div>
               
-              <div className="flex items-center justify-between pt-4 border-t border-slate-100">
-                <div className="text-[11.5px] font-medium text-slate-500">
-                  <span className="text-slate-400 mr-1">Pickup:</span>
-                  {new Date(ind.loadingDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+              {/* Ticket Details */}
+              <div className="px-5 py-4 bg-slate-50/30 flex-1 grid grid-cols-2 gap-y-4 gap-x-2">
+                <div>
+                  <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Material</div>
+                  <div className="font-medium text-slate-700 text-[13px]">{ind.material}</div>
+                </div>
+                <div>
+                  <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Weight</div>
+                  <div className="font-medium text-slate-700 text-[13px]">{ind.weight} Tons</div>
+                </div>
+                <div>
+                  <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Date</div>
+                  <div className="font-medium text-slate-700 text-[13px]">{new Date(ind.loadingDate).toLocaleDateString()}</div>
+                </div>
+                <div>
+                  <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Type</div>
+                  <div className="font-medium text-slate-700 text-[13px]">{(ind as any).truckType || ind.vehicleType}</div>
+                </div>
+              </div>
+              
+              {/* Ticket Action */}
+              <div className="p-4 bg-white border-t border-slate-100 flex items-center justify-between">
+                <div className="text-[11.5px] font-bold text-slate-700">
+                  <span className="text-slate-400 font-medium mr-1">Rate:</span>
+                  {(ind as any).customerRate ? `₹${(ind as any).customerRate.toLocaleString()}` : 'TBD'}
                 </div>
                 <button 
                   onClick={(e) => { e.stopPropagation(); handleDelete(ind.id); }}
-                  className="text-red-500 hover:text-red-600 hover:bg-red-50 px-2 py-1 rounded-md text-[11.5px] font-bold opacity-0 group-hover:opacity-100 transition-all"
+                  className="text-slate-400 hover:text-red-500 p-1.5 rounded-lg hover:bg-red-50 transition-colors opacity-0 group-hover:opacity-100"
                 >
-                  Delete
+                  <Trash2 className="w-4 h-4" />
                 </button>
               </div>
             </div>
@@ -347,7 +369,36 @@ export default function IndentsPage() {
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <label className="block text-[11.5px] font-bold text-slate-500 mb-1.5 uppercase tracking-wider">Vehicle Type Req.</label>
-                      <input required value={formData.vehicleType} onChange={e => setFormData({...formData, vehicleType: e.target.value})} className="w-full border border-slate-200 rounded-xl px-4 py-3 text-[14px] bg-slate-50 hover:bg-slate-100 focus:bg-white text-slate-800 font-medium outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all shadow-sm" placeholder="e.g. 10 Wheeler" />
+                      <select required value={formData.vehicleType} onChange={e => setFormData({...formData, vehicleType: e.target.value})} className="w-full border border-slate-200 rounded-xl px-4 py-3 text-[14px] bg-slate-50 hover:bg-slate-100 focus:bg-white text-slate-800 font-medium outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all shadow-sm">
+                        <option value="">Select Vehicle Type</option>
+                        <optgroup label="Open Body">
+                          <option value="14 ft Open Body">14 ft Open Body</option>
+                          <option value="17 ft Open Body">17 ft Open Body</option>
+                          <option value="19 ft Open Body">19 ft Open Body</option>
+                          <option value="20 ft Open Body">20 ft Open Body</option>
+                          <option value="22 ft Open Body">22 ft Open Body</option>
+                          <option value="24 ft Open Body">24 ft Open Body</option>
+                          <option value="32 ft Open Body">32 ft Open Body</option>
+                          <option value="40 ft Open Body">40 ft Open Body</option>
+                        </optgroup>
+                        <optgroup label="Container">
+                          <option value="14 ft Container">14 ft Container</option>
+                          <option value="17 ft Container">17 ft Container</option>
+                          <option value="19 ft Container">19 ft Container</option>
+                          <option value="20 ft Container">20 ft Container</option>
+                          <option value="22 ft Container">22 ft Container</option>
+                          <option value="24 ft Container">24 ft Container</option>
+                          <option value="32 ft Container">32 ft Container</option>
+                          <option value="40 ft Container">40 ft Container</option>
+                        </optgroup>
+                        <optgroup label="Heavy">
+                          <option value="40 ft Trailer">40 ft Trailer</option>
+                        </optgroup>
+                        <optgroup label="Other">
+                          <option value="Pickup">Pickup</option>
+                          <option value="Canter">Canter</option>
+                        </optgroup>
+                      </select>
                     </div>
                     <div>
                       <label className="block text-[11.5px] font-bold text-slate-500 mb-1.5 uppercase tracking-wider">Status</label>
@@ -379,8 +430,12 @@ export default function IndentsPage() {
                       </select>
                     </div>
                     <div>
-                      <label className="block text-[11.5px] font-bold text-slate-500 mb-1.5 uppercase tracking-wider">Customer Rate (₹)</label>
-                      <input type="number" step="0.01" value={formData.customerRate} onChange={e => setFormData({...formData, customerRate: e.target.value})} className="w-full border border-slate-200 rounded-xl px-4 py-3 text-[14px] bg-slate-50 hover:bg-slate-100 focus:bg-white text-slate-800 font-medium outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all shadow-sm" placeholder="e.g. 15000" />
+                      {formData.pricingModel === "AnnualContract" && (
+                        <>
+                          <label className="block text-[11.5px] font-bold text-slate-500 mb-1.5 uppercase tracking-wider">Customer Rate (₹) [Annual Contract]</label>
+                          <input type="number" step="0.01" value={formData.customerRate} onChange={e => setFormData({...formData, customerRate: e.target.value})} className="w-full border border-slate-200 rounded-xl px-4 py-3 text-[14px] bg-slate-50 hover:bg-slate-100 focus:bg-white text-slate-800 font-medium outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all shadow-sm" placeholder="e.g. 15000 (Auto-fetched in future)" />
+                        </>
+                      )}
                     </div>
                   </div>
                </form>

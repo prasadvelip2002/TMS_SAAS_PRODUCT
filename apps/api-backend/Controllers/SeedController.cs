@@ -57,9 +57,9 @@ namespace api_backend.Controllers
             await _context.SaveChangesAsync();
 
             var ramesh = await _context.Vendors.FirstOrDefaultAsync(v => v.Code == "VEND-RAM")
-                          ?? new Vendor { Name = "Ramesh Transports", Code = "VEND-RAM", GSTIN = "29AAACR", PAN = "AAACR", BankDetails = "HDFC", TDSInfo = "2%", ContactPerson = "Ramesh", Email = "c@c.com", Address = "Yesh", City = "Bangalore", State = "KA", Phone = "99", RouteRemarks = "Reliable", Status = "Active", TenantId = tId };
+                          ?? new Vendor { Name = "Ramesh Transports", Code = "VEND-RAM", GSTIN = "29AAACR", PAN = "AAACR", BankName = "HDFC", TDSInfo = "2%", ContactPerson = "Ramesh", Email = "c@c.com", Address = "Yesh", City = "Bangalore", State = "KA", Phone = "99", RouteRemarks = "Reliable", Status = "Active", TenantId = tId };
             var singh = await _context.Vendors.FirstOrDefaultAsync(v => v.Code == "VEND-SIN")
-                          ?? new Vendor { Name = "Singh Fleet Services", Code = "VEND-SIN", GSTIN = "07AAACS", PAN = "AAACS", BankDetails = "SBI", TDSInfo = "2%", ContactPerson = "Gurpreet", Email = "d@d.com", Address = "Delhi", City = "Delhi", State = "DL", Phone = "98", RouteRemarks = "National", Status = "Active", TenantId = tId };
+                          ?? new Vendor { Name = "Singh Fleet Services", Code = "VEND-SIN", GSTIN = "07AAACS", PAN = "AAACS", BankName = "SBI", TDSInfo = "2%", ContactPerson = "Gurpreet", Email = "d@d.com", Address = "Delhi", City = "Delhi", State = "DL", Phone = "98", RouteRemarks = "National", Status = "Active", TenantId = tId };
             if (ramesh.Id == 0) _context.Vendors.Add(ramesh);
             if (singh.Id == 0) _context.Vendors.Add(singh);
             await _context.SaveChangesAsync();

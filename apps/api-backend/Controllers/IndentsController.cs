@@ -24,7 +24,7 @@ namespace api_backend.Controllers
         [HttpGet]
         public async Task<ActionResult<IEnumerable<Indent>>> GetIndents()
         {
-            return await _context.Indents.Include(i => i.Customer).ToListAsync();
+            return await _context.Indents.AsNoTracking().Include(i => i.Customer).ToListAsync();
         }
 
         // GET: api/Indents/5

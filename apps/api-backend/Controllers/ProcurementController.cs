@@ -59,6 +59,25 @@ namespace api_backend.Controllers
             return Ok(quotes);
         }
 
+        // GET: api/Procurement/RFQ/{token} (Public endpoint for Magic Link)
+        [HttpGet("RFQ/{token}")]
+        [AllowAnonymous]
+        public async Task<IActionResult> GetRFQDetails(string token)
+        {
+            var quote = await _context.VendorQuotations
+                .Include(q => q.Indent)
+                .Include(q => q.Indent.Customer)
+                .Include(q => q.Vendor)
+                .FirstOrDefaultAsync(q => q.MagicLinkToken == token);
+                
+            if (quote == null) return NotFound("Invalid or expired RFQ link.");
+
+            return Ok(new {
+                VendorName = quote.Vendor.Name,
+                Indent = quote.Indent
+            });
+        }
+
         // POST: api/Procurement/SubmitBid (Public endpoint for Magic Link)
         [HttpPost("SubmitBid/{token}")]
         [AllowAnonymous]
@@ -104,33 +123,11 @@ namespace api_backend.Controllers
             foreach(var other in otherQuotes) other.Status = "Rejected";
 
             quote.Indent.RFQStatus = "Approved";
-            quote.Indent.Status = "Assigned";
+            quote.Indent.Status = "Supplier_Shortlisted";
             
-            // 2. Auto-generate Trip
-            var trip = new Trip
-            {
-                IndentId = quote.IndentId,
-                VendorId = quote.VendorId,
-                Status = "Assigned",
-                BookingType = "Contract",
-                SupplierRate = quote.QuotedRate
-            };
-            _context.Trips.Add(trip);
-            await _context.SaveChangesAsync(); // save to get TripId
-
-            // 3. Auto-generate PO
-            var po = new PurchaseOrder
-            {
-                PONumber = $"PO-{trip.Id.ToString().PadLeft(4, '0')}",
-                TripId = trip.Id,
-                VendorId = quote.VendorId,
-                TotalAmount = quote.QuotedRate,
-                Status = "Issued"
-            };
-            _context.PurchaseOrders.Add(po);
             await _context.SaveChangesAsync();
 
-            return Ok(new { tripId = trip.Id, poNumber = po.PONumber, message = "Bid approved, Trip and PO generated successfully" });
+            return Ok(new { message = "Supplier shortlisted successfully. Proceed to Sales module to generate SQ." });
         }
 
         // POST: api/Procurement/ReceiveGRPO/{poId}

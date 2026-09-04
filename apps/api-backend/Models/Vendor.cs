@@ -13,7 +13,9 @@ namespace api_backend.Models
         public string? State { get; set; }
         public string? PAN { get; set; }
         public string? GSTIN { get; set; }
-        public string? BankDetails { get; set; }
+        public string? BankName { get; set; }
+        public string? BankAccountNumber { get; set; }
+        public string? BankIFSC { get; set; }
         public string? TDSInfo { get; set; }
         public string? Phone { get; set; }
         public string? RouteRemarks { get; set; }

@@ -51,6 +51,7 @@ namespace api_backend.Services
             trip.RatePerTon = request.RatePerTon;
             trip.FixedRate = request.FixedRate;
             trip.AdvanceAmount = request.AdvanceAmount;
+            trip.SupplierPaymentTo = request.SupplierPaymentTo;
             trip.StartingKM = request.StartingKM;
             trip.TripStartDate = request.TripStartDate;
             trip.FreightCharges = freightCharges;
@@ -84,6 +85,11 @@ namespace api_backend.Services
         {
             var trip = await _context.Trips.FindAsync(tripId);
             if (trip == null) throw new Exception("Trip not found.");
+
+            if (newStatus == "Started" && string.IsNullOrEmpty(trip.LRNumber))
+            {
+                throw new Exception("LR Generation is mandatory before starting the trip.");
+            }
 
             trip.Status = newStatus;
             await _context.SaveChangesAsync();
