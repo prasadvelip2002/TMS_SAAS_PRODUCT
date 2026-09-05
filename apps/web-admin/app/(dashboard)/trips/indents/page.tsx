@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { fetchApi } from "@/lib/api";
+import { fetchApi, getCustomerRates } from "@/lib/api";
 import { ProtoTable, Td } from "@/components/PrototypeUI";
-import { Search, Grid, List, Plus, FileText, X, Activity, MapPin, Trash2 } from "lucide-react";
+import { Search, Grid, List, Plus, FileText, X, Activity, MapPin, Trash2, Sparkles, CheckCircle2, ArrowRight } from "lucide-react";
 import { formatTime12H } from "@/lib/utils";
 
 interface Indent {
@@ -48,6 +48,13 @@ export default function IndentsPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [viewMode, setViewMode] = useState<'table' | 'grid'>('table');
 
+  // Annual Contract state for active customer
+  const [customerContractRates, setCustomerContractRates] = useState<any[]>([]);
+  const [isContractLoading, setIsContractLoading] = useState(false);
+  const [isCustomSource, setIsCustomSource] = useState(false);
+  const [isCustomDestination, setIsCustomDestination] = useState(false);
+  const [contractRateBadge, setContractRateBadge] = useState<string | null>(null);
+
   const loadData = async () => {
     try {
       const [indData, custData, tripsData] = await Promise.all([
@@ -77,6 +84,180 @@ export default function IndentsPage() {
     loadData();
   }, []);
 
+  // Handle Customer Selection
+  const handleCustomerSelect = async (selectedId: string) => {
+    setFormData(prev => ({
+      ...prev,
+      customerId: selectedId,
+      source: "",
+      destination: "",
+      customerRate: ""
+    }));
+    setCustomerContractRates([]);
+    setIsCustomSource(false);
+    setIsCustomDestination(false);
+    setContractRateBadge(null);
+
+    if (!selectedId) return;
+
+    const cust = customers.find(c => c.id.toString() === selectedId);
+    if (!cust) return;
+
+    const isContract = cust.customerType === "Contract" || (cust.rateContract && cust.rateContract !== "Draft");
+    if (isContract) {
+      setFormData(prev => ({ ...prev, pricingModel: "AnnualContract" }));
+    } else {
+      setFormData(prev => ({ ...prev, pricingModel: "CaseToCase" }));
+    }
+
+    setIsContractLoading(true);
+    try {
+      const rates = await getCustomerRates(parseInt(selectedId));
+      if (rates && rates.length > 0) {
+        setCustomerContractRates(rates);
+        setFormData(prev => ({ ...prev, pricingModel: "AnnualContract" }));
+
+        // Check unique sources
+        const uniqueSrcs: string[] = Array.from(new Set(rates.map((r: any) => String(r.source))));
+        if (uniqueSrcs.length === 1) {
+          const onlySrc: string = uniqueSrcs[0];
+          const destsForSrc: string[] = Array.from(new Set(rates.filter((r: any) => r.source === onlySrc).map((r: any) => String(r.destination))));
+          
+          let nextDest: string = "";
+          let nextVeh: string = formData.vehicleType;
+          let nextRate: string = "";
+
+          if (destsForSrc.length === 1) {
+            nextDest = destsForSrc[0];
+            const matchingRates = rates.filter((r: any) => r.source === onlySrc && r.destination === nextDest);
+            if (matchingRates.length === 1) {
+              nextVeh = matchingRates[0].vehicleType || nextVeh;
+              nextRate = matchingRates[0].rate.toString();
+              setContractRateBadge(`₹${Number(matchingRates[0].rate).toLocaleString()} (${matchingRates[0].vehicleType})`);
+            }
+          }
+
+          setFormData(prev => ({
+            ...prev,
+            source: onlySrc,
+            destination: nextDest,
+            vehicleType: nextVeh,
+            customerRate: nextRate || prev.customerRate
+          }));
+        }
+      }
+    } catch (err) {
+      console.error("Failed to load customer rates:", err);
+    } finally {
+      setIsContractLoading(false);
+    }
+  };
+
+  // Handle Source Selection
+  const handleSourceSelect = (srcVal: string) => {
+    if (srcVal === "__custom__") {
+      setIsCustomSource(true);
+      setFormData(prev => ({ ...prev, source: "", destination: "", customerRate: "" }));
+      setContractRateBadge(null);
+      return;
+    }
+
+    const destsForSrc = Array.from(new Set(customerContractRates.filter(r => r.source.toLowerCase() === srcVal.toLowerCase()).map(r => r.destination)));
+    let nextDest = "";
+    let nextVeh = formData.vehicleType;
+    let nextRate = "";
+
+    if (destsForSrc.length === 1) {
+      nextDest = destsForSrc[0];
+      const match = customerContractRates.find(r => 
+        r.source.toLowerCase() === srcVal.toLowerCase() && 
+        r.destination.toLowerCase() === nextDest.toLowerCase()
+      );
+      if (match) {
+        nextVeh = match.vehicleType || nextVeh;
+        nextRate = match.rate.toString();
+        setContractRateBadge(`₹${Number(match.rate).toLocaleString()} (${match.vehicleType})`);
+      }
+    }
+
+    setFormData(prev => ({
+      ...prev,
+      source: srcVal,
+      destination: nextDest,
+      vehicleType: nextVeh,
+      customerRate: nextRate || prev.customerRate
+    }));
+  };
+
+  // Handle Destination Selection
+  const handleDestinationSelect = (destVal: string) => {
+    if (destVal === "__custom__") {
+      setIsCustomDestination(true);
+      setFormData(prev => ({ ...prev, destination: "", customerRate: "" }));
+      setContractRateBadge(null);
+      return;
+    }
+
+    const matchingRates = customerContractRates.filter(r => 
+      r.source.toLowerCase() === formData.source.toLowerCase() && 
+      r.destination.toLowerCase() === destVal.toLowerCase()
+    );
+
+    let nextVeh = formData.vehicleType;
+    let nextRate = "";
+
+    if (matchingRates.length === 1) {
+      nextVeh = matchingRates[0].vehicleType || nextVeh;
+      nextRate = matchingRates[0].rate.toString();
+      setContractRateBadge(`₹${Number(matchingRates[0].rate).toLocaleString()} (${matchingRates[0].vehicleType})`);
+    } else if (matchingRates.length > 1 && formData.vehicleType) {
+      const match = matchingRates.find(r => 
+        r.vehicleType?.toLowerCase() === formData.vehicleType.toLowerCase() ||
+        formData.vehicleType.toLowerCase().includes((r.vehicleType || "").toLowerCase()) ||
+        (r.vehicleType || "").toLowerCase().includes(formData.vehicleType.toLowerCase())
+      );
+      if (match) {
+        nextRate = match.rate.toString();
+        setContractRateBadge(`₹${Number(match.rate).toLocaleString()} (${match.vehicleType})`);
+      }
+    }
+
+    setFormData(prev => ({
+      ...prev,
+      destination: destVal,
+      vehicleType: nextVeh,
+      customerRate: nextRate || prev.customerRate
+    }));
+  };
+
+  // Handle Vehicle Type Selection
+  const handleVehicleTypeSelect = (vehVal: string) => {
+    let nextRate = formData.customerRate;
+    let badge = null;
+
+    if (formData.source && formData.destination && customerContractRates.length > 0) {
+      const match = customerContractRates.find(r => 
+        r.source.toLowerCase() === formData.source.toLowerCase() && 
+        r.destination.toLowerCase() === formData.destination.toLowerCase() &&
+        (r.vehicleType?.toLowerCase() === vehVal.toLowerCase() ||
+         vehVal.toLowerCase().includes((r.vehicleType || "").toLowerCase()) ||
+         (r.vehicleType || "").toLowerCase().includes(vehVal.toLowerCase()))
+      );
+
+      if (match) {
+        nextRate = match.rate.toString();
+        badge = `₹${Number(match.rate).toLocaleString()} (${match.vehicleType})`;
+      }
+    }
+
+    setContractRateBadge(badge);
+    setFormData(prev => ({
+      ...prev,
+      vehicleType: vehVal,
+      customerRate: nextRate
+    }));
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
@@ -105,6 +286,8 @@ export default function IndentsPage() {
         });
       }
       setFormData(DEFAULT_FORM);
+      setCustomerContractRates([]);
+      setContractRateBadge(null);
       setIsFormOpen(false);
       loadData();
     } catch (error) {
@@ -115,7 +298,7 @@ export default function IndentsPage() {
     }
   };
 
-  const handleEdit = (ind: Indent) => {
+  const handleEdit = async (ind: Indent) => {
     setFormData({
       id: ind.id,
       customerId: ind.customerId?.toString() || "",
@@ -131,6 +314,38 @@ export default function IndentsPage() {
       pricingModel: (ind as any).pricingModel || "CaseToCase",
       warehouseLocation: ind.warehouseLocation || ""
     });
+
+    setCustomerContractRates([]);
+    setIsCustomSource(false);
+    setIsCustomDestination(false);
+    setContractRateBadge(null);
+
+    if (ind.customerId) {
+      try {
+        const rates = await getCustomerRates(ind.customerId);
+        if (rates && rates.length > 0) {
+          setCustomerContractRates(rates);
+          // Check if current source/dest match contract
+          const hasSrc = rates.some((r: any) => r.source.toLowerCase() === (ind.source || "").toLowerCase());
+          const hasDest = rates.some((r: any) => r.destination.toLowerCase() === (ind.destination || "").toLowerCase());
+          if (!hasSrc && ind.source) setIsCustomSource(true);
+          if (!hasDest && ind.destination) setIsCustomDestination(true);
+
+          // Check if rate matches
+          const match = rates.find((r: any) => 
+            r.source.toLowerCase() === (ind.source || "").toLowerCase() &&
+            r.destination.toLowerCase() === (ind.destination || "").toLowerCase() &&
+            r.vehicleType?.toLowerCase() === (ind.vehicleType || "").toLowerCase()
+          );
+          if (match) {
+            setContractRateBadge(`₹${Number(match.rate).toLocaleString()} (${match.vehicleType})`);
+          }
+        }
+      } catch (err) {
+        console.error("Failed to load rates for edit:", err);
+      }
+    }
+
     setIsFormOpen(true);
   };
 
@@ -190,6 +405,18 @@ export default function IndentsPage() {
     }
     return <span className="px-[8px] py-[3px] bg-[#e0f2fe] text-[#075985] rounded-[6px] text-[11px] font-medium border border-[#bae6fd]">New</span>;
   };
+
+  const selectedCustomer = customers.find(c => c.id.toString() === formData.customerId);
+  const contractSources: string[] = Array.from(new Set(customerContractRates.map((r: any) => String(r.source))));
+  const contractDestinations: string[] = formData.source
+    ? Array.from(new Set(customerContractRates.filter((r: any) => r.source.toLowerCase() === formData.source.toLowerCase()).map((r: any) => String(r.destination))))
+    : Array.from(new Set(customerContractRates.map((r: any) => String(r.destination))));
+  const routeContractedRates = formData.source && formData.destination
+    ? customerContractRates.filter((r: any) => 
+        r.source.toLowerCase() === formData.source.toLowerCase() && 
+        r.destination.toLowerCase() === formData.destination.toLowerCase()
+      )
+    : [];
 
   return (
     <div className="max-w-[1600px] mx-auto pb-10">
@@ -397,25 +624,131 @@ export default function IndentsPage() {
              {/* Form Body - Scrollable */}
              <div className="flex-1 overflow-y-auto p-6 scrollbar-hide">
                <form id="indentForm" onSubmit={handleSubmit} className="space-y-5">
+                  {/* Customer Selection */}
                   <div className="col-span-2">
-                    <label className="block text-[11.5px] font-bold text-slate-500 mb-1.5 uppercase tracking-wider">Customer</label>
-                    <select required value={formData.customerId} onChange={e => setFormData({...formData, customerId: e.target.value})} className="w-full border border-slate-200 rounded-xl px-4 py-3 text-[14px] bg-slate-50 hover:bg-slate-100 focus:bg-white text-slate-800 font-medium outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all shadow-sm">
+                    <div className="flex justify-between items-center mb-1.5">
+                      <label className="block text-[11.5px] font-bold text-slate-500 uppercase tracking-wider">Customer *</label>
+                      {isContractLoading && (
+                        <span className="text-[11px] text-blue-600 flex items-center gap-1 font-medium">
+                          <Activity className="w-3 h-3 animate-spin" /> Fetching contract rates...
+                        </span>
+                      )}
+                    </div>
+                    <select 
+                      required 
+                      value={formData.customerId} 
+                      onChange={e => handleCustomerSelect(e.target.value)} 
+                      className="w-full border border-slate-200 rounded-xl px-4 py-3 text-[14px] bg-slate-50 hover:bg-slate-100 focus:bg-white text-slate-800 font-medium outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all shadow-sm"
+                    >
                       <option value="">Select Customer</option>
                       {customers.map(c => (
-                        <option key={c.id} value={c.id}>{c.name}</option>
+                        <option key={c.id} value={c.id}>
+                          {c.name} {c.customerType === "Contract" ? "★ (Annual Contract)" : ""}
+                        </option>
                       ))}
                     </select>
+
+                    {/* Contract Customer Notification Badge */}
+                    {selectedCustomer && (
+                      <div className="mt-2 px-3 py-2 bg-blue-50 border border-blue-200/80 rounded-xl text-xs flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <Sparkles className="w-4 h-4 text-blue-600 shrink-0" />
+                          <span className="font-semibold text-blue-900">
+                            {selectedCustomer.customerType === "Contract" ? "Annual Contract Customer" : "Spot Customer"}
+                          </span>
+                        </div>
+                        {customerContractRates.length > 0 ? (
+                          <span className="font-bold text-blue-700 bg-white px-2 py-0.5 rounded-md border border-blue-200 text-[11px]">
+                            {customerContractRates.length} Contracted Routes Available
+                          </span>
+                        ) : selectedCustomer.customerType === "Contract" ? (
+                          <span className="text-slate-500 italic text-[11px]">No rate sheet saved yet</span>
+                        ) : null}
+                      </div>
+                    )}
                   </div>
+
+                  {/* Route Corridor: Source & Destination */}
                   <div className="grid grid-cols-2 gap-4">
+                    {/* Source */}
                     <div>
-                      <label className="block text-[11.5px] font-bold text-slate-500 mb-1.5 uppercase tracking-wider">Source</label>
-                      <input required value={formData.source} onChange={e => setFormData({...formData, source: e.target.value})} className="w-full border border-slate-200 rounded-xl px-4 py-3 text-[14px] bg-slate-50 hover:bg-slate-100 focus:bg-white text-slate-800 font-medium outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all shadow-sm" placeholder="e.g. Mumbai" />
+                      <div className="flex justify-between items-center mb-1.5">
+                        <label className="block text-[11.5px] font-bold text-slate-500 uppercase tracking-wider">Source *</label>
+                        {contractSources.length > 0 && isCustomSource && (
+                          <button 
+                            type="button" 
+                            onClick={() => setIsCustomSource(false)} 
+                            className="text-[10px] font-bold text-blue-600 hover:underline"
+                          >
+                            Use Contract Dropdown
+                          </button>
+                        )}
+                      </div>
+
+                      {contractSources.length > 0 && !isCustomSource ? (
+                        <select 
+                          required 
+                          value={formData.source} 
+                          onChange={e => handleSourceSelect(e.target.value)} 
+                          className="w-full border border-slate-200 rounded-xl px-4 py-3 text-[14px] bg-slate-50 hover:bg-slate-100 focus:bg-white text-slate-800 font-medium outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all shadow-sm"
+                        >
+                          <option value="">Select Contract Source</option>
+                          {contractSources.map(s => (
+                            <option key={s} value={s}>{s}</option>
+                          ))}
+                          <option value="__custom__">✏️ Custom / Other Source...</option>
+                        </select>
+                      ) : (
+                        <input 
+                          required 
+                          value={formData.source} 
+                          onChange={e => setFormData({...formData, source: e.target.value})} 
+                          className="w-full border border-slate-200 rounded-xl px-4 py-3 text-[14px] bg-slate-50 hover:bg-slate-100 focus:bg-white text-slate-800 font-medium outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all shadow-sm" 
+                          placeholder="e.g. Mumbai" 
+                        />
+                      )}
                     </div>
+
+                    {/* Destination */}
                     <div>
-                      <label className="block text-[11.5px] font-bold text-slate-500 mb-1.5 uppercase tracking-wider">Destination</label>
-                      <input required value={formData.destination} onChange={e => setFormData({...formData, destination: e.target.value})} className="w-full border border-slate-200 rounded-xl px-4 py-3 text-[14px] bg-slate-50 hover:bg-slate-100 focus:bg-white text-slate-800 font-medium outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all shadow-sm" placeholder="e.g. Pune" />
+                      <div className="flex justify-between items-center mb-1.5">
+                        <label className="block text-[11.5px] font-bold text-slate-500 uppercase tracking-wider">Destination *</label>
+                        {contractDestinations.length > 0 && isCustomDestination && (
+                          <button 
+                            type="button" 
+                            onClick={() => setIsCustomDestination(false)} 
+                            className="text-[10px] font-bold text-blue-600 hover:underline"
+                          >
+                            Use Contract Dropdown
+                          </button>
+                        )}
+                      </div>
+
+                      {contractDestinations.length > 0 && !isCustomDestination ? (
+                        <select 
+                          required 
+                          value={formData.destination} 
+                          onChange={e => handleDestinationSelect(e.target.value)} 
+                          className="w-full border border-slate-200 rounded-xl px-4 py-3 text-[14px] bg-slate-50 hover:bg-slate-100 focus:bg-white text-slate-800 font-medium outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all shadow-sm"
+                        >
+                          <option value="">Select Contract Destination</option>
+                          {contractDestinations.map(d => (
+                            <option key={d} value={d}>{d}</option>
+                          ))}
+                          <option value="__custom__">✏️ Custom / Other Destination...</option>
+                        </select>
+                      ) : (
+                        <input 
+                          required 
+                          value={formData.destination} 
+                          onChange={e => setFormData({...formData, destination: e.target.value})} 
+                          className="w-full border border-slate-200 rounded-xl px-4 py-3 text-[14px] bg-slate-50 hover:bg-slate-100 focus:bg-white text-slate-800 font-medium outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all shadow-sm" 
+                          placeholder="e.g. Pune" 
+                        />
+                      )}
                     </div>
                   </div>
+
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <label className="block text-[11.5px] font-bold text-slate-500 mb-1.5 uppercase tracking-wider">Material</label>
@@ -426,11 +759,35 @@ export default function IndentsPage() {
                       <input required type="number" step="0.5" value={formData.weight} onChange={e => setFormData({...formData, weight: e.target.value})} className="w-full border border-slate-200 rounded-xl px-4 py-3 text-[14px] bg-slate-50 hover:bg-slate-100 focus:bg-white text-slate-800 font-medium outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all shadow-sm" placeholder="e.g. 20" />
                     </div>
                   </div>
+
+                  {/* Vehicle Type Req. */}
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-[11.5px] font-bold text-slate-500 mb-1.5 uppercase tracking-wider">Vehicle Type Req.</label>
-                      <select required value={formData.vehicleType} onChange={e => setFormData({...formData, vehicleType: e.target.value})} className="w-full border border-slate-200 rounded-xl px-4 py-3 text-[14px] bg-slate-50 hover:bg-slate-100 focus:bg-white text-slate-800 font-medium outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all shadow-sm">
+                      <div className="flex justify-between items-center mb-1.5">
+                        <label className="block text-[11.5px] font-bold text-slate-500 uppercase tracking-wider">Vehicle Type Req. *</label>
+                        {contractRateBadge && (
+                          <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200 flex items-center gap-1">
+                            <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                            Agreed
+                          </span>
+                        )}
+                      </div>
+                      <select 
+                        required 
+                        value={formData.vehicleType} 
+                        onChange={e => handleVehicleTypeSelect(e.target.value)} 
+                        className="w-full border border-slate-200 rounded-xl px-4 py-3 text-[14px] bg-slate-50 hover:bg-slate-100 focus:bg-white text-slate-800 font-medium outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all shadow-sm"
+                      >
                         <option value="">Select Vehicle Type</option>
+                        {routeContractedRates.length > 0 && (
+                          <optgroup label="⭐ Pre-agreed Contract Rates on this Route">
+                            {routeContractedRates.map((r: any) => (
+                              <option key={r.id} value={r.vehicleType}>
+                                {r.vehicleType} — Agreed: ₹{Number(r.rate).toLocaleString()}
+                              </option>
+                            ))}
+                          </optgroup>
+                        )}
                         <optgroup label="Open Body">
                           <option value="14 ft Open Body">14 ft Open Body</option>
                           <option value="17 ft Open Body">17 ft Open Body</option>
@@ -469,6 +826,7 @@ export default function IndentsPage() {
                       </select>
                     </div>
                   </div>
+
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <label className="block text-[11.5px] font-bold text-slate-500 mb-1.5 uppercase tracking-wider">Loading Date</label>
@@ -486,12 +844,15 @@ export default function IndentsPage() {
                       <input type="time" value={formData.loadingTime} onChange={e => setFormData({...formData, loadingTime: e.target.value})} className="w-full border border-slate-200 rounded-xl px-4 py-3 text-[14px] bg-slate-50 hover:bg-slate-100 focus:bg-white text-slate-800 font-medium outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all shadow-sm" />
                     </div>
                   </div>
+
                   <div className="grid grid-cols-1 gap-4">
                     <div>
                       <label className="block text-[11.5px] font-bold text-slate-500 mb-1.5 uppercase tracking-wider">Intermediate Warehouse (Optional for 3PL)</label>
                       <input value={formData.warehouseLocation} onChange={e => setFormData({...formData, warehouseLocation: e.target.value})} className="w-full border border-slate-200 rounded-xl px-4 py-3 text-[14px] bg-slate-50 hover:bg-slate-100 focus:bg-white text-slate-800 font-medium outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all shadow-sm" placeholder="e.g. Central Hub (Mumbai)" />
                     </div>
                   </div>
+
+                  {/* Pricing Model & Auto-filled Customer Rate */}
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <label className="block text-[11.5px] font-bold text-slate-500 mb-1.5 uppercase tracking-wider">Pricing Model</label>
@@ -503,8 +864,22 @@ export default function IndentsPage() {
                     <div>
                       {formData.pricingModel === "AnnualContract" && (
                         <>
-                          <label className="block text-[11.5px] font-bold text-slate-500 mb-1.5 uppercase tracking-wider">Customer Rate (₹) [Annual Contract]</label>
-                          <input type="number" step="0.01" value={formData.customerRate} onChange={e => setFormData({...formData, customerRate: e.target.value})} className="w-full border border-slate-200 rounded-xl px-4 py-3 text-[14px] bg-slate-50 hover:bg-slate-100 focus:bg-white text-slate-800 font-medium outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all shadow-sm" placeholder="e.g. 15000 (Auto-fetched in future)" />
+                          <div className="flex justify-between items-center mb-1.5">
+                            <label className="block text-[11.5px] font-bold text-slate-500 uppercase tracking-wider">Customer Rate (₹)</label>
+                            {contractRateBadge && (
+                              <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">
+                                ✓ Auto-filled from Contract
+                              </span>
+                            )}
+                          </div>
+                          <input 
+                            type="number" 
+                            step="0.01" 
+                            value={formData.customerRate} 
+                            onChange={e => setFormData({...formData, customerRate: e.target.value})} 
+                            className="w-full border border-slate-200 rounded-xl px-4 py-3 text-[14px] bg-slate-50 hover:bg-slate-100 focus:bg-white text-slate-800 font-bold font-mono outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all shadow-sm" 
+                            placeholder={contractRateBadge ? "Auto-filled" : "Enter agreed rate"} 
+                          />
                         </>
                       )}
                     </div>
