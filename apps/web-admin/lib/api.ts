@@ -84,3 +84,27 @@ export const getCustomers = () => fetchApi('/Customers');
 export const getVendors = () => fetchApi('/Vendors');
 export const getVehicles = () => fetchApi('/Vehicles');
 export const getDrivers = () => fetchApi('/Drivers');
+
+// -- CUSTOMER RATE CONTRACTS --
+export const getCustomerRateContracts = (params?: { customerId?: number, source?: string, destination?: string, vehicleType?: string, status?: string }) => {
+  const q = new URLSearchParams();
+  if (params?.customerId) q.append('customerId', params.customerId.toString());
+  if (params?.source) q.append('source', params.source);
+  if (params?.destination) q.append('destination', params.destination);
+  if (params?.vehicleType) q.append('vehicleType', params.vehicleType);
+  if (params?.status) q.append('status', params.status);
+  const qs = q.toString();
+  return fetchApi(`/CustomerRateContracts${qs ? `?${qs}` : ''}`);
+};
+export const getCustomerRates = (customerId: number) => fetchApi(`/CustomerRateContracts/Customer/${customerId}`);
+export const bulkSyncCustomerRates = (customerId: number, data: { contractDuration?: string, effectiveFrom?: string, effectiveTo?: string, rates: any[] }) => fetchApi(`/CustomerRateContracts/BulkSync/${customerId}`, {
+  method: 'POST',
+  body: JSON.stringify(data),
+});
+export const bulkImportRates = (items: any[]) => fetchApi('/CustomerRateContracts/Bulk', {
+  method: 'POST',
+  body: JSON.stringify(items),
+});
+export const deleteCustomerRate = (id: number) => fetchApi(`/CustomerRateContracts/${id}`, {
+  method: 'DELETE',
+});

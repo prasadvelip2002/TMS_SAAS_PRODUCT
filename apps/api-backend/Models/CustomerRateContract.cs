@@ -4,7 +4,6 @@ namespace api_backend.Models
 {
     public class CustomerRateContract : BaseEntity, ITenantEntity, ICompanyEntity
     {
-        
         public int CustomerId { get; set; }
         public Customer? Customer { get; set; }
 
@@ -16,6 +15,9 @@ namespace api_backend.Models
         
         public DateTime EffectiveFrom { get; set; }
         public DateTime EffectiveTo { get; set; }
+
+        public string? ContractDuration { get; set; } = "1 Year";
+        public string? Remarks { get; set; }
 
         public int TenantId { get; set; }
         public Tenant? Tenant { get; set; }
