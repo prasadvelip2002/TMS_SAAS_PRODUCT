@@ -15,6 +15,7 @@ export default function AdminPODDashboard() {
     if (!searchQuery.trim()) return true;
     const q = searchQuery.toLowerCase().trim();
     return (
+      `trp-${1000 + trip.id}`.toLowerCase().includes(q) ||
       `trp-${trip.id}`.toLowerCase().includes(q) ||
       trip.id?.toString().includes(q) ||
       trip.indent?.customer?.name?.toLowerCase().includes(q) ||
@@ -22,7 +23,8 @@ export default function AdminPODDashboard() {
       trip.indent?.destination?.toLowerCase().includes(q) ||
       trip.indent?.warehouseLocation?.toLowerCase().includes(q) ||
       trip.driver?.name?.toLowerCase().includes(q) ||
-      trip.vehicle?.registrationNumber?.toLowerCase().includes(q) ||
+      trip.vehicle?.vehicleNumber?.toLowerCase().includes(q) ||
+      trip.vehicle?.rcNumber?.toLowerCase().includes(q) ||
       trip.status?.toLowerCase().includes(q)
     );
   });
@@ -182,10 +184,10 @@ export default function AdminPODDashboard() {
       {viewMode === 'list' ? (
         <div className="bg-white border border-slate-200 rounded-[16px] overflow-hidden shadow-sm flex-1 flex flex-col">
           <div className="overflow-auto flex-1">
-            <ProtoTable headers={["TRIP ID", "CUSTOMER & ROUTE", "DRIVER & VEHICLE", "TRIP STATUS", "POD STATUS", "ACTIONS"]}>
+            <ProtoTable headers={["TRIP ID", "CUSTOMER", "ROUTE", "DRIVER & VEHICLE", "TRIP STATUS", "POD STATUS", "ACTIONS"]}>
               {loading ? (
                 <tr>
-                  <Td colSpan={6} className="text-center py-16">
+                  <Td colSpan={7} className="text-center py-16">
                     <div className="flex flex-col items-center justify-center text-slate-400">
                       <Loader2 className="w-10 h-10 mb-3 animate-spin text-slate-300" />
                       <span className="text-[14px] font-medium">Loading POD Data...</span>
@@ -194,7 +196,7 @@ export default function AdminPODDashboard() {
                 </tr>
               ) : filteredTrips.length === 0 ? (
                 <tr>
-                  <Td colSpan={6} className="text-center py-20">
+                  <Td colSpan={7} className="text-center py-20">
                     <div className="flex flex-col items-center justify-center">
                       <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mb-4 border border-slate-100">
                         <Camera className="w-8 h-8 text-slate-300" />
@@ -221,70 +223,138 @@ export default function AdminPODDashboard() {
               ) : (
                 filteredTrips.map((trip) => (
                   <tr key={trip.id} className="hover:bg-slate-50/80 transition-colors border-b border-slate-100 last:border-0">
-                    <Td className="font-mono text-[13px] font-semibold text-slate-600">
-                      <Link href={`/trips/${trip.id}/lr`} className="hover:text-blue-600 hover:underline">
-                        TRP-{trip.id}
-                      </Link>
+                    <Td className="font-mono text-[13px] font-bold text-slate-900">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <Link href={`/trips/${trip.id}/lr`} className="hover:text-blue-600 hover:underline">
+                          TRP-{1000 + trip.id}
+                        </Link>
+                        {trip.indent?.warehouseLocation && (
+                          <>
+                            {(trip.legType === "InboundLeg1" || trip.serviceScope === "SourceToHub") && (
+                              <span className="px-1.5 py-0.5 bg-blue-100 text-blue-700 rounded text-[9px] font-bold uppercase">Leg 1</span>
+                            )}
+                            {trip.legType === "OutboundLeg2" && (
+                              <span className="px-1.5 py-0.5 bg-purple-100 text-purple-700 rounded text-[9px] font-bold uppercase">Leg 2</span>
+                            )}
+                            {trip.legType !== "InboundLeg1" && trip.legType !== "OutboundLeg2" && trip.serviceScope !== "SourceToHub" && (
+                              <span className="px-1.5 py-0.5 bg-emerald-100 text-emerald-700 rounded text-[9px] font-bold uppercase">Full Route</span>
+                            )}
+                          </>
+                        )}
+                      </div>
+                    </Td>
+                    <Td className="font-semibold text-slate-800 text-[13px] whitespace-nowrap">
+                      {trip.indent?.customer?.name || "Unknown"}
                     </Td>
                     <Td>
-                      <div className="font-semibold text-slate-800">{trip.indent?.customer?.name}</div>
-                      <div className="text-[11px] text-slate-500 mt-0.5 truncate max-w-[200px]">
-                        {trip.indent?.source} → {trip.indent?.destination}
+                      {trip.indent?.warehouseLocation ? (
+                        <div className="flex flex-col gap-1 min-w-[250px]">
+                          {/* All locations: Source -> Hub (Hub) -> Destination */}
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <span className="text-[13px] font-medium text-slate-700">{trip.indent.source}</span>
+                            <span className="text-slate-300">→</span>
+                            <span className="text-[11px] font-bold text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200">
+                              {trip.indent.warehouseLocation} (Hub)
+                            </span>
+                            <span className="text-slate-300">→</span>
+                            <span className="text-[13px] font-medium text-slate-700">{trip.indent.destination}</span>
+                          </div>
+                          {/* Leg / Scope badge */}
+                          <div>
+                            {trip.legType === 'InboundLeg1' || trip.serviceScope === 'SourceToHub' ? (
+                              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10.5px] font-bold bg-blue-50 text-blue-700 border border-blue-200">
+                                📍 Leg 1: {trip.indent.source} → {trip.indent.warehouseLocation} (Hub)
+                              </span>
+                            ) : trip.legType === 'OutboundLeg2' ? (
+                              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10.5px] font-bold bg-purple-50 text-purple-700 border border-purple-200">
+                                📍 Leg 2: {trip.indent.warehouseLocation} (Hub) → {trip.indent.destination}
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10.5px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                🛣️ Entire Route: {trip.indent.source} → {trip.indent.destination}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-2 min-w-[180px]">
+                          <span className="text-[13px] font-medium text-slate-700">{trip.indent?.source || "—"}</span>
+                          <span className="text-slate-300">→</span>
+                          <span className="text-[13px] font-medium text-slate-700">{trip.indent?.destination || "—"}</span>
+                        </div>
+                      )}
+                    </Td>
+                    <Td>
+                      <div className="flex flex-col gap-0.5">
+                        <span className="font-semibold text-slate-800 text-[13px]">{trip.driver?.name || "—"}</span>
+                        <span className="font-mono text-[11px] text-slate-500 font-medium">{trip.vehicle?.vehicleNumber || trip.vehicle?.rcNumber || "—"}</span>
                       </div>
                     </Td>
                     <Td>
-                      <div className="font-semibold text-slate-700">{trip.driver?.name}</div>
-                      <div className="text-[11px] font-mono text-slate-500 mt-0.5">{trip.vehicle?.registrationNumber}</div>
-                    </Td>
-                    <Td>
-                      <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider ${trip.status === "Delivered" ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' : 'bg-sky-50 text-sky-700 border border-sky-100'}`}>
+                      <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider border ${
+                        trip.status === "Delivered" 
+                          ? 'bg-emerald-50 text-emerald-700 border-emerald-200' 
+                          : trip.status === "Closed"
+                            ? 'bg-slate-100 text-slate-700 border-slate-200'
+                            : trip.status === "Started" || trip.status === "InTransit"
+                              ? 'bg-sky-50 text-sky-700 border-sky-200'
+                              : 'bg-amber-50 text-amber-700 border-amber-200'
+                      }`}>
                         {trip.status}
                       </span>
                     </Td>
                     <Td>
                       {trip.podReceivedDate ? (
-                        <Badge color="green">Verified & Closed</Badge>
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200">
+                          <CheckCircle className="w-3.5 h-3.5 text-emerald-600" /> Verified & Closed
+                        </span>
                       ) : trip.podUploadedDate ? (
-                        <Badge color="orange">Pending Review</Badge>
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold text-amber-700 bg-amber-50 border border-amber-200">
+                          <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" /> Pending Review
+                        </span>
                       ) : (
-                        <Badge color="grey">Awaiting Upload</Badge>
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold text-slate-600 bg-slate-100 border border-slate-200">
+                          Awaiting Upload
+                        </span>
                       )}
                     </Td>
                     <Td>
-                      <div className="flex gap-2">
+                      <div className="flex items-center gap-2 flex-wrap">
                         {!trip.podUploadedDate ? (
-                          <div className="flex flex-col gap-1">
+                          <div className="flex flex-col gap-1.5">
                             <span className="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Driver Upload Link:</span>
-                            <a 
-                              href={`/pod/${trip.podMagicLinkToken}`} 
-                              target="_blank"
-                              className="bg-slate-100 text-slate-600 border border-slate-200 px-3 py-1.5 rounded-xl text-xs font-semibold hover:bg-slate-200 transition-colors flex items-center gap-1.5 w-max mb-1"
-                            >
-                              <Smartphone className="w-3.5 h-3.5 text-slate-500" /> Open Mobile View
-                            </a>
-                            <button 
-                              onClick={() => handleAdminUploadClick(trip)}
-                              disabled={isUploading && uploadingTrip?.id === trip.id}
-                              className="bg-emerald-50 text-emerald-700 border border-emerald-200 px-3 py-1.5 rounded-xl text-xs font-semibold hover:bg-emerald-100 transition-colors flex items-center gap-1.5 w-max disabled:opacity-50"
-                            >
-                              {isUploading && uploadingTrip?.id === trip.id ? <Loader2 className="w-3.5 h-3.5 animate-spin text-emerald-500" /> : <Camera className="w-3.5 h-3.5 text-emerald-500" />} 
-                              Upload for Driver
-                            </button>
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <a 
+                                href={`/pod/${trip.podMagicLinkToken}`} 
+                                target="_blank"
+                                className="bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors flex items-center gap-1.5 shadow-sm"
+                              >
+                                <Smartphone className="w-3.5 h-3.5 text-slate-500" /> Open Mobile View
+                              </a>
+                              <button 
+                                onClick={() => handleAdminUploadClick(trip)}
+                                disabled={isUploading && uploadingTrip?.id === trip.id}
+                                className="bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors flex items-center gap-1.5 shadow-sm disabled:opacity-50"
+                              >
+                                {isUploading && uploadingTrip?.id === trip.id ? <Loader2 className="w-3.5 h-3.5 animate-spin text-emerald-500" /> : <Camera className="w-3.5 h-3.5 text-emerald-600" />} 
+                                Upload for Driver
+                              </button>
+                            </div>
                           </div>
                         ) : !trip.podReceivedDate ? (
                           <button 
                             onClick={() => openVerifyPanel(trip)}
-                            className="bg-amber-50 text-amber-700 border border-amber-200 px-4 py-2 rounded-xl text-[12px] font-bold hover:bg-amber-100 transition-colors flex items-center gap-2 relative shadow-sm"
+                            className="bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200 px-4 py-2 rounded-xl text-[12px] font-bold transition-colors flex items-center gap-2 relative shadow-sm"
                           >
-                            <ImageIcon className="w-4 h-4" /> Review Image
+                            <ImageIcon className="w-4 h-4 text-amber-600" /> Review POD
                             <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-red-500 rounded-full animate-pulse shadow-sm border border-white" />
                           </button>
                         ) : (
                           <button 
                             onClick={() => openVerifyPanel(trip)}
-                            className="bg-slate-100 text-slate-600 border border-slate-200 px-4 py-2 rounded-xl text-[12px] font-bold flex items-center gap-1.5 hover:bg-slate-200 transition-colors"
+                            className="bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 px-4 py-2 rounded-xl text-[12px] font-bold flex items-center gap-1.5 transition-colors shadow-sm"
                           >
-                            <CheckCircle className="w-4 h-4 text-emerald-500" /> View POD
+                            <CheckCircle className="w-4 h-4 text-emerald-600" /> View POD
                           </button>
                         )}
                       </div>
@@ -334,10 +404,25 @@ export default function AdminPODDashboard() {
                         <FileText className="w-4 h-4" />
                       </div>
                       <div>
-                        <div className="font-mono font-bold text-slate-900 text-sm">
-                          <Link href={`/trips/${trip.id}/lr`} className="hover:text-blue-600 hover:underline">TRP-{trip.id}</Link>
+                        <div className="font-mono font-bold text-slate-900 text-sm flex items-center gap-1.5 flex-wrap">
+                          <Link href={`/trips/${trip.id}/lr`} className="hover:text-blue-600 hover:underline font-bold">
+                            TRP-{1000 + trip.id}
+                          </Link>
+                          {trip.indent?.warehouseLocation && (
+                            <>
+                              {(trip.legType === "InboundLeg1" || trip.serviceScope === "SourceToHub") && (
+                                <span className="px-1.5 py-0.5 bg-blue-100 text-blue-700 rounded text-[9px] font-bold uppercase">Leg 1</span>
+                              )}
+                              {trip.legType === "OutboundLeg2" && (
+                                <span className="px-1.5 py-0.5 bg-purple-100 text-purple-700 rounded text-[9px] font-bold uppercase">Leg 2</span>
+                              )}
+                              {trip.legType !== "InboundLeg1" && trip.legType !== "OutboundLeg2" && trip.serviceScope !== "SourceToHub" && (
+                                <span className="px-1.5 py-0.5 bg-emerald-100 text-emerald-700 rounded text-[9px] font-bold uppercase">Full Route</span>
+                              )}
+                            </>
+                          )}
                         </div>
-                        <div className="text-[11px] text-slate-500 font-medium mt-0.5 line-clamp-1">{trip.indent?.customer?.name}</div>
+                        <div className="text-[11px] text-slate-500 font-medium mt-0.5 line-clamp-1">{trip.indent?.customer?.name || "Unknown"}</div>
                       </div>
                     </div>
                     {trip.podReceivedDate ? (
@@ -351,34 +436,63 @@ export default function AdminPODDashboard() {
                   
                   {/* Ticket Route */}
                   <div className="px-5 py-5 border-b border-slate-100 border-dashed relative">
-                    <div className="flex items-center gap-4">
-                      <div className="flex-1">
-                        <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Source</div>
-                        <div className="font-semibold text-slate-800 text-sm truncate" title={trip.indent?.source}>{trip.indent?.source}</div>
-                      </div>
-                      <div className="flex-shrink-0 flex items-center justify-center">
-                        <div className="w-8 h-px bg-slate-300"></div>
-                        <div className="w-6 h-6 rounded-full border border-slate-200 flex items-center justify-center mx-1 bg-white shadow-sm z-10">
-                          <span className="text-[10px]">→</span>
+                    {trip.indent?.warehouseLocation ? (
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-1.5 flex-wrap font-semibold text-slate-800 text-xs">
+                          <span>{trip.indent.source}</span>
+                          <span className="text-slate-300">→</span>
+                          <span className="font-bold text-amber-700 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded text-[10px]">
+                            {trip.indent.warehouseLocation} (Hub)
+                          </span>
+                          <span className="text-slate-300">→</span>
+                          <span>{trip.indent.destination}</span>
                         </div>
-                        <div className="w-8 h-px bg-slate-300"></div>
+                        <div>
+                          {trip.legType === 'InboundLeg1' || trip.serviceScope === 'SourceToHub' ? (
+                            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-200">
+                              📍 Leg 1: {trip.indent.source} → {trip.indent.warehouseLocation} (Hub)
+                            </span>
+                          ) : trip.legType === 'OutboundLeg2' ? (
+                            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-purple-50 text-purple-700 border border-purple-200">
+                              📍 Leg 2: {trip.indent.warehouseLocation} (Hub) → {trip.indent.destination}
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                              🛣️ Entire Route: {trip.indent.source} → {trip.indent.destination}
+                            </span>
+                          )}
+                        </div>
                       </div>
-                      <div className="flex-1 text-right">
-                        <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Destination</div>
-                        <div className="font-semibold text-slate-800 text-sm truncate" title={trip.indent?.destination}>{trip.indent?.destination}</div>
+                    ) : (
+                      <div className="flex items-center gap-4">
+                        <div className="flex-1">
+                          <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Source</div>
+                          <div className="font-semibold text-slate-800 text-sm truncate" title={trip.indent?.source}>{trip.indent?.source || "—"}</div>
+                        </div>
+                        <div className="flex-shrink-0 flex items-center justify-center">
+                          <div className="w-8 h-px bg-slate-300"></div>
+                          <div className="w-6 h-6 rounded-full border border-slate-200 flex items-center justify-center mx-1 bg-white shadow-sm z-10">
+                            <span className="text-[10px]">→</span>
+                          </div>
+                          <div className="w-8 h-px bg-slate-300"></div>
+                        </div>
+                        <div className="flex-1 text-right">
+                          <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Destination</div>
+                          <div className="font-semibold text-slate-800 text-sm truncate" title={trip.indent?.destination}>{trip.indent?.destination || "—"}</div>
+                        </div>
                       </div>
-                    </div>
+                    )}
                   </div>
                   
                   {/* Ticket Details */}
                   <div className="px-5 py-4 bg-slate-50/30 flex-1 grid grid-cols-2 gap-y-4 gap-x-2">
                     <div>
                       <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Driver</div>
-                      <div className="font-medium text-slate-700 text-[13px]">{trip.driver?.name}</div>
+                      <div className="font-medium text-slate-700 text-[13px]">{trip.driver?.name || "—"}</div>
                     </div>
                     <div>
                       <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Vehicle</div>
-                      <div className="font-medium text-slate-700 text-[13px]">{trip.vehicle?.registrationNumber}</div>
+                      <div className="font-mono text-slate-700 text-[12px] font-medium">{trip.vehicle?.vehicleNumber || trip.vehicle?.rcNumber || "—"}</div>
                     </div>
                     <div>
                       <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Trip Status</div>
@@ -445,7 +559,28 @@ export default function AdminPODDashboard() {
             <h2 className="text-xl font-bold text-slate-800 flex items-center gap-2">
               <Camera className="w-5 h-5 text-slate-400" /> Review POD
             </h2>
-            <p className="text-[13px] text-slate-500 mt-1 font-medium">TRP-{selectedTrip?.id} • {selectedTrip?.indent?.customer?.name}</p>
+            <div className="text-[13px] text-slate-500 mt-1 font-medium flex items-center gap-2 flex-wrap">
+              <span className="font-mono font-bold text-slate-700">TRP-{selectedTrip ? 1000 + selectedTrip.id : ""}</span>
+              <span className="text-slate-300">•</span>
+              <span className="font-semibold text-slate-800">{selectedTrip?.indent?.customer?.name || "Customer"}</span>
+            </div>
+            {selectedTrip?.indent && (
+              <div className="text-xs font-medium text-slate-600 mt-1 flex items-center gap-1.5 flex-wrap">
+                <span>{selectedTrip.indent.source}</span>
+                {selectedTrip.indent.warehouseLocation ? (
+                  <>
+                    <span className="text-slate-300">→</span>
+                    <span className="font-bold text-amber-700 bg-amber-50 border border-amber-200 px-1 py-0.2 rounded text-[10px]">
+                      {selectedTrip.indent.warehouseLocation} (Hub)
+                    </span>
+                    <span className="text-slate-300">→</span>
+                  </>
+                ) : (
+                  <span className="text-slate-300">→</span>
+                )}
+                <span>{selectedTrip.indent.destination}</span>
+              </div>
+            )}
           </div>
           <button 
             onClick={() => setIsVerifyPanelOpen(false)}
