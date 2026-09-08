@@ -88,6 +88,10 @@ using (var scope = app.Services.CreateScope())
             UPDATE ""Trips"" t
             SET ""LegType"" = 'EntireRoute'
             WHERE t.""ServiceScope"" = 'EntireRoute' AND t.""LegType"" != 'OutboundLeg2' AND EXISTS (SELECT 1 FROM ""Indents"" i WHERE i.""Id"" = t.""IndentId"" AND i.""WarehouseLocation"" IS NOT NULL AND i.""WarehouseLocation"" != '');
+
+            UPDATE ""Trips""
+            SET ""Status"" = 'Pending Assignment'
+            WHERE (""VehicleId"" IS NULL OR ""DriverId"" IS NULL) AND ""Status"" = 'Assigned';
         ");
     }
     catch (Exception ex)

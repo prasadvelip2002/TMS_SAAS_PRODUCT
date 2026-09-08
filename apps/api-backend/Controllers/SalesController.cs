@@ -131,7 +131,7 @@ namespace api_backend.Controllers
             // Now that Customer PO is accepted, the indent is ready for assignment
             if (sq.Indent != null)
             {
-                sq.Indent.Status = "Assigned";
+                sq.Indent.Status = "Pending Assignment";
             }
             
             // Determine LegType & ServiceScope based on vendor quote scope
@@ -143,13 +143,14 @@ namespace api_backend.Controllers
             }
 
             // Auto-generate Trip (for Own fleet, VendorId will be null and SupplierRate 0)
+            // Trip status must be Pending Assignment until vehicle and driver are assigned!
             var trip = new Trip
             {
                 IndentId = sq.IndentId,
                 LegType = legType,
                 ServiceScope = serviceScope,
                 VendorId = sq.WinningVendorQuotation?.VendorId,
-                Status = "Assigned",
+                Status = "Pending Assignment",
                 BookingType = "Fixed",
                 SupplierRate = sq.WinningVendorQuotation?.QuotedRate ?? 0,
                 CustomerRate = (legType == "InboundLeg1") ? 0 : sq.SellingPrice,

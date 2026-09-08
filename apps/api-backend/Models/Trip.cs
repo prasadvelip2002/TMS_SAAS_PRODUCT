@@ -35,7 +35,7 @@ namespace api_backend.Models
         public string? SupervisorName { get; set; }
         public string? SupervisorContact { get; set; }
         public string? SupplierPaymentTo { get; set; } // Vendor, Driver
-        public string Status { get; set; } = "Assigned"; // Assigned, Accepted, Started, Delivered, Closed
+        public string Status { get; set; } = "Pending Assignment"; // Pending Assignment, Assigned, Accepted, Started, Delivered, Closed
 
         public ICollection<Payment>? Payments { get; set; }
         public ICollection<AdditionalCharge>? AdditionalCharges { get; set; }

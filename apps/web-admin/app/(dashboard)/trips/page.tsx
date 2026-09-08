@@ -107,14 +107,29 @@ export default function TripsPage() {
   });
 
   const TRIP_STAGES = ['Indent', 'Confirmed', 'Assigned', 'Started', 'Delivered', 'POD', 'Approved', 'Closed'];
+
+  const isFleetAssigned = (trip: any) => {
+    return Boolean(trip.vehicleId && trip.driverId);
+  };
+
+  const getEffectiveStatus = (trip: any) => {
+    if (trip.invoice?.status === 'Paid') return 'Paid';
+    if (!isFleetAssigned(trip) && (trip.status === 'Pending Assignment' || trip.status === 'Assigned')) {
+      return 'Pending Assignment';
+    }
+    return trip.status;
+  };
+
   const getStageIdx = (trip: any) => {
     if (trip.invoice?.status === 'Paid') return 7;
     if (!trip.vendorId && (trip.status === 'Closed' || trip.status === 'Approved')) return 7;
+    if (!isFleetAssigned(trip)) return 1; // Confirmed / Awaiting Fleet Assignment
     const map: Record<string, number> = {
       'Pending Assignment': 1, 'Assigned': 2, 'Started': 3, 'Delivered': 4, 'POD_Uploaded': 5, 'Closed': 7, 'Approved': 6
     };
-    return map[trip.status] ?? 0;
+    return map[trip.status] ?? 2;
   };
+
   const getBadgeColor = (status: string) => {
     const map: Record<string, 'blue' | 'orange' | 'green' | 'red' | 'grey'> = {
       'Pending Assignment': 'orange', 'Assigned': 'blue', 'Started': 'blue', 'Delivered': 'orange', 'POD_Uploaded': 'blue', 'Closed': 'green', 'Approved': 'green', 'Paid': 'green'
@@ -496,12 +511,12 @@ export default function TripsPage() {
                         <RouteTrack stages={TRIP_STAGES} currentIdx={getStageIdx(trip)} />
                       </Td>
                       <Td>
-                        <Badge color={trip.invoice?.status === 'Paid' ? 'green' : getBadgeColor(trip.status)}>
-                          {trip.invoice?.status === 'Paid' ? 'Paid' : trip.status}
+                        <Badge color={getBadgeColor(getEffectiveStatus(trip))}>
+                          {getEffectiveStatus(trip)}
                         </Badge>
                       </Td>
                       <Td className="flex gap-2 items-center flex-wrap">
-                        {trip.status === "Assigned" && !trip.lrNumber && (
+                        {isFleetAssigned(trip) && trip.status === "Assigned" && !trip.lrNumber && (
                           <button 
                             onClick={() => handleGenerateLR(trip.id)}
                             className="bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 px-3 py-1.5 rounded-lg text-[11.5px] font-bold uppercase tracking-wide transition-colors"
@@ -509,7 +524,7 @@ export default function TripsPage() {
                             Generate LR
                           </button>
                         )}
-                        {trip.status === "Assigned" && trip.lrNumber && (
+                        {isFleetAssigned(trip) && trip.status === "Assigned" && trip.lrNumber && (
                           <button 
                             onClick={() => handleUpdateStatus(trip.id, "Started")}
                             className="bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 px-3 py-1.5 rounded-lg text-[11.5px] font-bold uppercase tracking-wide transition-colors"
@@ -525,7 +540,7 @@ export default function TripsPage() {
                             Mark Delivered
                           </button>
                         )}
-                        {trip.status === "Pending Assignment" && (
+                        {!isFleetAssigned(trip) && (
                           <Link href="/trips/assignment">
                             <button className="bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200 px-3 py-1.5 rounded-lg text-[11.5px] font-bold uppercase tracking-wide transition-colors">
                               Assign Fleet
@@ -599,8 +614,8 @@ export default function TripsPage() {
                           </div>
                         </div>
                       </div>
-                      <Badge color={trip.invoice?.status === 'Paid' ? 'green' : getBadgeColor(trip.status)}>
-                        {trip.invoice?.status === 'Paid' ? 'Paid' : trip.status}
+                      <Badge color={getBadgeColor(getEffectiveStatus(trip))}>
+                        {getEffectiveStatus(trip)}
                       </Badge>
                     </div>
                     
@@ -663,7 +678,7 @@ export default function TripsPage() {
                     
                     {/* Ticket Actions */}
                     <div className="p-4 bg-white border-t border-slate-100 flex gap-2 items-center flex-wrap">
-                      {trip.status === "Assigned" && !trip.lrNumber && (
+                      {isFleetAssigned(trip) && trip.status === "Assigned" && !trip.lrNumber && (
                         <button 
                           onClick={() => handleGenerateLR(trip.id)}
                           className="flex-1 bg-blue-50 hover:bg-blue-600 hover:text-white text-blue-700 font-bold py-2.5 rounded-xl transition-all text-[13px]"
@@ -671,7 +686,7 @@ export default function TripsPage() {
                           Generate LR
                         </button>
                       )}
-                      {trip.status === "Assigned" && trip.lrNumber && (
+                      {isFleetAssigned(trip) && trip.status === "Assigned" && trip.lrNumber && (
                         <button 
                           onClick={() => handleUpdateStatus(trip.id, "Started")}
                           className="flex-1 bg-emerald-50 hover:bg-emerald-600 hover:text-white text-emerald-700 font-bold py-2.5 rounded-xl transition-all text-[13px]"
@@ -687,7 +702,7 @@ export default function TripsPage() {
                           Mark Delivered
                         </button>
                       )}
-                      {trip.status === "Pending Assignment" && (
+                      {!isFleetAssigned(trip) && (
                         <Link href="/trips/assignment" className="flex-1">
                           <button className="w-full bg-amber-50 hover:bg-amber-600 hover:text-white text-amber-700 font-bold py-2.5 rounded-xl transition-all text-[13px]">
                             Assign Fleet
