@@ -19,6 +19,19 @@ namespace api_backend.Controllers
             _context = context;
         }
 
+        // GET: api/Sales/Quotations
+        [HttpGet("Quotations")]
+        [Authorize]
+        public async Task<IActionResult> GetAllSalesQuotations()
+        {
+            var sqs = await _context.SalesQuotations
+                .Include(s => s.WinningVendorQuotation)
+                .ThenInclude(v => v.Vendor)
+                .OrderByDescending(s => s.CreatedAt)
+                .ToListAsync();
+            return Ok(sqs);
+        }
+
         // GET: api/Sales/Quotations/{indentId}
         [HttpGet("Quotations/{indentId}")]
         [Authorize]
@@ -48,7 +61,9 @@ namespace api_backend.Controllers
                 var vendorQuote = await _context.VendorQuotations.FindAsync(request.VendorQuotationId.Value);
                 if (vendorQuote == null) return NotFound("Vendor quotation not found");
                 baseRate = vendorQuote.QuotedRate;
-                sellingPrice = vendorQuote.QuotedRate + request.Margin;
+                sellingPrice = (request.SellingPrice.HasValue && request.SellingPrice.Value > 0) 
+                    ? request.SellingPrice.Value 
+                    : (vendorQuote.QuotedRate + request.Margin);
             }
             else
             {

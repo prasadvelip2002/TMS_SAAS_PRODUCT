@@ -341,7 +341,22 @@ export default function CustomerInvoicingDashboard() {
                               />
                             </div>
                           </div>
-                          <div className="text-[12px] font-medium text-slate-600">{trip.indent?.source} → {trip.indent?.destination}</div>
+                          <div className="text-[12px] font-medium text-slate-600 flex items-center gap-1.5 flex-wrap">
+                            <span>{trip.indent?.source}</span>
+                            <span className="text-slate-400">→</span>
+                            {trip.indent?.warehouseLocation && (
+                              <>
+                                <span className="font-semibold text-purple-600">{trip.indent?.warehouseLocation} <span className="text-[10px] font-bold text-blue-500 uppercase">(Hub)</span></span>
+                                <span className="text-slate-400">→</span>
+                              </>
+                            )}
+                            <span>{trip.indent?.destination}</span>
+                            {trip.indent?.warehouseLocation && (
+                              <span className="px-1.5 py-0.5 bg-blue-50 text-blue-700 border border-blue-200 text-[10px] font-bold rounded ml-1">
+                                Full Route
+                              </span>
+                            )}
+                          </div>
                           
                           {/* CHARGES BREAKDOWN PILLS */}
                           <div className="mt-2 pt-2 border-t border-slate-100 flex flex-wrap gap-1.5 text-[11px]">

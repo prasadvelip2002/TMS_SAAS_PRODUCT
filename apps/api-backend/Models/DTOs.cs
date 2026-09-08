@@ -4,6 +4,7 @@ namespace api_backend.Models
 {
     public class AssignTripRequest
     {
+        public int? TripId { get; set; }
         public int IndentId { get; set; }
         public int? VendorId { get; set; }
         public int VehicleId { get; set; }

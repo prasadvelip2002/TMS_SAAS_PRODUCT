@@ -62,20 +62,30 @@ export default function LorryReceiptPrint() {
         <div className="grid grid-cols-2 gap-8 mb-6">
           <div className="border border-slate-400 p-4 min-h-[140px]">
             <h3 className="font-bold text-[12px] border-b border-slate-300 pb-1 mb-2 uppercase text-slate-500">Consignor (Sender)</h3>
-            <p className="font-bold text-sm uppercase">{trip.indent?.customer?.name || 'Loading Customer Details...'}</p>
-            <p className="text-[12px] mt-1">{trip.indent?.customer?.address || 'Address pending'}</p>
+            <p className="font-bold text-sm uppercase">
+              {trip.legType === "OutboundLeg2" 
+                ? (trip.indent?.warehouseLocation ? `${trip.indent.warehouseLocation} (Central Hub)` : "TRANSITFLOW LOGISTICS HUB") 
+                : (trip.indent?.customer?.name || 'Loading Customer Details...')}
+            </p>
+            <p className="text-[12px] mt-1">
+              {trip.legType === "OutboundLeg2"
+                ? (trip.indent?.warehouseLocation ? `Central Logistics Hub, ${trip.indent.warehouseLocation}` : "Central Hub, Warehouse No. 42")
+                : (trip.indent?.customer?.address || trip.indent?.source || 'Address pending')}
+            </p>
             <p className="text-[12px] mt-1"><strong>GSTIN:</strong> {trip.indent?.customer?.gstin || 'N/A'}</p>
             <p className="text-[12px]"><strong>Phone:</strong> {trip.indent?.customer?.phone || 'N/A'}</p>
           </div>
           <div className="border border-slate-400 p-4 min-h-[140px]">
             <h3 className="font-bold text-[12px] border-b border-slate-300 pb-1 mb-2 uppercase text-slate-500">Consignee (Receiver)</h3>
             <p className="font-bold text-sm uppercase">
-              {trip.legType === "InboundLeg1" ? "TRANSITFLOW LOGISTICS WAREHOUSE" : "OEM PLANT (Destination)"}
+              {trip.legType === "InboundLeg1" 
+                ? (trip.indent?.warehouseLocation ? `${trip.indent.warehouseLocation} (Central Hub)` : "TRANSITFLOW LOGISTICS HUB") 
+                : (trip.indent?.customer?.name ? `${trip.indent.customer.name} - Plant` : "CONSIGNEE (Destination)")}
             </p>
             <p className="text-[12px] mt-1 whitespace-pre-line">
               {trip.legType === "InboundLeg1" 
-                ? "Central Hub, Warehouse No. 42,\nIndustrial Area, Phase 1" 
-                : trip.indent?.destination}
+                ? (trip.indent?.warehouseLocation ? `Central Hub Warehouse, ${trip.indent.warehouseLocation}` : "Central Hub, Warehouse No. 42,\nIndustrial Area, Phase 1") 
+                : (trip.indent?.destination || "Destination Plant")}
             </p>
           </div>
         </div>
@@ -92,9 +102,9 @@ export default function LorryReceiptPrint() {
               </tr>
               <tr className="border-b border-slate-400">
                 <th className="p-2 border-r border-slate-400 text-[11px] uppercase text-slate-500">From</th>
-                <td className="p-2 border-r border-slate-400 text-sm">{trip.legType === "OutboundLeg2" ? "Transitflow Warehouse" : trip.indent?.source}</td>
+                <td className="p-2 border-r border-slate-400 text-sm">{trip.legType === "OutboundLeg2" ? (trip.indent?.warehouseLocation || "Transitflow Warehouse") : trip.indent?.source}</td>
                 <th className="p-2 border-r border-slate-400 text-[11px] uppercase text-slate-500">To</th>
-                <td className="p-2 text-sm">{trip.legType === "InboundLeg1" ? "Transitflow Warehouse" : trip.indent?.destination}</td>
+                <td className="p-2 text-sm">{trip.legType === "InboundLeg1" ? (trip.indent?.warehouseLocation || "Transitflow Warehouse") : trip.indent?.destination}</td>
               </tr>
               <tr>
                 <th className="p-2 border-r border-slate-400 text-[11px] uppercase text-slate-500">Driver Phone</th>

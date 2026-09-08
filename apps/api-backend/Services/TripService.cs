@@ -22,8 +22,21 @@ namespace api_backend.Services
             var indent = await _context.Indents.FindAsync(request.IndentId);
             if (indent == null) throw new Exception("Indent not found.");
 
-            // Check if a Trip already exists for this Indent (e.g., from RFQ)
-            var trip = await _context.Trips.FirstOrDefaultAsync(t => t.IndentId == request.IndentId);
+            Trip? trip = null;
+            if (request.TripId.HasValue && request.TripId.Value > 0)
+            {
+                trip = await _context.Trips.Include(t => t.Indent).FirstOrDefaultAsync(t => t.Id == request.TripId.Value);
+            }
+
+            if (trip == null)
+            {
+                // Look for an unassigned trip for this indent (e.g. from RFQ or pre-created leg)
+                trip = await _context.Trips.FirstOrDefaultAsync(t => t.IndentId == request.IndentId && (t.VehicleId == null || t.DriverId == null));
+                if (trip == null)
+                {
+                    trip = await _context.Trips.FirstOrDefaultAsync(t => t.IndentId == request.IndentId);
+                }
+            }
             
             bool isNewTrip = false;
             if (trip == null)
@@ -64,7 +77,23 @@ namespace api_backend.Services
                 trip.LegType = !string.IsNullOrEmpty(indent.WarehouseLocation) ? "InboundLeg1" : "Direct";
             }
 
-            indent.Status = "Assigned";
+            // Single Customer Invoice: Inbound Leg 1 is internal (CustomerRate = 0),
+            // while Outbound Leg 2 or Direct trip carries the full customer agreed rate.
+            if (trip.LegType == "InboundLeg1")
+            {
+                trip.CustomerRate = 0;
+                indent.Status = "Assigned";
+            }
+            else if (trip.LegType == "OutboundLeg2")
+            {
+                trip.CustomerRate = indent.CustomerRate;
+                indent.Status = "Outbound_Assigned";
+            }
+            else
+            {
+                trip.CustomerRate = indent.CustomerRate;
+                indent.Status = "Assigned";
+            }
             
             if (isNewTrip)
             {
@@ -100,11 +129,29 @@ namespace api_backend.Services
             {
                 if (newStatus == "Delivered" || newStatus == "Completed")
                 {
-                    trip.Indent.Status = "Completed";
+                    if (trip.LegType == "InboundLeg1" && !string.IsNullOrEmpty(trip.Indent.WarehouseLocation))
+                    {
+                        trip.Indent.Status = "At_Hub";
+                    }
+                    else
+                    {
+                        trip.Indent.Status = "Completed";
+                    }
                 }
                 else if (newStatus == "Started" || newStatus == "InTransit")
                 {
-                    trip.Indent.Status = "InTransit";
+                    if (trip.LegType == "InboundLeg1")
+                    {
+                        trip.Indent.Status = "Inbound_Transit";
+                    }
+                    else if (trip.LegType == "OutboundLeg2")
+                    {
+                        trip.Indent.Status = "Outbound_Transit";
+                    }
+                    else
+                    {
+                        trip.Indent.Status = "InTransit";
+                    }
                 }
             }
 

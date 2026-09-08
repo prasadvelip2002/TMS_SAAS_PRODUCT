@@ -129,6 +129,12 @@ export default function TripsPage() {
     return null;
   };
 
+  const canAddOutboundLeg = (trip: any) => {
+    if (trip.legType === "OutboundLeg2") return false;
+    const hasOutbound = trips.some(t => t.parentTripId === trip.id || (t.indentId === trip.indentId && t.legType === "OutboundLeg2"));
+    return !hasOutbound;
+  };
+
   return (
     <div className="max-w-[1600px] mx-auto pb-6 h-full flex flex-col w-full">
       
@@ -390,12 +396,19 @@ export default function TripsPage() {
                             Mark Delivered
                           </button>
                         )}
-                        {(!trip.legType || trip.legType === "Direct") && (
+                        {trip.status === "Pending Assignment" && (
+                          <Link href="/trips/assignment">
+                            <button className="bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200 px-3 py-1.5 rounded-lg text-[11.5px] font-bold uppercase tracking-wide transition-colors">
+                              Assign Fleet
+                            </button>
+                          </Link>
+                        )}
+                        {canAddOutboundLeg(trip) && (
                           <button 
                             onClick={() => handleCreateOutboundLeg(trip.id)}
                             className="bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200 px-3 py-1.5 rounded-lg text-[11.5px] font-bold uppercase tracking-wide transition-colors"
                           >
-                            + Add Next Leg
+                            {trip.indent?.warehouseLocation ? "+ Dispatch from Hub (Leg 2)" : "+ Add Next Leg"}
                           </button>
                         )}
                         {trip.legType === "OutboundLeg2" && (
@@ -526,12 +539,19 @@ export default function TripsPage() {
                           Mark Delivered
                         </button>
                       )}
-                      {(!trip.legType || trip.legType === "Direct") && (
+                      {trip.status === "Pending Assignment" && (
+                        <Link href="/trips/assignment" className="flex-1">
+                          <button className="w-full bg-amber-50 hover:bg-amber-600 hover:text-white text-amber-700 font-bold py-2.5 rounded-xl transition-all text-[13px]">
+                            Assign Fleet
+                          </button>
+                        </Link>
+                      )}
+                      {canAddOutboundLeg(trip) && (
                         <button 
                           onClick={() => handleCreateOutboundLeg(trip.id)}
                           className="flex-1 bg-purple-50 hover:bg-purple-600 hover:text-white text-purple-700 font-bold py-2.5 rounded-xl transition-all text-[13px]"
                         >
-                          + Add Next Leg
+                          {trip.indent?.warehouseLocation ? "+ Dispatch from Hub" : "+ Add Next Leg"}
                         </button>
                       )}
                       {trip.lrNumber && (

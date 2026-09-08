@@ -48,12 +48,29 @@ export default function IndentsPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [viewMode, setViewMode] = useState<'table' | 'grid'>('table');
 
+  // Customer Type filter: 'Contract' | 'Spot' | 'All'
+  const [customerTypeFilter, setCustomerTypeFilter] = useState<'Contract' | 'Spot' | 'All'>('Contract');
+
   // Annual Contract state for active customer
   const [customerContractRates, setCustomerContractRates] = useState<any[]>([]);
   const [isContractLoading, setIsContractLoading] = useState(false);
   const [isCustomSource, setIsCustomSource] = useState(false);
   const [isCustomDestination, setIsCustomDestination] = useState(false);
   const [contractRateBadge, setContractRateBadge] = useState<string | null>(null);
+
+  const handleCustomerTypeFilterChange = (type: 'Contract' | 'Spot' | 'All') => {
+    setCustomerTypeFilter(type);
+    if (formData.customerId) {
+      const cust = customers.find(c => c.id.toString() === formData.customerId);
+      if (cust) {
+        if (type === 'Contract' && cust.customerType !== 'Contract') {
+          handleCustomerSelect("");
+        } else if (type === 'Spot' && cust.customerType === 'Contract') {
+          handleCustomerSelect("");
+        }
+      }
+    }
+  };
 
   const loadData = async () => {
     try {
@@ -321,6 +338,10 @@ export default function IndentsPage() {
     setContractRateBadge(null);
 
     if (ind.customerId) {
+      const cust = customers.find(c => c.id === ind.customerId);
+      if (cust) {
+        setCustomerTypeFilter(cust.customerType === "Contract" ? "Contract" : "Spot");
+      }
       try {
         const rates = await getCustomerRates(ind.customerId);
         if (rates && rates.length > 0) {
@@ -407,6 +428,11 @@ export default function IndentsPage() {
   };
 
   const selectedCustomer = customers.find(c => c.id.toString() === formData.customerId);
+  const filteredCustomersByType = customers.filter(c => {
+    if (customerTypeFilter === 'Contract') return c.customerType === 'Contract';
+    if (customerTypeFilter === 'Spot') return c.customerType !== 'Contract';
+    return true;
+  });
   const contractSources: string[] = Array.from(new Set(customerContractRates.map((r: any) => String(r.source))));
   const contractDestinations: string[] = formData.source
     ? Array.from(new Set(customerContractRates.filter((r: any) => r.source.toLowerCase() === formData.source.toLowerCase()).map((r: any) => String(r.destination))))
@@ -625,25 +651,78 @@ export default function IndentsPage() {
              <div className="flex-1 overflow-y-auto p-6 scrollbar-hide">
                <form id="indentForm" onSubmit={handleSubmit} className="space-y-5">
                   {/* Customer Selection */}
-                  <div className="col-span-2">
-                    <div className="flex justify-between items-center mb-1.5">
-                      <label className="block text-[11.5px] font-bold text-slate-500 uppercase tracking-wider">Customer *</label>
-                      {isContractLoading && (
-                        <span className="text-[11px] text-blue-600 flex items-center gap-1 font-medium">
-                          <Activity className="w-3 h-3 animate-spin" /> Fetching contract rates...
-                        </span>
-                      )}
+                  <div className="col-span-2 space-y-2">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5">
+                      <label className="block text-[11.5px] font-bold text-slate-500 uppercase tracking-wider">
+                        Customer *
+                      </label>
+                      
+                      {/* Customer Type Quick Filter Switcher */}
+                      <div className="inline-flex p-0.5 bg-slate-100 rounded-lg border border-slate-200">
+                        <button
+                          type="button"
+                          onClick={() => handleCustomerTypeFilterChange("Contract")}
+                          className={`px-2.5 py-1 text-[11px] font-bold rounded-md transition-all flex items-center gap-1.5 ${
+                            customerTypeFilter === "Contract" 
+                              ? "bg-blue-600 text-white shadow-sm" 
+                              : "text-slate-500 hover:text-slate-700"
+                          }`}
+                        >
+                          <span>🏢 Contract</span>
+                          <span className={`text-[9px] px-1 py-0.2 rounded font-mono ${customerTypeFilter === "Contract" ? "bg-white/20 text-white" : "bg-slate-200 text-slate-600"}`}>
+                            {customers.filter(c => c.customerType === "Contract").length}
+                          </span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleCustomerTypeFilterChange("Spot")}
+                          className={`px-2.5 py-1 text-[11px] font-bold rounded-md transition-all flex items-center gap-1.5 ${
+                            customerTypeFilter === "Spot" 
+                              ? "bg-blue-600 text-white shadow-sm" 
+                              : "text-slate-500 hover:text-slate-700"
+                          }`}
+                        >
+                          <span>⚡ Spot</span>
+                          <span className={`text-[9px] px-1 py-0.2 rounded font-mono ${customerTypeFilter === "Spot" ? "bg-white/20 text-white" : "bg-slate-200 text-slate-600"}`}>
+                            {customers.filter(c => c.customerType !== "Contract").length}
+                          </span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleCustomerTypeFilterChange("All")}
+                          className={`px-2.5 py-1 text-[11px] font-bold rounded-md transition-all ${
+                            customerTypeFilter === "All" 
+                              ? "bg-white text-slate-800 shadow-sm" 
+                              : "text-slate-500 hover:text-slate-700"
+                          }`}
+                        >
+                          All ({customers.length})
+                        </button>
+                      </div>
                     </div>
+
+                    {isContractLoading && (
+                      <div className="text-[11px] text-blue-600 flex items-center gap-1 font-medium">
+                        <Activity className="w-3 h-3 animate-spin" /> Fetching contract rates...
+                      </div>
+                    )}
+
                     <select 
                       required 
                       value={formData.customerId} 
                       onChange={e => handleCustomerSelect(e.target.value)} 
                       className="w-full border border-slate-200 rounded-xl px-4 py-3 text-[14px] bg-slate-50 hover:bg-slate-100 focus:bg-white text-slate-800 font-medium outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all shadow-sm"
                     >
-                      <option value="">Select Customer</option>
-                      {customers.map(c => (
+                      <option value="">
+                        {customerTypeFilter === "Contract" 
+                          ? "— Select a Contract Customer —" 
+                          : customerTypeFilter === "Spot" 
+                          ? "— Select a Spot Customer —" 
+                          : "— Select Customer —"}
+                      </option>
+                      {filteredCustomersByType.map(c => (
                         <option key={c.id} value={c.id}>
-                          {c.name} {c.customerType === "Contract" ? "★ (Annual Contract)" : ""}
+                          {c.name} {c.code ? `(${c.code})` : ""} {c.customerType === "Contract" ? "★ [Contract Account]" : ""}
                         </option>
                       ))}
                     </select>

@@ -42,25 +42,94 @@ export default function AssignmentPage() {
         fetchApi("/Trips")
       ]);
       
-      const tripsByIndent = tripsData.reduce((acc: any, trip: any) => {
-        acc[trip.indentId] = trip;
+      const indentsMap = (indData || []).reduce((acc: any, i: any) => {
+        acc[i.id] = i;
         return acc;
       }, {});
 
-      setIndents(indData.map((i: any) => {
-        i.trip = tripsByIndent[i.id];
-        return i;
-      }).filter((i: any) => {
-        if (i.status === 'New' || i.status === 'Pending') return true;
-        if (i.status === 'Assigned') {
-           if (i.trip && (!i.trip.vehicleId || !i.trip.driverId)) return true;
+      const items: any[] = [];
+
+      // 1. Process Indents for Leg 1 (or Direct)
+      (indData || []).forEach((indent: any) => {
+        const indentTrips = (tripsData || []).filter((t: any) => t.indentId === indent.id);
+        const leg1Trip = indentTrips.find((t: any) => t.legType === "InboundLeg1" || (!t.legType && !t.parentTripId) || t.legType === "Direct");
+
+        // Needs Leg 1 assignment if:
+        // - Indent is New/Pending and no trip assigned yet, OR
+        // - Leg 1 trip exists but doesn't have vehicle or driver assigned
+        if (!leg1Trip && (indent.status === "New" || indent.status === "Pending")) {
+          items.push({
+            id: `ind-${indent.id}-leg1`,
+            indentId: indent.id,
+            tripId: null,
+            legType: indent.warehouseLocation ? "InboundLeg1" : "Direct",
+            customer: indent.customer,
+            source: indent.source,
+            destination: indent.warehouseLocation || indent.destination,
+            finalDestination: indent.destination,
+            warehouseLocation: indent.warehouseLocation,
+            vehicleType: indent.vehicleType,
+            weight: indent.weight,
+            material: indent.material,
+            loadingDate: indent.loadingDate,
+            loadingTime: indent.loadingTime,
+            status: "Pending Assignment",
+            indent: indent,
+            trip: null
+          });
+        } else if (leg1Trip && (!leg1Trip.vehicleId || !leg1Trip.driverId || leg1Trip.status === "Pending Assignment")) {
+          items.push({
+            id: `trip-${leg1Trip.id}`,
+            indentId: indent.id,
+            tripId: leg1Trip.id,
+            legType: leg1Trip.legType || (indent.warehouseLocation ? "InboundLeg1" : "Direct"),
+            customer: indent.customer,
+            source: indent.source,
+            destination: indent.warehouseLocation || indent.destination,
+            finalDestination: indent.destination,
+            warehouseLocation: indent.warehouseLocation,
+            vehicleType: indent.vehicleType,
+            weight: indent.weight,
+            material: indent.material,
+            loadingDate: indent.loadingDate,
+            loadingTime: indent.loadingTime,
+            status: "Pending Assignment",
+            indent: indent,
+            trip: leg1Trip
+          });
         }
-        return false;
-      }));
-      
-      setVendors(venData);
-      setVehicles(vehData);
-      setDrivers(drvData);
+      });
+
+      // 2. Process Leg 2 (Outbound from Hub) trips that need vehicle & driver assignment
+      (tripsData || []).forEach((trip: any) => {
+        if (trip.legType === "OutboundLeg2" && (!trip.vehicleId || !trip.driverId || trip.status === "Pending Assignment")) {
+          const indent = trip.indent || indentsMap[trip.indentId];
+          items.push({
+            id: `trip-${trip.id}-leg2`,
+            indentId: trip.indentId,
+            tripId: trip.id,
+            legType: "OutboundLeg2",
+            customer: indent?.customer,
+            source: indent?.warehouseLocation || "Central Hub",
+            destination: indent?.destination,
+            finalDestination: indent?.destination,
+            warehouseLocation: indent?.warehouseLocation,
+            vehicleType: indent?.vehicleType || "Standard Truck",
+            weight: indent?.weight || 0,
+            material: indent?.material || "Cargo",
+            loadingDate: trip.tripStartDate || indent?.loadingDate,
+            loadingTime: indent?.loadingTime,
+            status: "Pending Assignment",
+            indent: indent,
+            trip: trip
+          });
+        }
+      });
+
+      setIndents(items);
+      setVendors(venData || []);
+      setVehicles(vehData || []);
+      setDrivers(drvData || []);
     } catch (error) {
       console.error(error);
     } finally {
@@ -72,25 +141,25 @@ export default function AssignmentPage() {
     loadData();
   }, []);
 
-  const openAssignPanel = (indent: any) => {
-    setSelectedIndent(indent);
+  const openAssignPanel = (item: any) => {
+    setSelectedIndent(item);
     
-    // If the indent already has a partial trip (e.g., from RFQ), pre-fill the form
-    if (indent.trip) {
-        const baseRate = indent.trip.fixedRate || indent.trip.supplierRate || indent.trip.freightCharges || 0;
+    // If the item already has a partial trip, pre-fill the form
+    if (item.trip) {
+        const baseRate = item.trip.fixedRate || item.trip.supplierRate || item.trip.freightCharges || 0;
         const calculatedAdvance = baseRate * 0.9;
         
         setFormData({
-          vendorId: indent.trip.vendorId?.toString() || "",
-          vehicleId: indent.trip.vehicleId?.toString() || "",
-          driverId: indent.trip.driverId?.toString() || "",
-          bookingType: (indent.trip.bookingType === "Contract" ? "Fixed" : indent.trip.bookingType) || "Fixed",
-          ratePerTon: indent.trip.ratePerTon?.toString() || "0",
+          vendorId: item.trip.vendorId?.toString() || "",
+          vehicleId: item.trip.vehicleId?.toString() || "",
+          driverId: item.trip.driverId?.toString() || "",
+          bookingType: (item.trip.bookingType === "Contract" ? "Fixed" : item.trip.bookingType) || "Fixed",
+          ratePerTon: item.trip.ratePerTon?.toString() || "0",
           fixedRate: baseRate.toString(),
-          advanceAmount: indent.trip.advanceAmount > 0 ? indent.trip.advanceAmount.toString() : calculatedAdvance.toString(),
-          supplierPaymentTo: indent.trip.supplierPaymentTo || "Vendor",
-          startingKM: indent.trip.startingKM?.toString() || "",
-          tripStartDate: indent.trip.tripStartDate ? new Date(indent.trip.tripStartDate).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+          advanceAmount: item.trip.advanceAmount > 0 ? item.trip.advanceAmount.toString() : calculatedAdvance.toString(),
+          supplierPaymentTo: item.trip.supplierPaymentTo || "Vendor",
+          startingKM: item.trip.startingKM?.toString() || "",
+          tripStartDate: item.trip.tripStartDate ? new Date(item.trip.tripStartDate).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
         });
     } else {
       // Reset form for fresh assignment
@@ -118,18 +187,19 @@ export default function AssignmentPage() {
     setIsSubmitting(true);
     
     // Auto-fill vendor if it's already assigned on the trip, or null if Own Fleet
-    const existingVendorId = selectedIndent.vendorId || (formData.vendorId ? parseInt(formData.vendorId) : null);
+    const existingVendorId = selectedIndent.trip?.vendorId || (formData.vendorId ? parseInt(formData.vendorId) : null);
     
     try {
       await assignTrip({
-        indentId: selectedIndent.id,
+        tripId: selectedIndent.tripId,
+        indentId: selectedIndent.indentId,
         vendorId: existingVendorId,
         vehicleId: parseInt(formData.vehicleId),
         driverId: parseInt(formData.driverId),
         bookingType: formData.bookingType,
         ratePerTon: parseFloat(formData.ratePerTon || "0"),
         fixedRate: parseFloat(formData.fixedRate || "0"),
-        advanceAmount: parseFloat(formData.advanceAmount),
+        advanceAmount: parseFloat(formData.advanceAmount || "0"),
         supplierPaymentTo: formData.supplierPaymentTo,
         startingKM: formData.startingKM ? parseFloat(formData.startingKM) : null,
         tripStartDate: new Date(formData.tripStartDate).toISOString(),
@@ -213,51 +283,63 @@ export default function AssignmentPage() {
                   </Td>
                 </tr>
               ) : (
-                indents.map((indent) => (
+                indents.map((item) => (
                   <tr 
-                    key={indent.id} 
+                    key={item.id} 
                     className="hover:bg-slate-50/80 transition-colors border-b border-slate-100 last:border-0" 
                   >
-                    <Td className="font-mono text-[13px] font-semibold text-slate-600">IND-{1000 + indent.id}</Td>
-                    <Td className="font-semibold text-slate-800">{indent.customer?.name || "Unknown"}</Td>
+                    <Td className="font-mono text-[13px] font-semibold text-slate-600">
+                      <div className="flex items-center gap-1.5">
+                        <span>{item.tripId ? `TRP-${1000 + item.tripId}` : `IND-${1000 + item.indentId}`}</span>
+                        {item.legType === "InboundLeg1" && (
+                          <span className="px-1.5 py-0.5 bg-blue-100 text-blue-700 rounded text-[9px] font-bold uppercase">Leg 1</span>
+                        )}
+                        {item.legType === "OutboundLeg2" && (
+                          <span className="px-1.5 py-0.5 bg-purple-100 text-purple-700 rounded text-[9px] font-bold uppercase">Leg 2</span>
+                        )}
+                      </div>
+                    </Td>
+                    <Td className="font-semibold text-slate-800">{item.customer?.name || "Unknown"}</Td>
                     <Td>
                       <div className="flex items-center gap-2 flex-wrap">
-                        <span className="text-[13px] font-medium text-slate-700">{indent.source}</span>
+                        <span className="text-[13px] font-medium text-slate-700">{item.source}</span>
                         <span className="text-slate-300">→</span>
-                        {indent.warehouseLocation && (
-                          <>
-                            <span className="text-[13px] font-medium text-slate-700">{indent.warehouseLocation} <span className="text-blue-500 font-bold text-[10px] uppercase ml-1">(Hub)</span></span>
-                            <span className="text-slate-300">→</span>
-                          </>
+                        {item.legType === "InboundLeg1" ? (
+                          <span className="text-[13px] font-bold text-purple-700">{item.destination} <span className="text-blue-500 font-bold text-[10px] uppercase ml-1">(Hub)</span></span>
+                        ) : item.legType === "OutboundLeg2" ? (
+                          <span className="text-[13px] font-medium text-slate-700">{item.destination}</span>
+                        ) : (
+                          <span className="text-[13px] font-medium text-slate-700">{item.destination}</span>
                         )}
-                        <span className="text-[13px] font-medium text-slate-700">{indent.destination}</span>
                       </div>
-                      {indent.loadingDate && (
+                      {item.loadingDate && (
                         <div className="text-[11px] text-slate-500 mt-0.5">
-                          Pickup: {new Date(indent.loadingDate).toLocaleDateString()} {indent.loadingTime ? `@ ${formatTime12H(indent.loadingTime)}` : ''}
+                          Schedule: {new Date(item.loadingDate).toLocaleDateString()} {item.loadingTime ? `@ ${formatTime12H(item.loadingTime)}` : ''}
                         </div>
                       )}
                     </Td>
                     <Td>
-                      <div className="text-[13px] font-medium text-slate-800">{indent.vehicleType}</div>
-                      <div className="text-[11px] text-slate-500">{indent.weight} Tons</div>
+                      <div className="text-[13px] font-medium text-slate-800">{item.vehicleType}</div>
+                      <div className="text-[11px] text-slate-500">{item.weight} Tons</div>
                     </Td>
                     <Td>
                       <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider border ${
-                        indent.status === 'Assigned' 
-                          ? 'bg-amber-50 text-amber-700 border-amber-200' 
-                          : 'bg-sky-50 text-sky-700 border-sky-100'
+                        item.legType === 'OutboundLeg2'
+                          ? 'bg-purple-50 text-purple-700 border-purple-200'
+                          : item.status === 'Assigned' 
+                            ? 'bg-amber-50 text-amber-700 border-amber-200' 
+                            : 'bg-sky-50 text-sky-700 border-sky-100'
                       }`}>
-                        {indent.status === 'Assigned' ? 'Awaiting Fleet' : indent.status}
+                        {item.legType === 'OutboundLeg2' ? 'Outbound Leg 2' : item.status === 'Assigned' ? 'Awaiting Fleet' : item.status}
                       </span>
                     </Td>
                     <Td>
                       <button 
-                        onClick={() => openAssignPanel(indent)}
+                        onClick={() => openAssignPanel(item)}
                         className="bg-slate-900 hover:bg-slate-800 text-white px-4 py-2 rounded-xl text-[13px] font-bold transition-all shadow-sm flex items-center gap-2"
                       >
                         <Plus className="w-4 h-4" />
-                        Assign Trip
+                        {item.legType === "OutboundLeg2" ? "Assign Leg 2" : "Assign Trip"}
                       </button>
                     </Td>
                   </tr>
@@ -284,25 +366,35 @@ export default function AssignmentPage() {
             </div>
           ) : (
             <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-              {indents.map(indent => (
-                <div key={indent.id} className="bg-white rounded-2xl p-0 shadow-sm border border-slate-200 overflow-hidden flex flex-col">
+              {indents.map(item => (
+                <div key={item.id} className="bg-white rounded-2xl p-0 shadow-sm border border-slate-200 overflow-hidden flex flex-col">
                   {/* Ticket Header */}
                   <div className="bg-slate-50/80 p-4 border-b border-slate-100 flex justify-between items-center">
                     <div className="flex items-center gap-3">
-                      <div className="bg-blue-100 text-blue-700 p-1.5 rounded-lg">
+                      <div className={`p-1.5 rounded-lg ${item.legType === 'OutboundLeg2' ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700'}`}>
                         <Handshake className="w-4 h-4" />
                       </div>
                       <div>
-                        <div className="font-mono font-bold text-slate-900 text-sm">IND-{1000 + indent.id}</div>
-                        <div className="text-[11px] text-slate-500 font-medium mt-0.5 line-clamp-1">{indent.customer?.name || "Unknown"}</div>
+                        <div className="font-mono font-bold text-slate-900 text-sm flex items-center gap-1.5">
+                          <span>{item.tripId ? `TRP-${1000 + item.tripId}` : `IND-${1000 + item.indentId}`}</span>
+                          {item.legType === "InboundLeg1" && (
+                            <span className="px-1.5 py-0.5 bg-blue-100 text-blue-700 rounded text-[9px] font-bold uppercase">Leg 1</span>
+                          )}
+                          {item.legType === "OutboundLeg2" && (
+                            <span className="px-1.5 py-0.5 bg-purple-100 text-purple-700 rounded text-[9px] font-bold uppercase">Leg 2</span>
+                          )}
+                        </div>
+                        <div className="text-[11px] text-slate-500 font-medium mt-0.5 line-clamp-1">{item.customer?.name || "Unknown"}</div>
                       </div>
                     </div>
                     <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border ${
-                      indent.status === 'Assigned' 
-                        ? 'bg-amber-50 text-amber-700 border-amber-200' 
-                        : 'bg-sky-50 text-sky-700 border-sky-100'
+                      item.legType === 'OutboundLeg2'
+                        ? 'bg-purple-50 text-purple-700 border-purple-200'
+                        : item.status === 'Assigned' 
+                          ? 'bg-amber-50 text-amber-700 border-amber-200' 
+                          : 'bg-sky-50 text-sky-700 border-sky-100'
                     }`}>
-                      {indent.status === 'Assigned' ? 'Awaiting Fleet' : indent.status}
+                      {item.legType === 'OutboundLeg2' ? 'Outbound Leg 2' : item.status === 'Assigned' ? 'Awaiting Fleet' : item.status}
                     </span>
                   </div>
                   
@@ -310,14 +402,16 @@ export default function AssignmentPage() {
                   <div className="px-5 py-5 border-b border-slate-100 border-dashed relative">
                     <div className="flex items-center gap-4">
                       <div className="flex-1">
-                        <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Source</div>
-                        <div className="font-semibold text-slate-800 text-sm truncate" title={indent.source}>{indent.source}</div>
+                        <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">
+                          {item.legType === 'OutboundLeg2' ? 'Hub (Origin)' : 'Source'}
+                        </div>
+                        <div className="font-semibold text-slate-800 text-sm truncate" title={item.source}>{item.source}</div>
                       </div>
                       <div className="flex-shrink-0 flex items-center justify-center">
                         <div className="w-8 h-px bg-slate-300"></div>
                         <div className="w-6 h-6 rounded-full border border-slate-200 flex items-center justify-center mx-1 bg-white shadow-sm z-10">
-                          {indent.warehouseLocation ? (
-                            <span className="text-[10px] font-bold text-blue-500">HUB</span>
+                          {item.legType === 'InboundLeg1' ? (
+                            <span className="text-[9px] font-bold text-blue-600">HUB</span>
                           ) : (
                             <span className="text-[10px]">→</span>
                           )}
@@ -325,8 +419,10 @@ export default function AssignmentPage() {
                         <div className="w-8 h-px bg-slate-300"></div>
                       </div>
                       <div className="flex-1 text-right">
-                        <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Destination</div>
-                        <div className="font-semibold text-slate-800 text-sm truncate" title={indent.destination}>{indent.destination}</div>
+                        <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">
+                          {item.legType === 'InboundLeg1' ? 'Hub (Destination)' : 'Destination'}
+                        </div>
+                        <div className="font-semibold text-slate-800 text-sm truncate" title={item.destination}>{item.destination}</div>
                       </div>
                     </div>
                   </div>
@@ -335,32 +431,32 @@ export default function AssignmentPage() {
                   <div className="px-5 py-4 bg-slate-50/30 flex-1 grid grid-cols-2 gap-y-4 gap-x-2">
                     <div>
                       <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Vehicle Type</div>
-                      <div className="font-medium text-slate-700 text-[13px]">{indent.vehicleType}</div>
+                      <div className="font-medium text-slate-700 text-[13px]">{item.vehicleType}</div>
                     </div>
                     <div>
                       <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Weight</div>
-                      <div className="font-medium text-slate-700 text-[13px]">{indent.weight} Tons</div>
+                      <div className="font-medium text-slate-700 text-[13px]">{item.weight} Tons</div>
                     </div>
                     <div>
-                      <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Pickup Scheduled</div>
+                      <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Schedule</div>
                       <div className="font-medium text-slate-700 text-[12px]">
-                        {indent.loadingDate ? `${new Date(indent.loadingDate).toLocaleDateString()} ${indent.loadingTime ? `@ ${formatTime12H(indent.loadingTime)}` : ''}` : 'Not set'}
+                        {item.loadingDate ? `${new Date(item.loadingDate).toLocaleDateString()} ${item.loadingTime ? `@ ${formatTime12H(item.loadingTime)}` : ''}` : 'Not set'}
                       </div>
                     </div>
                     <div>
-                      <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Requirements</div>
-                      <div className="font-medium text-slate-700 text-[13px] line-clamp-1">{indent.material || 'Standard goods'}</div>
+                      <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Material</div>
+                      <div className="font-medium text-slate-700 text-[13px] line-clamp-1">{item.material || 'Standard goods'}</div>
                     </div>
                   </div>
                   
                   {/* Ticket Action */}
                   <div className="p-4 bg-white border-t border-slate-100 flex items-center gap-2">
                     <button 
-                      onClick={() => openAssignPanel(indent)}
+                      onClick={() => openAssignPanel(item)}
                       className="w-full bg-slate-900 hover:bg-slate-800 text-white px-4 py-2.5 rounded-xl text-sm font-bold transition-all shadow-sm flex items-center justify-center gap-2"
                     >
                       <Plus className="w-4 h-4" />
-                      Assign Trip
+                      {item.legType === "OutboundLeg2" ? "Assign Leg 2 Fleet" : "Assign Trip"}
                     </button>
                   </div>
                 </div>
@@ -380,14 +476,21 @@ export default function AssignmentPage() {
       >
         <div className="px-8 py-6 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
           <div>
-            <h2 className="text-xl font-bold text-slate-800">Assign Trip</h2>
-            <div className="text-[13px] text-slate-500 mt-1 font-medium flex items-center gap-2 flex-wrap">
-              <span>{selectedIndent ? `IND-${1000 + selectedIndent.id} • ${selectedIndent.material} (${selectedIndent.weight}T)` : ""}</span>
-              {selectedIndent?.loadingDate && (
-                <span className="bg-blue-50 text-blue-700 px-2 py-0.5 rounded text-[11px] font-semibold border border-blue-100">
-                  Pickup: {new Date(selectedIndent.loadingDate).toLocaleDateString()} {selectedIndent.loadingTime ? `@ ${formatTime12H(selectedIndent.loadingTime)}` : ''}
-                </span>
+            <div className="flex items-center gap-2">
+              <h2 className="text-xl font-bold text-slate-800">
+                {selectedIndent?.legType === "OutboundLeg2" ? "Assign Outbound Leg 2" : "Assign Trip"}
+              </h2>
+              {selectedIndent?.legType === "InboundLeg1" && (
+                <span className="px-2 py-0.5 bg-blue-100 text-blue-700 rounded text-[10px] font-bold uppercase">Leg 1 (To Hub)</span>
               )}
+              {selectedIndent?.legType === "OutboundLeg2" && (
+                <span className="px-2 py-0.5 bg-purple-100 text-purple-700 rounded text-[10px] font-bold uppercase">Leg 2 (To Dest)</span>
+              )}
+            </div>
+            <div className="text-[13px] text-slate-500 mt-1 font-medium flex items-center gap-2 flex-wrap">
+              <span>{selectedIndent ? `${selectedIndent.source} → ${selectedIndent.destination}` : ""}</span>
+              <span className="text-slate-400">•</span>
+              <span>{selectedIndent?.weight}T</span>
             </div>
           </div>
           <button 

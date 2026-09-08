@@ -28,8 +28,10 @@ namespace api_backend.Controllers
         {
             var trips = await _context.Trips
                 .Include(t => t.Vendor)
+                .Include(t => t.Vehicle)
+                .Include(t => t.Driver)
                 .Include(t => t.Indent)
-                .ThenInclude(i => i.Customer)
+                    .ThenInclude(i => i.Customer)
                 .Include(t => t.Payments)
                 .Where(t => t.Status == "Closed" && t.VendorId != null)
                 .ToListAsync();
@@ -69,11 +71,25 @@ namespace api_backend.Controllers
         {
             var trips = await _context.Trips
                 .Include(t => t.Indent)
+                .Include(t => t.Vehicle)
                 .Include(t => t.AdditionalCharges)
                 .Where(t => t.Status == "Closed" && t.InvoiceId == null && t.Indent.CustomerId == customerId)
                 .ToListAsync();
 
-            return Ok(trips);
+            // Find indents that have an OutboundLeg2 (either closed or active)
+            var multiLegIndentIds = await _context.Trips
+                .Where(t => t.LegType == "OutboundLeg2" && t.Indent.CustomerId == customerId)
+                .Select(t => t.IndentId)
+                .Distinct()
+                .ToListAsync();
+
+            var multiLegSet = new HashSet<int>(multiLegIndentIds);
+
+            // Single Invoice: InboundLeg1 is an internal transfer leg and is not billed to the customer.
+            // The customer is invoiced on the delivering leg (OutboundLeg2 or Direct) at the full agreed rate.
+            var unbilledTrips = trips.Where(t => !(t.LegType == "InboundLeg1" && multiLegSet.Contains(t.IndentId))).ToList();
+
+            return Ok(unbilledTrips);
         }
 
         // POST: api/Finance/invoice

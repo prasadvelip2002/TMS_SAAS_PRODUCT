@@ -38,11 +38,11 @@ export default function ReportsPage() {
 
   const downloadCSV = () => {
     if (reports.length === 0) return;
-    const headers = ["Trip ID", "Date", "Customer", "Route", "Vendor", "Selling Price", "Supplier Cost", "Fuel", "Toll", "Gross Margin", "Status"];
+    const headers = ["Trip ID", "Date", "Customer", "Route", "Vendor", "Selling Price", "Supplier Cost", "Fuel", "Toll", "Extra Charges", "Total Cost", "Gross Margin", "Status"];
     const csvContent = "data:text/csv;charset=utf-8," 
       + headers.join(",") + "\n"
       + reports.map(r => 
-          `${r.tripId},${new Date(r.date).toLocaleDateString()},"${r.customerName}","${r.source} to ${r.destination}","${r.vendorName}",${r.customerRate},${r.supplierRate},${r.fuelAdvance},${r.tollCharges},${r.margin},${r.status}`
+          `${r.tripId},${new Date(r.date).toLocaleDateString()},"${r.customerName}","${r.source} to ${r.destination}","${r.vendorName}",${r.customerRate},${r.supplierRate},${r.fuelAdvance},${r.tollCharges},${r.extraCharges || 0},${r.totalCost || (r.supplierRate + r.fuelAdvance + r.tollCharges + (r.extraCharges || 0))},${r.margin},${r.status}`
         ).join("\n");
     
     const encodedUri = encodeURI(csvContent);
@@ -120,7 +120,7 @@ export default function ReportsPage() {
         </div>
         
         <div className="overflow-y-auto flex-1">
-          <ProtoTable headers={["TRIP ID / DATE", "ROUTE & CUSTOMER", "VENDOR", "SELLING PRICE", "COSTS (SUPPLIER/FUEL/TOLL)", "GROSS MARGIN", "STATUS"]}>
+          <ProtoTable headers={["TRIP ID / DATE", "ROUTE & CUSTOMER", "VENDOR", "SELLING PRICE", "COSTS BREAKDOWN", "GROSS MARGIN", "STATUS"]}>
             {loading ? (
               <tr>
                 <Td colSpan={7} className="text-center py-16">
@@ -163,25 +163,46 @@ export default function ReportsPage() {
                     <span className="font-bold text-blue-700 text-[14px]">₹{(r.customerRate || 0).toLocaleString('en-IN')}</span>
                   </Td>
                   <Td>
-                    <div className="flex flex-col gap-0.5">
-                      <div className="flex justify-between items-center text-[12.5px]">
+                    <div className="flex flex-col gap-0.5 min-w-[160px]">
+                      <div className="flex justify-between items-center text-[12px]">
                         <span className="text-slate-500">Supplier:</span>
                         <span className="font-bold text-slate-700">₹{(r.supplierRate || 0).toLocaleString('en-IN')}</span>
                       </div>
-                      <div className="flex justify-between items-center text-[11.5px]">
-                        <span className="text-slate-400">Fuel:</span>
-                        <span className="font-medium text-slate-600">₹{(r.fuelAdvance || 0).toLocaleString('en-IN')}</span>
-                      </div>
-                      <div className="flex justify-between items-center text-[11.5px]">
-                        <span className="text-slate-400">Toll:</span>
-                        <span className="font-medium text-slate-600">₹{(r.tollCharges || 0).toLocaleString('en-IN')}</span>
+                      {(r.fuelAdvance > 0) && (
+                        <div className="flex justify-between items-center text-[11px]">
+                          <span className="text-slate-400">Fuel:</span>
+                          <span className="font-medium text-slate-600">₹{(r.fuelAdvance || 0).toLocaleString('en-IN')}</span>
+                        </div>
+                      )}
+                      {(r.tollCharges > 0) && (
+                        <div className="flex justify-between items-center text-[11px]">
+                          <span className="text-slate-400">Toll:</span>
+                          <span className="font-medium text-slate-600">₹{(r.tollCharges || 0).toLocaleString('en-IN')}</span>
+                        </div>
+                      )}
+                      {(r.extraCharges > 0) && (
+                        <div className="flex justify-between items-center text-[11px]">
+                          <span className="text-amber-600 font-medium">Extra Charges:</span>
+                          <span className="font-bold text-amber-700">₹{(r.extraCharges || 0).toLocaleString('en-IN')}</span>
+                        </div>
+                      )}
+                      <div className="flex justify-between items-center text-[11.5px] pt-1 mt-0.5 border-t border-slate-100 font-bold">
+                        <span className="text-slate-600">Total Cost:</span>
+                        <span className="text-slate-900">₹{(r.totalCost || (r.supplierRate + r.fuelAdvance + r.tollCharges + (r.extraCharges || 0))).toLocaleString('en-IN')}</span>
                       </div>
                     </div>
                   </Td>
                   <Td>
-                    <span className={`font-black text-[15px] ${r.margin > 0 ? 'text-emerald-600' : 'text-red-500'}`}>
-                      {r.margin > 0 ? '+' : ''}₹{(r.margin || 0).toLocaleString('en-IN')}
-                    </span>
+                    <div>
+                      <span className={`font-black text-[15px] block ${r.margin >= 0 ? 'text-emerald-600' : 'text-red-500'}`}>
+                        {r.margin >= 0 ? '+' : ''}₹{(r.margin || 0).toLocaleString('en-IN')}
+                      </span>
+                      {r.customerRate > 0 && (
+                        <span className="text-[11px] text-slate-400 font-medium block mt-0.5">
+                          {((r.margin / r.customerRate) * 100).toFixed(1)}% margin
+                        </span>
+                      )}
+                    </div>
                   </Td>
                   <Td>
                     <Badge color={

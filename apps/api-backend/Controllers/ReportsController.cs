@@ -28,6 +28,7 @@ namespace api_backend.Controllers
                     .ThenInclude(i => i.Customer)
                 .Include(t => t.Vendor)
                 .Include(t => t.Vehicle)
+                .Include(t => t.AdditionalCharges)
                 .OrderByDescending(t => t.CreatedAt)
                 .Select(t => new
                 {
@@ -43,7 +44,9 @@ namespace api_backend.Controllers
                     SupplierRate = t.SupplierRate ?? 0m,
                     FuelAdvance = t.FuelAdvance ?? 0m,
                     TollCharges = t.TollCharges ?? 0m,
-                    Margin = (t.CustomerRate ?? t.Indent.CustomerRate ?? t.FreightCharges) - (t.SupplierRate ?? 0m) - (t.FuelAdvance ?? 0m) - (t.TollCharges ?? 0m)
+                    ExtraCharges = t.AdditionalCharges != null ? t.AdditionalCharges.Where(a => a.Status == "Approved").Sum(a => (decimal?)a.Amount) ?? 0m : 0m,
+                    TotalCost = (t.SupplierRate ?? 0m) + (t.FuelAdvance ?? 0m) + (t.TollCharges ?? 0m) + (t.AdditionalCharges != null ? t.AdditionalCharges.Where(a => a.Status == "Approved").Sum(a => (decimal?)a.Amount) ?? 0m : 0m),
+                    Margin = (t.CustomerRate ?? t.Indent.CustomerRate ?? t.FreightCharges) - ((t.SupplierRate ?? 0m) + (t.FuelAdvance ?? 0m) + (t.TollCharges ?? 0m) + (t.AdditionalCharges != null ? t.AdditionalCharges.Where(a => a.Status == "Approved").Sum(a => (decimal?)a.Amount) ?? 0m : 0m))
                 })
                 .ToListAsync();
 

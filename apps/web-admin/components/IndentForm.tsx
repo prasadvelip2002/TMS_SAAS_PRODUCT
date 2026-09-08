@@ -17,6 +17,9 @@ export function IndentForm({ onSuccess }: { onSuccess: () => void }) {
   const [isCustomDestination, setIsCustomDestination] = useState(false);
   const [contractRateBadge, setContractRateBadge] = useState<string | null>(null);
 
+  // Customer Type filter: 'Contract' | 'Spot' | 'All'
+  const [customerTypeFilter, setCustomerTypeFilter] = useState<'Contract' | 'Spot' | 'All'>('Contract');
+
   const [formData, setFormData] = useState({
     customerId: "",
     source: "",
@@ -235,7 +238,26 @@ export function IndentForm({ onSuccess }: { onSuccess: () => void }) {
     }
   };
 
+  const handleCustomerTypeFilterChange = (type: 'Contract' | 'Spot' | 'All') => {
+    setCustomerTypeFilter(type);
+    if (formData.customerId) {
+      const cust = customers.find(c => c.id.toString() === formData.customerId);
+      if (cust) {
+        if (type === 'Contract' && cust.customerType !== 'Contract') {
+          handleCustomerSelect("");
+        } else if (type === 'Spot' && cust.customerType === 'Contract') {
+          handleCustomerSelect("");
+        }
+      }
+    }
+  };
+
   const selectedCustomer = customers.find(c => c.id.toString() === formData.customerId);
+  const filteredCustomersByType = customers.filter(c => {
+    if (customerTypeFilter === 'Contract') return c.customerType === 'Contract';
+    if (customerTypeFilter === 'Spot') return c.customerType !== 'Contract';
+    return true;
+  });
   const contractSources: string[] = Array.from(new Set(customerContractRates.map((r: any) => String(r.source))));
   const contractDestinations: string[] = formData.source
     ? Array.from(new Set(customerContractRates.filter((r: any) => r.source.toLowerCase() === formData.source.toLowerCase()).map((r: any) => String(r.destination))))
@@ -253,24 +275,75 @@ export function IndentForm({ onSuccess }: { onSuccess: () => void }) {
       <div className="grid grid-cols-2 gap-4">
         {/* Customer Selection */}
         <div className="space-y-2 col-span-2">
-          <div className="flex justify-between items-center">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5">
             <label className="text-sm font-medium">Customer *</label>
-            {isContractLoading && (
-              <span className="text-xs text-blue-600 animate-pulse font-medium">
-                Fetching contract rates...
-              </span>
-            )}
+
+            {/* Customer Type Quick Filter Switcher */}
+            <div className="inline-flex p-0.5 bg-slate-100 rounded-lg border border-slate-200">
+              <button
+                type="button"
+                onClick={() => handleCustomerTypeFilterChange("Contract")}
+                className={`px-2.5 py-1 text-xs font-bold rounded-md transition-all flex items-center gap-1.5 ${
+                  customerTypeFilter === "Contract" 
+                    ? "bg-blue-600 text-white shadow-sm" 
+                    : "text-slate-500 hover:text-slate-700"
+                }`}
+              >
+                <span>🏢 Contract</span>
+                <span className={`text-[9px] px-1 py-0.2 rounded font-mono ${customerTypeFilter === "Contract" ? "bg-white/20 text-white" : "bg-slate-200 text-slate-600"}`}>
+                  {customers.filter(c => c.customerType === "Contract").length}
+                </span>
+              </button>
+              <button
+                type="button"
+                onClick={() => handleCustomerTypeFilterChange("Spot")}
+                className={`px-2.5 py-1 text-xs font-bold rounded-md transition-all flex items-center gap-1.5 ${
+                  customerTypeFilter === "Spot" 
+                    ? "bg-blue-600 text-white shadow-sm" 
+                    : "text-slate-500 hover:text-slate-700"
+                }`}
+              >
+                <span>⚡ Spot</span>
+                <span className={`text-[9px] px-1 py-0.2 rounded font-mono ${customerTypeFilter === "Spot" ? "bg-white/20 text-white" : "bg-slate-200 text-slate-600"}`}>
+                  {customers.filter(c => c.customerType !== "Contract").length}
+                </span>
+              </button>
+              <button
+                type="button"
+                onClick={() => handleCustomerTypeFilterChange("All")}
+                className={`px-2.5 py-1 text-xs font-bold rounded-md transition-all ${
+                  customerTypeFilter === "All" 
+                    ? "bg-white text-slate-800 shadow-sm" 
+                    : "text-slate-500 hover:text-slate-700"
+                }`}
+              >
+                All ({customers.length})
+              </button>
+            </div>
           </div>
+
+          {isContractLoading && (
+            <div className="text-xs text-blue-600 animate-pulse font-medium">
+              Fetching contract rates...
+            </div>
+          )}
+
           <select 
             className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
             value={formData.customerId}
             onChange={e => handleCustomerSelect(e.target.value)}
             required
           >
-            <option value="">Select a customer...</option>
-            {customers.map(c => (
+            <option value="">
+              {customerTypeFilter === "Contract" 
+                ? "— Select a Contract Customer —" 
+                : customerTypeFilter === "Spot" 
+                ? "— Select a Spot Customer —" 
+                : "— Select a customer... —"}
+            </option>
+            {filteredCustomersByType.map(c => (
               <option key={c.id} value={c.id}>
-                {c.name} ({c.gstin || "No GST"}) {c.customerType === "Contract" ? "★ (Annual Contract)" : ""}
+                {c.name} ({c.gstin || "No GST"}) {c.customerType === "Contract" ? "★ [Contract]" : ""}
               </option>
             ))}
           </select>

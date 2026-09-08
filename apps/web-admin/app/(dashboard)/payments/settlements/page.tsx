@@ -164,15 +164,34 @@ export default function VendorSettlementDashboard() {
                 return (
                   <tr key={trip.id} className="hover:bg-slate-50/80 transition-colors border-b border-slate-100 last:border-0">
                     <Td className="font-mono text-[13px] font-semibold text-slate-600">
-                      <Link href={`/trips/${trip.id}/lr`} className="hover:text-blue-600 hover:underline">
-                        TRP-{trip.id}
-                      </Link>
+                      <div className="flex items-center gap-1.5">
+                        <Link href={`/trips/${trip.id}/lr`} className="hover:text-blue-600 hover:underline">
+                          TRP-{trip.id}
+                        </Link>
+                        {trip.legType === "InboundLeg1" && (
+                          <span className="px-1.5 py-0.5 bg-blue-100 text-blue-700 rounded text-[9px] font-bold uppercase">Leg 1</span>
+                        )}
+                        {trip.legType === "OutboundLeg2" && (
+                          <span className="px-1.5 py-0.5 bg-purple-100 text-purple-700 rounded text-[9px] font-bold uppercase">Leg 2</span>
+                        )}
+                      </div>
                     </Td>
                     <Td>
                       <div className="font-semibold text-slate-800">{trip.vendor?.name}</div>
-                      <div className="text-[11px] text-slate-500 font-medium truncate max-w-[200px] mt-0.5">
-                        {trip.indent?.source} → {trip.indent?.destination}
+                      <div className="text-[11px] text-slate-500 font-medium truncate max-w-[240px] mt-0.5">
+                        {trip.legType === "InboundLeg1" ? (
+                          <>{trip.indent?.source} &rarr; <span className="font-semibold text-purple-600">{trip.indent?.warehouseLocation || "Hub"}</span></>
+                        ) : trip.legType === "OutboundLeg2" ? (
+                          <><span className="font-semibold text-purple-600">{trip.indent?.warehouseLocation || "Hub"}</span> &rarr; {trip.indent?.destination}</>
+                        ) : (
+                          <>{trip.indent?.source} &rarr; {trip.indent?.destination}</>
+                        )}
                       </div>
+                      {trip.vehicle?.vehicleNumber && (
+                        <div className="text-[10px] text-slate-400 font-mono mt-0.5">
+                          {trip.vehicle.vehicleNumber} {trip.driver?.name ? `• ${trip.driver.name}` : ''}
+                        </div>
+                      )}
                     </Td>
                     <Td>
                       <span className="font-semibold text-slate-700">₹{(baseAmount + (trip.tollCharges || 0)).toLocaleString('en-IN')}</span>

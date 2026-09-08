@@ -80,6 +80,28 @@ namespace api_backend.Controllers
                 return NotFound(new { message = "Leg 1 Trip not found." });
             }
 
+            // Check if Outbound Leg 2 already exists
+            var existingLeg2 = await _context.Trips
+                .Include(t => t.Indent)
+                .Include(t => t.Vendor)
+                .Include(t => t.Vehicle)
+                .Include(t => t.Driver)
+                .FirstOrDefaultAsync(t => t.ParentTripId == leg1Trip.Id || (t.IndentId == leg1Trip.IndentId && t.LegType == "OutboundLeg2"));
+
+            if (existingLeg2 != null)
+            {
+                return Ok(existingLeg2);
+            }
+
+            if (leg1Trip.LegType == "Direct")
+            {
+                leg1Trip.LegType = "InboundLeg1";
+            }
+            // Single Invoice: Leg 1 is internal transfer (CustomerRate = 0),
+            // while Leg 2 holds the customer agreed master rate.
+            leg1Trip.CustomerRate = 0;
+            _context.Entry(leg1Trip).State = EntityState.Modified;
+
             var leg2Trip = new Trip
             {
                 IndentId = leg1Trip.IndentId,
@@ -88,21 +110,21 @@ namespace api_backend.Controllers
                 Status = "Pending Assignment",
                 TenantId = leg1Trip.TenantId,
                 CompanyId = leg1Trip.CompanyId,
-                VendorId = leg1Trip.VendorId,
-                LRGenerationType = leg1Trip.LRGenerationType,
-                BookingType = leg1Trip.BookingType,
-                RatePerTon = leg1Trip.RatePerTon,
-                FixedRate = leg1Trip.FixedRate
+                VehicleId = null,
+                DriverId = null,
+                VendorId = null,
+                LRGenerationType = "System",
+                BookingType = leg1Trip.BookingType ?? "Fixed",
+                RatePerTon = 0,
+                FixedRate = 0,
+                FreightCharges = 0,
+                AdvanceAmount = 0,
+                BalanceAmount = 0,
+                SupplierRate = 0,
+                CustomerRate = leg1Trip.Indent?.CustomerRate
             };
 
             _context.Trips.Add(leg2Trip);
-
-            if (leg1Trip.LegType == "Direct")
-            {
-                leg1Trip.LegType = "InboundLeg1";
-                _context.Entry(leg1Trip).State = EntityState.Modified;
-            }
-
             await _context.SaveChangesAsync();
 
             return Ok(leg2Trip);
