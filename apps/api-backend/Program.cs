@@ -72,6 +72,23 @@ using (var scope = app.Services.CreateScope())
         db.Database.ExecuteSqlRaw("ALTER TABLE \"Trips\" ALTER COLUMN \"VendorId\" DROP NOT NULL;");
         db.Database.ExecuteSqlRaw("ALTER TABLE \"Trips\" ALTER COLUMN \"VehicleId\" DROP NOT NULL;");
         db.Database.ExecuteSqlRaw("ALTER TABLE \"Trips\" ALTER COLUMN \"DriverId\" DROP NOT NULL;");
+        db.Database.ExecuteSqlRaw("ALTER TABLE \"VendorQuotations\" ADD COLUMN IF NOT EXISTS \"ServiceScope\" text;");
+        db.Database.ExecuteSqlRaw("ALTER TABLE \"Trips\" ADD COLUMN IF NOT EXISTS \"ServiceScope\" text;");
+        db.Database.ExecuteSqlRaw(@"
+            UPDATE ""Trips"" t
+            SET ""ServiceScope"" = COALESCE(vq.""ServiceScope"", 'EntireRoute')
+            FROM ""SalesQuotations"" sq
+            JOIN ""VendorQuotations"" vq ON sq.""WinningVendorQuotationId"" = vq.""Id""
+            WHERE t.""IndentId"" = sq.""IndentId"" AND t.""ServiceScope"" IS NULL;
+
+            UPDATE ""Trips"" t
+            SET ""LegType"" = 'InboundLeg1'
+            WHERE t.""ServiceScope"" = 'SourceToHub' AND t.""LegType"" != 'OutboundLeg2';
+
+            UPDATE ""Trips"" t
+            SET ""LegType"" = 'EntireRoute'
+            WHERE t.""ServiceScope"" = 'EntireRoute' AND t.""LegType"" != 'OutboundLeg2' AND EXISTS (SELECT 1 FROM ""Indents"" i WHERE i.""Id"" = t.""IndentId"" AND i.""WarehouseLocation"" IS NOT NULL AND i.""WarehouseLocation"" != '');
+        ");
     }
     catch (Exception ex)
     {

@@ -1,11 +1,22 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Building2, Users, Plus, LayoutDashboard, DollarSign, Activity } from "lucide-react";
+import { Building2, Users, Plus, LayoutDashboard, DollarSign, Activity, Search, X } from "lucide-react";
 
 export default function SaaSAdminPage() {
   const [tenants, setTenants] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState("");
+
+  const filteredTenants = tenants.filter((t) => {
+    if (!searchQuery.trim()) return true;
+    const q = searchQuery.toLowerCase().trim();
+    return (
+      t.name?.toLowerCase().includes(q) ||
+      t.companyName?.toLowerCase().includes(q) ||
+      t.id?.toString().includes(q)
+    );
+  });
 
   // New Tenant Form State
   const [showModal, setShowModal] = useState(false);
@@ -128,8 +139,23 @@ export default function SaaSAdminPage() {
       </div>
 
       <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
-        <div className="p-6 border-b border-slate-100">
+        <div className="p-6 border-b border-slate-100 flex flex-col md:flex-row md:items-center justify-between gap-4">
           <h2 className="text-lg font-bold text-slate-800">Tenant Directory</h2>
+          <div className="flex items-center px-3.5 py-1.5 bg-slate-50 border border-slate-200 rounded-xl w-full md:w-80">
+            <Search className="w-4 h-4 text-slate-400 mr-2 flex-shrink-0" />
+            <input
+              type="text"
+              placeholder="Search tenants..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="bg-transparent border-none text-sm focus:outline-none w-full text-slate-700 placeholder:text-slate-400"
+            />
+            {searchQuery && (
+              <button onClick={() => setSearchQuery("")} className="text-slate-400 hover:text-slate-600 p-0.5">
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
         </div>
         <div className="overflow-auto">
           <table className="w-full text-left text-sm">
@@ -143,7 +169,7 @@ export default function SaaSAdminPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {tenants.map((t, idx) => (
+              {filteredTenants.map((t, idx) => (
                 <tr key={idx} className="hover:bg-slate-50 transition-colors">
                   <td className="px-6 py-4 font-medium text-slate-800">
                     <div className="flex items-center gap-3">
@@ -174,10 +200,10 @@ export default function SaaSAdminPage() {
                   </td>
                 </tr>
               ))}
-              {tenants.length === 0 && (
+              {filteredTenants.length === 0 && (
                 <tr>
                   <td colSpan={5} className="px-6 py-8 text-center text-slate-500">
-                    No tenants found.
+                    {searchQuery ? `No tenants matched "${searchQuery}".` : "No tenants found."}
                   </td>
                 </tr>
               )}

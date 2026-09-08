@@ -100,6 +100,7 @@ namespace api_backend.Controllers
             quote.Remarks = request.Remarks;
             quote.AvailableDate = request.AvailableDate;
             quote.AvailableTime = request.AvailableTime;
+            quote.ServiceScope = !string.IsNullOrEmpty(request.ServiceScope) ? request.ServiceScope : "EntireRoute";
             quote.Status = "QuotationReceived";
 
             var indent = await _context.Indents.FindAsync(quote.IndentId);
@@ -185,6 +186,7 @@ namespace api_backend.Controllers
         public string? Remarks { get; set; }
         public DateTime? AvailableDate { get; set; }
         public string? AvailableTime { get; set; }
+        public string? ServiceScope { get; set; }
     }
 
     public class ReceiveGRPORequest

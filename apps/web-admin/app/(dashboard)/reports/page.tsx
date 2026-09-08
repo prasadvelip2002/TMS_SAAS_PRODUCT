@@ -1,6 +1,6 @@
 "use client";
 
-import { BarChart2, TrendingUp, Clock, AlertTriangle, FileSpreadsheet, Download, Loader2 } from "lucide-react";
+import { BarChart2, TrendingUp, Clock, AlertTriangle, FileSpreadsheet, Download, Loader2, Search, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { fetchApi } from "@/lib/api";
 import { ProtoTable, Td, Badge } from "@/components/PrototypeUI";
@@ -28,6 +28,22 @@ function PremiumKpiCard({ title, value, subtext, trend, icon: Icon, colorClass }
 export default function ReportsPage() {
   const [reports, setReports] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState("");
+
+  const filteredReports = reports.filter(r => {
+    if (!searchQuery.trim()) return true;
+    const q = searchQuery.toLowerCase().trim();
+    return (
+      r.tripId?.toString().toLowerCase().includes(q) ||
+      r.customerName?.toLowerCase().includes(q) ||
+      r.source?.toLowerCase().includes(q) ||
+      r.destination?.toLowerCase().includes(q) ||
+      r.warehouseLocation?.toLowerCase().includes(q) ||
+      r.vendorName?.toLowerCase().includes(q) ||
+      r.vehicle?.toLowerCase().includes(q) ||
+      r.status?.toLowerCase().includes(q)
+    );
+  });
 
   useEffect(() => {
     fetchApi("/Reports/trips")
@@ -37,13 +53,15 @@ export default function ReportsPage() {
   }, []);
 
   const downloadCSV = () => {
-    if (reports.length === 0) return;
     const headers = ["Trip ID", "Date", "Customer", "Route", "Vendor", "Selling Price", "Supplier Cost", "Fuel", "Toll", "Extra Charges", "Total Cost", "Gross Margin", "Status"];
     const csvContent = "data:text/csv;charset=utf-8," 
       + headers.join(",") + "\n"
-      + reports.map(r => 
-          `${r.tripId},${new Date(r.date).toLocaleDateString()},"${r.customerName}","${r.source} to ${r.destination}","${r.vendorName}",${r.customerRate},${r.supplierRate},${r.fuelAdvance},${r.tollCharges},${r.extraCharges || 0},${r.totalCost || (r.supplierRate + r.fuelAdvance + r.tollCharges + (r.extraCharges || 0))},${r.margin},${r.status}`
-        ).join("\n");
+      + reports.map(r => {
+          const routeStr = r.warehouseLocation 
+            ? `${r.source} -> ${r.warehouseLocation} (Hub) -> ${r.destination}`
+            : `${r.source} to ${r.destination}`;
+          return `${r.tripId},${new Date(r.date).toLocaleDateString()},"${r.customerName}","${routeStr}","${r.vendorName}",${r.customerRate},${r.supplierRate},${r.fuelAdvance},${r.tollCharges},${r.extraCharges || 0},${r.totalCost || (r.supplierRate + r.fuelAdvance + r.tollCharges + (r.extraCharges || 0))},${r.margin},${r.status}`;
+        }).join("\n");
     
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement("a");
@@ -105,18 +123,39 @@ export default function ReportsPage() {
 
       {/* Reports Table Area */}
       <div className="bg-white rounded-2xl shadow-sm ring-1 ring-slate-200/50 overflow-hidden flex flex-col h-[500px]">
-        <div className="px-6 py-5 border-b border-slate-100 flex items-center justify-between bg-slate-50/50 shrink-0">
+        <div className="px-6 py-4 border-b border-slate-100 flex flex-col md:flex-row md:items-center justify-between gap-4 bg-slate-50/50 shrink-0">
           <div>
             <h3 className="font-bold text-lg text-slate-900 tracking-tight">Trip Profitability Report</h3>
             <p className="text-[13px] font-medium text-slate-500 mt-0.5">Detailed breakdown of customer billing vs supplier costs</p>
           </div>
-          <button 
-            onClick={downloadCSV}
-            disabled={reports.length === 0}
-            className="bg-white border border-slate-200 text-slate-700 font-bold py-2 px-4 rounded-xl hover:bg-slate-50 transition-all text-[13px] flex items-center gap-2 shadow-sm disabled:opacity-50"
-          >
-            <Download className="w-4 h-4" /> Export CSV
-          </button>
+          <div className="flex items-center gap-3">
+            <div className="relative flex items-center">
+              <Search className="w-4 h-4 text-slate-400 absolute left-3 pointer-events-none" />
+              <input
+                type="text"
+                placeholder="Search trip, customer, route, vendor, vehicle..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-9 pr-8 py-2 bg-white border border-slate-200 rounded-xl text-xs font-medium text-slate-700 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 w-64 md:w-80 transition-all shadow-sm"
+              />
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery("")}
+                  className="absolute right-2.5 text-slate-400 hover:text-slate-600 p-0.5 rounded-full hover:bg-slate-100"
+                  title="Clear search"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </div>
+            <button 
+              onClick={downloadCSV}
+              disabled={reports.length === 0}
+              className="bg-white border border-slate-200 text-slate-700 font-bold py-2 px-4 rounded-xl hover:bg-slate-50 transition-all text-[13px] flex items-center gap-2 shadow-sm disabled:opacity-50 shrink-0"
+            >
+              <Download className="w-4 h-4" /> Export CSV
+            </button>
+          </div>
         </div>
         
         <div className="overflow-y-auto flex-1">
@@ -130,20 +169,34 @@ export default function ReportsPage() {
                   </div>
                 </Td>
               </tr>
-            ) : reports.length === 0 ? (
+            ) : filteredReports.length === 0 ? (
               <tr>
                 <Td colSpan={7} className="text-center py-20">
                   <div className="flex flex-col items-center justify-center">
                     <div className="w-16 h-16 bg-slate-100 text-slate-400 rounded-full flex items-center justify-center mb-6 border border-slate-200">
                       <FileSpreadsheet className="w-8 h-8" />
                     </div>
-                    <h3 className="text-[16px] font-bold text-slate-800 mb-1">No trips found</h3>
-                    <p className="text-[14px] text-slate-500 max-w-sm mx-auto">There are no trips to report on yet.</p>
+                    <h3 className="text-[16px] font-bold text-slate-800 mb-1">
+                      {searchQuery ? "No matching trips found" : "No trips found"}
+                    </h3>
+                    <p className="text-[14px] text-slate-500 max-w-sm mx-auto mb-4">
+                      {searchQuery 
+                        ? `No report records matched "${searchQuery}".` 
+                        : "There are no trips to report on yet."}
+                    </p>
+                    {searchQuery && (
+                      <button
+                        onClick={() => setSearchQuery("")}
+                        className="bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs px-4 py-2 rounded-xl transition-all"
+                      >
+                        Clear Filter
+                      </button>
+                    )}
                   </div>
                 </Td>
               </tr>
             ) : (
-              reports.map((r, idx) => (
+              filteredReports.map((r, idx) => (
                 <tr key={idx} className="hover:bg-slate-50/80 transition-colors border-b border-slate-100 last:border-0">
                   <Td>
                     <div className="font-mono text-[13px] font-bold text-slate-700">{r.tripId}</div>
@@ -151,8 +204,20 @@ export default function ReportsPage() {
                   </Td>
                   <Td>
                     <div className="font-semibold text-slate-800 max-w-[200px] truncate">{r.customerName}</div>
-                    <div className="text-[11px] text-slate-500 font-medium truncate max-w-[200px] mt-0.5">
-                      {r.source} → {r.destination}
+                    <div className="text-[11px] text-slate-500 font-medium truncate max-w-[220px] mt-0.5 flex items-center gap-1 flex-wrap">
+                      <span>{r.source}</span>
+                      {r.warehouseLocation ? (
+                        <>
+                          <span className="text-slate-300">→</span>
+                          <span className="font-bold text-amber-700 bg-amber-50 px-1 py-0.2 rounded border border-amber-200 text-[10px]">
+                            {r.warehouseLocation} (Hub)
+                          </span>
+                          <span className="text-slate-300">→</span>
+                        </>
+                      ) : (
+                        <span className="text-slate-300">→</span>
+                      )}
+                      <span>{r.destination}</span>
                     </div>
                   </Td>
                   <Td>

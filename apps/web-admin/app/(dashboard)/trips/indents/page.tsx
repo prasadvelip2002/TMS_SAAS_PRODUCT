@@ -42,11 +42,28 @@ export default function IndentsPage() {
   const [indents, setIndents] = useState<Indent[]>([]);
   const [customers, setCustomers] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState("");
   
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [formData, setFormData] = useState(DEFAULT_FORM);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [viewMode, setViewMode] = useState<'table' | 'grid'>('table');
+  const [viewMode, setViewMode] = useState<'table' | 'grid'>('grid');
+
+  const filteredIndents = indents.filter((ind) => {
+    if (!searchQuery.trim()) return true;
+    const q = searchQuery.toLowerCase().trim();
+    return (
+      `ind-${1000 + ind.id}`.toLowerCase().includes(q) ||
+      ind.id.toString().includes(q) ||
+      ind.customer?.name?.toLowerCase().includes(q) ||
+      ind.source?.toLowerCase().includes(q) ||
+      ind.destination?.toLowerCase().includes(q) ||
+      ind.warehouseLocation?.toLowerCase().includes(q) ||
+      ind.material?.toLowerCase().includes(q) ||
+      ind.vehicleType?.toLowerCase().includes(q) ||
+      ind.status?.toLowerCase().includes(q)
+    );
+  });
 
   // Customer Type filter: 'Contract' | 'Spot' | 'All'
   const [customerTypeFilter, setCustomerTypeFilter] = useState<'Contract' | 'Spot' | 'All'>('Contract');
@@ -467,9 +484,20 @@ export default function IndentsPage() {
           <Search className="w-5 h-5 text-slate-400" />
           <input 
             type="text" 
-            placeholder="Search indents by customer or route..." 
+            placeholder="Search indents by ID, customer, route, hub, vehicle..." 
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full bg-transparent border-none focus:outline-none text-sm text-slate-700 font-medium placeholder:text-slate-400 py-2.5"
           />
+          {searchQuery && (
+            <button 
+              onClick={() => setSearchQuery("")}
+              className="text-slate-400 hover:text-slate-600 p-1 rounded-full hover:bg-slate-100 transition-colors"
+              title="Clear search"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          )}
         </div>
         <div className="flex items-center gap-2 pr-2">
           <button 
@@ -492,24 +520,39 @@ export default function IndentsPage() {
         <div className="flex justify-center p-16">
           <Activity className="animate-spin text-blue-600 w-8 h-8" />
         </div>
-      ) : indents.length === 0 ? (
+      ) : filteredIndents.length === 0 ? (
         <div className="bg-white rounded-2xl border border-dashed border-slate-300 p-20 flex flex-col items-center justify-center text-center mt-2">
            <div className="w-16 h-16 bg-slate-100 text-slate-400 rounded-full flex items-center justify-center mb-6">
              <FileText className="w-8 h-8" />
            </div>
-           <h3 className="text-xl font-bold text-slate-900 mb-2">No indents found</h3>
-           <p className="text-slate-500 text-[14.5px] mb-8 max-w-sm">You haven't added any indents to the system yet.</p>
-           <button 
-             onClick={() => { setFormData(DEFAULT_FORM); setIsFormOpen(true); }}
-             className="bg-blue-600 hover:bg-blue-700 text-white font-medium px-6 py-3 rounded-xl shadow-[0_4px_14px_rgba(37,99,235,0.25)] transition-all flex items-center gap-2"
-           >
-             <Plus className="w-5 h-5" />
-             Add First Indent
-           </button>
+           <h3 className="text-xl font-bold text-slate-900 mb-2">
+             {searchQuery ? "No matching indents found" : "No indents found"}
+           </h3>
+           <p className="text-slate-500 text-[14.5px] mb-8 max-w-sm">
+             {searchQuery 
+               ? `No indents matched "${searchQuery}". Try a different search keyword.` 
+               : "You haven't added any indents to the system yet."}
+           </p>
+           {searchQuery ? (
+             <button
+               onClick={() => setSearchQuery("")}
+               className="bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold px-5 py-2.5 rounded-xl transition-all"
+             >
+               Clear Search Filter
+             </button>
+           ) : (
+             <button 
+               onClick={() => { setFormData(DEFAULT_FORM); setIsFormOpen(true); }}
+               className="bg-blue-600 hover:bg-blue-700 text-white font-medium px-6 py-3 rounded-xl shadow-[0_4px_14px_rgba(37,99,235,0.25)] transition-all flex items-center gap-2"
+             >
+               <Plus className="w-5 h-5" />
+               Add First Indent
+             </button>
+           )}
         </div>
       ) : viewMode === 'grid' ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {indents.map((ind) => (
+          {filteredIndents.map((ind) => (
             <div 
               key={ind.id} 
               onClick={() => handleEdit(ind)}
@@ -531,23 +574,42 @@ export default function IndentsPage() {
               
               {/* Ticket Route */}
               <div className="px-5 py-5 border-b border-slate-100 border-dashed relative">
-                <div className="flex items-center gap-4">
-                  <div className="flex-1">
-                    <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Source</div>
-                    <div className="font-semibold text-slate-800 text-sm truncate" title={ind.source}>{ind.source}</div>
-                  </div>
-                  <div className="flex-shrink-0 flex items-center justify-center">
-                    <div className="w-8 h-px bg-slate-300"></div>
-                    <div className="w-6 h-6 rounded-full border border-slate-200 flex items-center justify-center mx-1 bg-white shadow-sm z-10">
-                      <MapPin className="w-3 h-3 text-blue-500" />
+                {ind.warehouseLocation ? (
+                  <div className="flex items-center justify-between gap-1 text-xs">
+                    <div className="flex-1 min-w-0">
+                      <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Source</div>
+                      <div className="font-semibold text-slate-800 truncate" title={ind.source}>{ind.source}</div>
                     </div>
-                    <div className="w-8 h-px bg-slate-300"></div>
+                    <div className="flex flex-col items-center shrink-0 px-2">
+                      <span className="text-[10px] font-bold text-amber-800 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded">
+                        via {ind.warehouseLocation} (Hub)
+                      </span>
+                      <span className="text-slate-300 text-xs mt-0.5">➔</span>
+                    </div>
+                    <div className="flex-1 min-w-0 text-right">
+                      <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Destination</div>
+                      <div className="font-semibold text-slate-800 truncate" title={ind.destination}>{ind.destination}</div>
+                    </div>
                   </div>
-                  <div className="flex-1 text-right">
-                    <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Destination</div>
-                    <div className="font-semibold text-slate-800 text-sm truncate" title={ind.destination}>{ind.destination}</div>
+                ) : (
+                  <div className="flex items-center gap-4">
+                    <div className="flex-1">
+                      <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Source</div>
+                      <div className="font-semibold text-slate-800 text-sm truncate" title={ind.source}>{ind.source}</div>
+                    </div>
+                    <div className="flex-shrink-0 flex items-center justify-center">
+                      <div className="w-8 h-px bg-slate-300"></div>
+                      <div className="w-6 h-6 rounded-full border border-slate-200 flex items-center justify-center mx-1 bg-white shadow-sm z-10">
+                        <MapPin className="w-3 h-3 text-blue-500" />
+                      </div>
+                      <div className="w-8 h-px bg-slate-300"></div>
+                    </div>
+                    <div className="flex-1 text-right">
+                      <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Destination</div>
+                      <div className="font-semibold text-slate-800 text-sm truncate" title={ind.destination}>{ind.destination}</div>
+                    </div>
                   </div>
-                </div>
+                )}
               </div>
               
               {/* Ticket Details */}
@@ -591,11 +653,25 @@ export default function IndentsPage() {
       ) : (
         <div className="bg-white rounded-2xl shadow-sm ring-1 ring-slate-200/50 overflow-hidden">
           <ProtoTable headers={["INDENT #", "CUSTOMER", "ROUTE", "VEHICLE TYPE", "RATE", "PICKUP", "STATUS", "ACTIONS"]}>
-            {indents.map((ind) => (
+            {filteredIndents.map((ind) => (
               <tr key={ind.id} className="hover:bg-slate-50 transition-colors cursor-pointer group" onClick={() => handleEdit(ind)}>
                 <Td className="font-mono font-semibold text-[12.5px]">IND-{1000 + ind.id}</Td>
                 <Td>{ind.customer?.name || `Customer #${ind.customerId}`}</Td>
-                <Td className="text-[12px]">{ind.source} → {ind.destination}</Td>
+                <Td className="text-[12px]">
+                  {ind.warehouseLocation ? (
+                    <div className="flex items-center gap-1.5 flex-wrap font-medium text-slate-700">
+                      <span>{ind.source}</span>
+                      <span className="text-slate-300">→</span>
+                      <span className="text-[11px] font-bold text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200">
+                        {ind.warehouseLocation} (Hub)
+                      </span>
+                      <span className="text-slate-300">→</span>
+                      <span>{ind.destination}</span>
+                    </div>
+                  ) : (
+                    <span>{ind.source} → {ind.destination}</span>
+                  )}
+                </Td>
                 <Td className="text-[12px]">{ind.vehicleType}</Td>
                 <Td className="text-[12px]">
                   {(ind as any).pricingModel === 'CaseToCase' ? 'Spot: ' : 'Contract: '}

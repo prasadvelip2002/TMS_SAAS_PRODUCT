@@ -9,6 +9,18 @@ export default function CustomerInvoicingDashboard() {
   const [customers, setCustomers] = useState<any[]>([]);
   const [invoices, setInvoices] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState("");
+  
+  const filteredInvoices = invoices.filter((inv) => {
+    if (!searchQuery.trim()) return true;
+    const q = searchQuery.toLowerCase().trim();
+    return (
+      inv.invoiceNumber?.toLowerCase().includes(q) ||
+      inv.customer?.name?.toLowerCase().includes(q) ||
+      inv.status?.toLowerCase().includes(q) ||
+      inv.grandTotal?.toString().includes(q)
+    );
+  });
   
   // Side Panel State
   const [isPanelOpen, setIsPanelOpen] = useState(false);
@@ -140,13 +152,24 @@ export default function CustomerInvoicingDashboard() {
           
           <div className="h-[24px] w-[1px] bg-slate-200"></div>
 
-          <div className="relative">
-            <Search className="w-[16px] h-[16px] text-slate-400 absolute left-[14px] top-1/2 -translate-y-1/2" />
+          <div className="relative flex items-center">
+            <Search className="w-[16px] h-[16px] text-slate-400 absolute left-[14px] top-1/2 -translate-y-1/2 pointer-events-none" />
             <input 
               type="text" 
-              placeholder="Search invoices..." 
-              className="w-[240px] h-[42px] bg-white border border-slate-200 rounded-[12px] pl-[40px] pr-[14px] text-[14px] outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all shadow-sm"
+              placeholder="Search invoices by number, customer..." 
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-[240px] md:w-[280px] h-[42px] bg-white border border-slate-200 rounded-[12px] pl-[40px] pr-[34px] text-[14px] outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all shadow-sm"
             />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery("")}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-1 rounded-full hover:bg-slate-100"
+                title="Clear search"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
           </div>
           
           <div className="flex bg-white border border-slate-200 rounded-[12px] p-1 shadow-sm">
@@ -169,22 +192,34 @@ export default function CustomerInvoicingDashboard() {
                   </div>
                 </Td>
               </tr>
-            ) : invoices.length === 0 ? (
+            ) : filteredInvoices.length === 0 ? (
               <tr>
                 <Td colSpan={6} className="text-center py-20">
                   <div className="flex flex-col items-center justify-center">
                     <div className="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center mb-4 border border-blue-100">
                       <FileText className="w-8 h-8 text-blue-500" />
                     </div>
-                    <h3 className="text-[16px] font-bold text-slate-800 mb-1">No Invoices Generated Yet</h3>
-                    <p className="text-[14px] text-slate-500 max-w-sm mx-auto">
-                      Click the "Generate Invoice" button above to group unbilled trips and bill your customers.
+                    <h3 className="text-[16px] font-bold text-slate-800 mb-1">
+                      {searchQuery ? "No matching invoices found" : "No Invoices Generated Yet"}
+                    </h3>
+                    <p className="text-[14px] text-slate-500 max-w-sm mx-auto mb-4">
+                      {searchQuery 
+                        ? `No invoices matched "${searchQuery}".` 
+                        : "Click the \"Generate Invoice\" button above to group unbilled trips and bill your customers."}
                     </p>
+                    {searchQuery && (
+                      <button
+                        onClick={() => setSearchQuery("")}
+                        className="bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs px-4 py-2 rounded-xl transition-all"
+                      >
+                        Clear Filter
+                      </button>
+                    )}
                   </div>
                 </Td>
               </tr>
             ) : (
-              invoices.map((inv) => (
+              filteredInvoices.map((inv) => (
                 <tr key={inv.id} className="hover:bg-slate-50/80 transition-colors border-b border-slate-100 last:border-0">
                   <Td className="font-mono text-[13px] font-bold text-blue-600">{inv.invoiceNumber}</Td>
                   <Td className="font-medium text-slate-600">{new Date(inv.invoiceDate).toLocaleDateString()}</Td>

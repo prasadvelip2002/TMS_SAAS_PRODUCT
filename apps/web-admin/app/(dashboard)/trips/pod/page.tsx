@@ -9,6 +9,23 @@ import Link from "next/link";
 export default function AdminPODDashboard() {
   const [trips, setTrips] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState("");
+  
+  const filteredTrips = trips.filter((trip) => {
+    if (!searchQuery.trim()) return true;
+    const q = searchQuery.toLowerCase().trim();
+    return (
+      `trp-${trip.id}`.toLowerCase().includes(q) ||
+      trip.id?.toString().includes(q) ||
+      trip.indent?.customer?.name?.toLowerCase().includes(q) ||
+      trip.indent?.source?.toLowerCase().includes(q) ||
+      trip.indent?.destination?.toLowerCase().includes(q) ||
+      trip.indent?.warehouseLocation?.toLowerCase().includes(q) ||
+      trip.driver?.name?.toLowerCase().includes(q) ||
+      trip.vehicle?.registrationNumber?.toLowerCase().includes(q) ||
+      trip.status?.toLowerCase().includes(q)
+    );
+  });
   
   // Verify Slide-Over Panel
   const [isVerifyPanelOpen, setIsVerifyPanelOpen] = useState(false);
@@ -135,13 +152,24 @@ export default function AdminPODDashboard() {
         </div>
         
         <div className="flex items-center gap-[12px]">
-          <div className="relative">
-            <Search className="w-[16px] h-[16px] text-slate-400 absolute left-[14px] top-1/2 -translate-y-1/2" />
+          <div className="relative flex items-center">
+            <Search className="w-[16px] h-[16px] text-slate-400 absolute left-[14px] top-1/2 -translate-y-1/2 pointer-events-none" />
             <input 
               type="text" 
-              placeholder="Search trips..." 
-              className="w-[240px] h-[42px] bg-white border border-slate-200 rounded-[12px] pl-[40px] pr-[14px] text-[14px] outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all shadow-sm"
+              placeholder="Search by trip #, customer, route, vehicle, driver..." 
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-[240px] md:w-[280px] h-[42px] bg-white border border-slate-200 rounded-[12px] pl-[40px] pr-[34px] text-[14px] outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all shadow-sm"
             />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery("")}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-1 rounded-full hover:bg-slate-100"
+                title="Clear search"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
           </div>
           
           <div className="flex bg-white border border-slate-200 rounded-[12px] p-1 shadow-sm">
@@ -164,22 +192,34 @@ export default function AdminPODDashboard() {
                     </div>
                   </Td>
                 </tr>
-              ) : trips.length === 0 ? (
+              ) : filteredTrips.length === 0 ? (
                 <tr>
                   <Td colSpan={6} className="text-center py-20">
                     <div className="flex flex-col items-center justify-center">
                       <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mb-4 border border-slate-100">
                         <Camera className="w-8 h-8 text-slate-300" />
                       </div>
-                      <h3 className="text-[16px] font-bold text-slate-800 mb-1">No Active Trips</h3>
-                      <p className="text-[14px] text-slate-500 max-w-sm mx-auto">
-                        There are no active trips requiring POD review right now.
+                      <h3 className="text-[16px] font-bold text-slate-800 mb-1">
+                        {searchQuery ? "No matching trips found" : "No Active Trips"}
+                      </h3>
+                      <p className="text-[14px] text-slate-500 max-w-sm mx-auto mb-4">
+                        {searchQuery 
+                          ? `No trips matched "${searchQuery}".` 
+                          : "There are no active trips requiring POD review right now."}
                       </p>
+                      {searchQuery && (
+                        <button
+                          onClick={() => setSearchQuery("")}
+                          className="bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs px-4 py-2 rounded-xl transition-all"
+                        >
+                          Clear Filter
+                        </button>
+                      )}
                     </div>
                   </Td>
                 </tr>
               ) : (
-                trips.map((trip) => (
+                filteredTrips.map((trip) => (
                   <tr key={trip.id} className="hover:bg-slate-50/80 transition-colors border-b border-slate-100 last:border-0">
                     <Td className="font-mono text-[13px] font-semibold text-slate-600">
                       <Link href={`/trips/${trip.id}/lr`} className="hover:text-blue-600 hover:underline">
@@ -261,19 +301,31 @@ export default function AdminPODDashboard() {
             <div className="flex justify-center p-16">
               <Loader2 className="animate-spin text-blue-600 w-8 h-8" />
             </div>
-          ) : trips.length === 0 ? (
+          ) : filteredTrips.length === 0 ? (
             <div className="bg-white rounded-2xl border border-dashed border-slate-300 p-20 flex flex-col items-center justify-center text-center mt-2">
               <div className="w-16 h-16 bg-slate-100 text-slate-400 rounded-full flex items-center justify-center mb-6">
                 <Camera className="w-8 h-8 text-slate-300" />
               </div>
-              <h3 className="text-[16px] font-bold text-slate-800 mb-1">No Active Trips</h3>
-              <p className="text-[14px] text-slate-500 max-w-sm mx-auto">
-                There are no active trips requiring POD review right now.
+              <h3 className="text-[16px] font-bold text-slate-800 mb-1">
+                {searchQuery ? "No matching trips found" : "No Active Trips"}
+              </h3>
+              <p className="text-[14px] text-slate-500 max-w-sm mx-auto mb-4">
+                {searchQuery 
+                  ? `No trips matched "${searchQuery}".` 
+                  : "There are no active trips requiring POD review right now."}
               </p>
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery("")}
+                  className="bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs px-4 py-2 rounded-xl transition-all"
+                >
+                  Clear Filter
+                </button>
+              )}
             </div>
           ) : (
             <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-              {trips.map(trip => (
+              {filteredTrips.map(trip => (
                 <div key={trip.id} className="bg-white rounded-2xl p-0 shadow-sm border border-slate-200 overflow-hidden flex flex-col">
                   {/* Ticket Header */}
                   <div className="bg-slate-50/80 p-4 border-b border-slate-100 flex justify-between items-center">

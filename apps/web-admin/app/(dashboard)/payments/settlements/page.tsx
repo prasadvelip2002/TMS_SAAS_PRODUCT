@@ -10,6 +10,7 @@ export default function VendorSettlementDashboard() {
   const [trips, setTrips] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<"Pending" | "Settled" | "All">("Pending");
+  const [searchQuery, setSearchQuery] = useState("");
   
   // Settlement Panel
   const [isPanelOpen, setIsPanelOpen] = useState(false);
@@ -97,13 +98,24 @@ export default function VendorSettlementDashboard() {
             </button>
           </div>
 
-          <div className="relative">
-            <Search className="w-[16px] h-[16px] text-slate-400 absolute left-[14px] top-1/2 -translate-y-1/2" />
+          <div className="relative flex items-center">
+            <Search className="w-[16px] h-[16px] text-slate-400 absolute left-[14px] top-1/2 -translate-y-1/2 pointer-events-none" />
             <input 
               type="text" 
-              placeholder="Search settlements..." 
-              className="w-[240px] h-[42px] bg-white border border-slate-200 rounded-[12px] pl-[40px] pr-[14px] text-[14px] outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all shadow-sm"
+              placeholder="Search by trip #, vendor, route, truck..." 
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-[240px] md:w-[280px] h-[42px] bg-white border border-slate-200 rounded-[12px] pl-[40px] pr-[34px] text-[14px] outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all shadow-sm"
             />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery("")}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-1 rounded-full hover:bg-slate-100"
+                title="Clear search"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
           </div>
           
           <div className="flex bg-white border border-slate-200 rounded-[12px] p-1 shadow-sm">
@@ -120,9 +132,21 @@ export default function VendorSettlementDashboard() {
             {(() => {
               // Filter logic
               const filteredTrips = trips.filter(t => {
-                if (filter === "Pending") return !t.isVendorSettled;
-                if (filter === "Settled") return t.isVendorSettled;
-                return true;
+                if (filter === "Pending" && t.isVendorSettled) return false;
+                if (filter === "Settled" && !t.isVendorSettled) return false;
+                if (!searchQuery.trim()) return true;
+                const q = searchQuery.toLowerCase().trim();
+                return (
+                  `trp-${t.id}`.toLowerCase().includes(q) ||
+                  t.id?.toString().includes(q) ||
+                  t.vendor?.name?.toLowerCase().includes(q) ||
+                  t.source?.toLowerCase().includes(q) ||
+                  t.destination?.toLowerCase().includes(q) ||
+                  t.warehouseLocation?.toLowerCase().includes(q) ||
+                  t.truckRegistrationNumber?.toLowerCase().includes(q) ||
+                  t.driverName?.toLowerCase().includes(q) ||
+                  t.status?.toLowerCase().includes(q)
+                );
               });
 
               if (loading) {
@@ -147,11 +171,21 @@ export default function VendorSettlementDashboard() {
                           <Handshake className="w-8 h-8 text-emerald-500" />
                         </div>
                         <h3 className="text-[16px] font-bold text-slate-800 mb-1">
-                          {filter === "Pending" ? "All Accounts Settled!" : filter === "Settled" ? "No Settled History" : "No Closed Trips"}
+                          {searchQuery ? "No matching settlements found" : filter === "Pending" ? "All Accounts Settled!" : filter === "Settled" ? "No Settled History" : "No Closed Trips"}
                         </h3>
-                        <p className="text-[14px] text-slate-500 max-w-sm mx-auto">
-                          {filter === "Pending" ? "There are no pending vendor settlements at this time. Great job!" : "No trips found matching the selected status."}
+                        <p className="text-[14px] text-slate-500 max-w-sm mx-auto mb-4">
+                          {searchQuery 
+                            ? `No settlements matched "${searchQuery}".` 
+                            : filter === "Pending" ? "There are no pending vendor settlements at this time. Great job!" : "No trips found matching the selected status."}
                         </p>
+                        {searchQuery && (
+                          <button
+                            onClick={() => setSearchQuery("")}
+                            className="bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs px-4 py-2 rounded-xl transition-all"
+                          >
+                            Clear Filter
+                          </button>
+                        )}
                       </div>
                     </Td>
                   </tr>

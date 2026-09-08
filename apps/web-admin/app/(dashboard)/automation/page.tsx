@@ -3,12 +3,25 @@
 import { useEffect, useState } from "react";
 import { fetchApi } from "@/lib/api";
 import { ProtoTable, Td } from "@/components/PrototypeUI";
-import { Search, Grid, List, RefreshCw, Activity, Loader2 } from "lucide-react";
+import { Search, Grid, List, RefreshCw, Activity, Loader2, X } from "lucide-react";
 
 export default function AutomationPage() {
   const [logs, setLogs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+
+  const filteredLogs = logs.filter((log) => {
+    if (!searchQuery.trim()) return true;
+    const q = searchQuery.toLowerCase().trim();
+    return (
+      log.title?.toLowerCase().includes(q) ||
+      log.message?.toLowerCase().includes(q) ||
+      log.type?.toLowerCase().includes(q) ||
+      log.entityId?.toString().includes(q) ||
+      (log.isRead ? "processed" : "pending").includes(q)
+    );
+  });
 
   const loadData = async (isManualRefresh = false) => {
     if (!isManualRefresh) setLoading(true);
@@ -59,13 +72,24 @@ export default function AutomationPage() {
           
           <div className="h-[24px] w-[1px] bg-slate-200"></div>
 
-          <div className="relative">
+          <div className="relative flex items-center">
             <Search className="w-[16px] h-[16px] text-slate-400 absolute left-[14px] top-1/2 -translate-y-1/2" />
             <input 
               type="text" 
               placeholder="Search logs..." 
-              className="w-[240px] h-[42px] bg-white border border-slate-200 rounded-[12px] pl-[40px] pr-[14px] text-[14px] outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all shadow-sm"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-[240px] h-[42px] bg-white border border-slate-200 rounded-[12px] pl-[40px] pr-[32px] text-[14px] outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all shadow-sm"
             />
+            {searchQuery && (
+              <button 
+                onClick={() => setSearchQuery("")}
+                className="text-slate-400 hover:text-slate-600 absolute right-[10px] top-1/2 -translate-y-1/2 p-0.5"
+                title="Clear search"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            )}
           </div>
           
           <div className="flex bg-white border border-slate-200 rounded-[12px] p-1 shadow-sm">
@@ -94,22 +118,34 @@ export default function AutomationPage() {
                   </div>
                 </Td>
               </tr>
-            ) : logs.length === 0 ? (
+            ) : filteredLogs.length === 0 ? (
               <tr>
                 <Td colSpan={6} className="text-center py-20">
                   <div className="flex flex-col items-center justify-center">
                     <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mb-4 border border-slate-100">
                       <Activity className="w-8 h-8 text-slate-300" />
                     </div>
-                    <h3 className="text-[16px] font-bold text-slate-800 mb-1">No System Logs</h3>
+                    <h3 className="text-[16px] font-bold text-slate-800 mb-1">
+                      {searchQuery ? "No matching logs found" : "No System Logs"}
+                    </h3>
                     <p className="text-[14px] text-slate-500 max-w-sm mx-auto">
-                      The background workers haven't generated any logs yet.
+                      {searchQuery 
+                        ? `No logs matched "${searchQuery}". Try another keyword.`
+                        : "The background workers haven't generated any logs yet."}
                     </p>
+                    {searchQuery && (
+                      <button
+                        onClick={() => setSearchQuery("")}
+                        className="mt-4 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold px-4 py-2 rounded-xl text-xs transition-all"
+                      >
+                        Clear Search Filter
+                      </button>
+                    )}
                   </div>
                 </Td>
               </tr>
             ) : (
-              logs.map(log => (
+              filteredLogs.map(log => (
                 <tr key={log.id} className="hover:bg-slate-50/80 transition-colors border-b border-slate-100 last:border-0">
                   <Td className="font-mono text-[12px] font-semibold text-slate-500">
                     {new Date(log.createdAt).toLocaleString()}

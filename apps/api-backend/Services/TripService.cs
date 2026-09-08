@@ -71,14 +71,21 @@ namespace api_backend.Services
             trip.BalanceAmount = freightCharges - request.AdvanceAmount; // balance is freight - advance
             trip.Status = "Assigned";
             
-            // Automatically determine LegType based on WarehouseLocation
+            // Automatically determine LegType based on WarehouseLocation and ServiceScope
             if (string.IsNullOrEmpty(trip.LegType) || trip.LegType == "Direct")
             {
-                trip.LegType = !string.IsNullOrEmpty(indent.WarehouseLocation) ? "InboundLeg1" : "Direct";
+                if (!string.IsNullOrEmpty(indent.WarehouseLocation))
+                {
+                    trip.LegType = (trip.ServiceScope == "SourceToHub") ? "InboundLeg1" : "EntireRoute";
+                }
+                else
+                {
+                    trip.LegType = "Direct";
+                }
             }
 
             // Single Customer Invoice: Inbound Leg 1 is internal (CustomerRate = 0),
-            // while Outbound Leg 2 or Direct trip carries the full customer agreed rate.
+            // while Outbound Leg 2, EntireRoute, or Direct trip carries the full customer agreed rate.
             if (trip.LegType == "InboundLeg1")
             {
                 trip.CustomerRate = 0;
@@ -91,6 +98,7 @@ namespace api_backend.Services
             }
             else
             {
+                // EntireRoute or Direct
                 trip.CustomerRate = indent.CustomerRate;
                 indent.Status = "Assigned";
             }

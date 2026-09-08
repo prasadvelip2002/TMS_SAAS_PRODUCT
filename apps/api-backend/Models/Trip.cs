@@ -58,11 +58,11 @@ namespace api_backend.Models
 
         public int TenantId { get; set; }
         public Tenant? Tenant { get; set; }
-
         public int CompanyId { get; set; }
         public Company? Company { get; set; }
 
-        public string LegType { get; set; } = "Direct"; // Direct, InboundLeg1, OutboundLeg2
+        public string LegType { get; set; } = "Direct"; // Direct, InboundLeg1, OutboundLeg2, EntireRoute
+        public string? ServiceScope { get; set; } = "EntireRoute"; // SourceToHub, EntireRoute
         public int? ParentTripId { get; set; }
         public Trip? ParentTrip { get; set; }
 

@@ -15,6 +15,7 @@ namespace api_backend.Models
         public string? Remarks { get; set; } // Pending, Approved, Rejected
         public DateTime? AvailableDate { get; set; }
         public string? AvailableTime { get; set; } // e.g. "14:00" or "02:00 PM"
+        public string? ServiceScope { get; set; } = "EntireRoute"; // "SourceToHub", "EntireRoute"
 
         public string MagicLinkToken { get; set; } = Guid.NewGuid().ToString();
 

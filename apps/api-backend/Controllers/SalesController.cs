@@ -134,15 +134,25 @@ namespace api_backend.Controllers
                 sq.Indent.Status = "Assigned";
             }
             
+            // Determine LegType & ServiceScope based on vendor quote scope
+            string serviceScope = sq.WinningVendorQuotation?.ServiceScope ?? "EntireRoute";
+            string legType = "Direct";
+            if (!string.IsNullOrEmpty(sq.Indent?.WarehouseLocation))
+            {
+                legType = (serviceScope == "SourceToHub") ? "InboundLeg1" : "EntireRoute";
+            }
+
             // Auto-generate Trip (for Own fleet, VendorId will be null and SupplierRate 0)
             var trip = new Trip
             {
                 IndentId = sq.IndentId,
+                LegType = legType,
+                ServiceScope = serviceScope,
                 VendorId = sq.WinningVendorQuotation?.VendorId,
                 Status = "Assigned",
                 BookingType = "Fixed",
                 SupplierRate = sq.WinningVendorQuotation?.QuotedRate ?? 0,
-                CustomerRate = sq.SellingPrice,
+                CustomerRate = (legType == "InboundLeg1") ? 0 : sq.SellingPrice,
                 FixedRate = sq.WinningVendorQuotation?.QuotedRate ?? 0,
                 TenantId = sq.TenantId,
                 CompanyId = sq.CompanyId

@@ -5,7 +5,7 @@ import { getIndents, getTrips, fetchApi } from "@/lib/api";
 import { ProtoTable, Td, Badge, RouteTrack } from "@/components/PrototypeUI";
 import { IndentForm } from "@/components/IndentForm";
 import { TripAssignmentForm } from "@/components/TripAssignmentForm";
-import { MapPin, X, Activity, FileText, Truck, Grid, List, Plus } from "lucide-react";
+import { MapPin, X, Activity, FileText, Truck, Grid, List, Plus, Search } from "lucide-react";
 import Link from "next/link";
 import { formatTime12H } from "@/lib/utils";
 
@@ -52,6 +52,7 @@ export default function TripsPage() {
   const [activeTab, setActiveTab] = useState<'indents' | 'trips'>('indents');
   const [isLoading, setIsLoading] = useState(true);
   const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
+  const [searchQuery, setSearchQuery] = useState("");
 
   const loadData = async () => {
     try {
@@ -70,6 +71,40 @@ export default function TripsPage() {
   }, []);
 
   const pendingIndents = indents.filter(i => i.status !== 'Assigned');
+
+  const filteredPendingIndents = pendingIndents.filter(i => {
+    if (!searchQuery.trim()) return true;
+    const q = searchQuery.toLowerCase().trim();
+    return (
+      `ind-${1000 + i.id}`.toLowerCase().includes(q) ||
+      i.id.toString().includes(q) ||
+      i.customer?.name?.toLowerCase().includes(q) ||
+      i.source?.toLowerCase().includes(q) ||
+      i.destination?.toLowerCase().includes(q) ||
+      i.warehouseLocation?.toLowerCase().includes(q) ||
+      i.material?.toLowerCase().includes(q) ||
+      i.vehicleType?.toLowerCase().includes(q) ||
+      i.status?.toLowerCase().includes(q)
+    );
+  });
+
+  const filteredTrips = trips.filter(t => {
+    if (!searchQuery.trim()) return true;
+    const q = searchQuery.toLowerCase().trim();
+    return (
+      `trp-${1000 + t.id}`.toLowerCase().includes(q) ||
+      t.id.toString().includes(q) ||
+      t.indent?.customer?.name?.toLowerCase().includes(q) ||
+      t.indent?.source?.toLowerCase().includes(q) ||
+      t.indent?.destination?.toLowerCase().includes(q) ||
+      t.indent?.warehouseLocation?.toLowerCase().includes(q) ||
+      t.vehicle?.vehicleNumber?.toLowerCase().includes(q) ||
+      t.driver?.name?.toLowerCase().includes(q) ||
+      t.status?.toLowerCase().includes(q) ||
+      t.lrNumber?.toLowerCase().includes(q) ||
+      t.vendor?.name?.toLowerCase().includes(q)
+    );
+  });
 
   const TRIP_STAGES = ['Indent', 'Confirmed', 'Assigned', 'Started', 'Delivered', 'POD', 'Approved', 'Closed'];
   const getStageIdx = (trip: any) => {
@@ -123,16 +158,24 @@ export default function TripsPage() {
     }
   };
 
-  const getLegBadge = (legType: string) => {
-    if (legType === "InboundLeg1") return <span className="px-2 py-0.5 bg-blue-100 text-blue-700 rounded-md text-[10px] font-bold uppercase tracking-wider ml-2">Leg 1</span>;
+  const getLegBadge = (legType: string, serviceScope?: string) => {
+    if (legType === "InboundLeg1" || serviceScope === "SourceToHub") return <span className="px-2 py-0.5 bg-blue-100 text-blue-700 rounded-md text-[10px] font-bold uppercase tracking-wider ml-2">Leg 1</span>;
     if (legType === "OutboundLeg2") return <span className="px-2 py-0.5 bg-purple-100 text-purple-700 rounded-md text-[10px] font-bold uppercase tracking-wider ml-2">Leg 2</span>;
+    if (legType === "EntireRoute" || serviceScope === "EntireRoute") return <span className="px-2 py-0.5 bg-emerald-100 text-emerald-700 rounded-md text-[10px] font-bold uppercase tracking-wider ml-2">Full Route</span>;
     return null;
   };
 
   const canAddOutboundLeg = (trip: any) => {
-    if (trip.legType === "OutboundLeg2") return false;
+    // ONLY available if intermediate Hub was selected on the indent!
+    if (!trip.indent?.warehouseLocation) return false;
+    // If the trip is OutboundLeg2 or EntireRoute, do not add next leg!
+    if (trip.legType === "OutboundLeg2" || trip.legType === "EntireRoute" || trip.serviceScope === "EntireRoute") return false;
+    // If an outbound leg already exists, do not add another
     const hasOutbound = trips.some(t => t.parentTripId === trip.id || (t.indentId === trip.indentId && t.legType === "OutboundLeg2"));
-    return !hasOutbound;
+    if (hasOutbound) return false;
+
+    // Show only when the vendor quoted SourceToHub (or trip is InboundLeg1)
+    return trip.legType === "InboundLeg1" || trip.serviceScope === "SourceToHub";
   };
 
   return (
@@ -144,13 +187,33 @@ export default function TripsPage() {
           <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Trip & Indent Dashboard</h1>
           <p className="text-sm font-medium text-slate-500 mt-1">Monitor pending indents and track active trips in real-time.</p>
         </div>
-        <div className="flex items-center gap-1 bg-white rounded-xl shadow-sm ring-1 ring-slate-200/50 p-1.5">
-          <button onClick={() => setViewMode('grid')} className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition-colors ${viewMode === 'grid' ? 'bg-blue-50 text-blue-700' : 'text-slate-500 hover:bg-slate-50'}`}>
-            <Grid className="w-4 h-4" /> Grid
-          </button>
-          <button onClick={() => setViewMode('list')} className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition-colors ${viewMode === 'list' ? 'bg-blue-50 text-blue-700' : 'text-slate-500 hover:bg-slate-50'}`}>
-            <List className="w-4 h-4" /> Table
-          </button>
+        <div className="flex items-center gap-3">
+          <div className="relative">
+            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+            <input 
+              type="text" 
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder={activeTab === 'indents' ? "Search indents, customer, route..." : "Search trips, vehicle, driver, route..."}
+              className="w-[280px] h-[40px] bg-white border border-slate-200 rounded-xl pl-9 pr-8 text-xs font-medium outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all shadow-xs"
+            />
+            {searchQuery && (
+              <button 
+                onClick={() => setSearchQuery("")}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
+          <div className="flex items-center gap-1 bg-white rounded-xl shadow-sm ring-1 ring-slate-200/50 p-1.5">
+            <button onClick={() => setViewMode('grid')} className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition-colors ${viewMode === 'grid' ? 'bg-blue-50 text-blue-700' : 'text-slate-500 hover:bg-slate-50'}`}>
+              <Grid className="w-4 h-4" /> Grid
+            </button>
+            <button onClick={() => setViewMode('list')} className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition-colors ${viewMode === 'list' ? 'bg-blue-50 text-blue-700' : 'text-slate-500 hover:bg-slate-50'}`}>
+              <List className="w-4 h-4" /> Table
+            </button>
+          </div>
         </div>
       </div>
 
@@ -189,24 +252,42 @@ export default function TripsPage() {
             </div>
             <div className="overflow-auto flex-1">
               <ProtoTable headers={["INDENT #", "CUSTOMER", "ROUTE", "MATERIAL", "DATE", "STATUS", "ACTIONS"]}>
-                {pendingIndents.length === 0 ? (
+                {filteredPendingIndents.length === 0 ? (
                 <tr>
                   <Td colSpan={7} className="p-0 hover:bg-transparent">
                     <div className="p-20 flex flex-col items-center justify-center text-center">
                       <div className="w-16 h-16 bg-slate-100 text-slate-400 rounded-full flex items-center justify-center mb-6">
                         <FileText className="w-8 h-8" />
                       </div>
-                      <h3 className="text-xl font-bold text-slate-900 mb-2">No pending indents</h3>
-                      <p className="text-slate-500 text-[14.5px] mb-8 max-w-sm">All indents have been assigned to trips, or no indents exist.</p>
+                      <h3 className="text-xl font-bold text-slate-900 mb-2">
+                        {searchQuery ? "No matching indents found" : "No pending indents"}
+                      </h3>
+                      <p className="text-slate-500 text-[14.5px] mb-8 max-w-sm">
+                        {searchQuery ? `No indents matched "${searchQuery}". Try a different search.` : "All indents have been assigned to trips, or no indents exist."}
+                      </p>
                     </div>
                   </Td>
                 </tr>
               ) : (
-                pendingIndents.map(indent => (
+                filteredPendingIndents.map(indent => (
                   <tr key={indent.id} className="hover:bg-slate-50 transition-colors">
                     <Td className="font-mono font-semibold text-[12.5px]">IND-{1000 + indent.id}</Td>
                     <Td>{indent.customer?.name}</Td>
-                    <Td className="text-[12px]">{indent.source} &rarr; {indent.destination}</Td>
+                    <Td className="text-[12px]">
+                      {indent.warehouseLocation ? (
+                        <div className="flex items-center gap-1.5 flex-wrap font-medium text-slate-700">
+                          <span>{indent.source}</span>
+                          <span className="text-slate-300">→</span>
+                          <span className="text-[11px] font-bold text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200">
+                            {indent.warehouseLocation} (Hub)
+                          </span>
+                          <span className="text-slate-300">→</span>
+                          <span>{indent.destination}</span>
+                        </div>
+                      ) : (
+                        <span>{indent.source} &rarr; {indent.destination}</span>
+                      )}
+                    </Td>
                     <Td className="text-[12px]">{indent.material} ({indent.weight}t)</Td>
                     <Td className="text-[12px] whitespace-nowrap">
                       {new Date(indent.loadingDate).toLocaleDateString()}
@@ -239,17 +320,21 @@ export default function TripsPage() {
               </button>
             </div>
             
-            {pendingIndents.length === 0 ? (
+            {filteredPendingIndents.length === 0 ? (
               <div className="bg-white rounded-2xl border border-dashed border-slate-300 p-20 flex flex-col items-center justify-center text-center">
                 <div className="w-16 h-16 bg-slate-100 text-slate-400 rounded-full flex items-center justify-center mb-6">
                   <FileText className="w-8 h-8" />
                 </div>
-                <h3 className="text-xl font-bold text-slate-900 mb-2">No pending indents</h3>
-                <p className="text-slate-500 text-[14.5px] max-w-sm">All indents have been assigned to trips, or no indents exist.</p>
+                <h3 className="text-xl font-bold text-slate-900 mb-2">
+                  {searchQuery ? "No matching indents found" : "No pending indents"}
+                </h3>
+                <p className="text-slate-500 text-[14.5px] max-w-sm">
+                  {searchQuery ? `No indents matched "${searchQuery}". Try a different search.` : "All indents have been assigned to trips, or no indents exist."}
+                </p>
               </div>
             ) : (
               <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-                {pendingIndents.map(indent => (
+                {filteredPendingIndents.map(indent => (
                   <div key={indent.id} className="bg-white rounded-2xl p-0 shadow-sm border border-slate-200 overflow-hidden flex flex-col">
                     {/* Ticket Header */}
                     <div className="bg-slate-50/80 p-4 border-b border-slate-100 flex justify-between items-center">
@@ -267,23 +352,42 @@ export default function TripsPage() {
                     
                     {/* Ticket Route */}
                     <div className="px-5 py-5 border-b border-slate-100 border-dashed relative">
-                      <div className="flex items-center gap-4">
-                        <div className="flex-1">
-                          <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Source</div>
-                          <div className="font-semibold text-slate-800 text-sm truncate" title={indent.source}>{indent.source}</div>
-                        </div>
-                        <div className="flex-shrink-0 flex items-center justify-center">
-                          <div className="w-8 h-px bg-slate-300"></div>
-                          <div className="w-6 h-6 rounded-full border border-slate-200 flex items-center justify-center mx-1 bg-white shadow-sm z-10">
-                            <MapPin className="w-3 h-3 text-blue-500" />
+                      {indent.warehouseLocation ? (
+                        <div className="flex items-center justify-between gap-1 text-xs">
+                          <div className="flex-1 min-w-0">
+                            <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Source</div>
+                            <div className="font-semibold text-slate-800 truncate" title={indent.source}>{indent.source}</div>
                           </div>
-                          <div className="w-8 h-px bg-slate-300"></div>
+                          <div className="flex flex-col items-center shrink-0 px-2">
+                            <span className="text-[10px] font-bold text-amber-800 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded">
+                              via {indent.warehouseLocation} (Hub)
+                            </span>
+                            <span className="text-slate-300 text-xs mt-0.5">➔</span>
+                          </div>
+                          <div className="flex-1 min-w-0 text-right">
+                            <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Destination</div>
+                            <div className="font-semibold text-slate-800 truncate" title={indent.destination}>{indent.destination}</div>
+                          </div>
                         </div>
-                        <div className="flex-1 text-right">
-                          <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Destination</div>
-                          <div className="font-semibold text-slate-800 text-sm truncate" title={indent.destination}>{indent.destination}</div>
+                      ) : (
+                        <div className="flex items-center gap-4">
+                          <div className="flex-1">
+                            <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Source</div>
+                            <div className="font-semibold text-slate-800 text-sm truncate" title={indent.source}>{indent.source}</div>
+                          </div>
+                          <div className="flex-shrink-0 flex items-center justify-center">
+                            <div className="w-8 h-px bg-slate-300"></div>
+                            <div className="w-6 h-6 rounded-full border border-slate-200 flex items-center justify-center mx-1 bg-white shadow-sm z-10">
+                              <MapPin className="w-3 h-3 text-blue-500" />
+                            </div>
+                            <div className="w-8 h-px bg-slate-300"></div>
+                          </div>
+                          <div className="flex-1 text-right">
+                            <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Destination</div>
+                            <div className="font-semibold text-slate-800 text-sm truncate" title={indent.destination}>{indent.destination}</div>
+                          </div>
                         </div>
-                      </div>
+                      )}
                     </div>
                     
                     {/* Ticket Details */}
@@ -329,36 +433,61 @@ export default function TripsPage() {
           <div className="bg-white rounded-2xl shadow-sm ring-1 ring-slate-200/50 overflow-hidden flex flex-col min-h-0 flex-1">
             <div className="overflow-auto flex-1">
               <ProtoTable headers={["TRIP ID", "ROUTE", "VEHICLE", "DRIVER", "PROGRESS", "STATUS", "ACTIONS"]}>
-                {trips.length === 0 ? (
+                {filteredTrips.length === 0 ? (
                   <tr>
                     <Td colSpan={7} className="p-0 hover:bg-transparent">
                       <div className="p-20 flex flex-col items-center justify-center text-center">
                         <div className="w-16 h-16 bg-slate-100 text-slate-400 rounded-full flex items-center justify-center mb-6">
                           <Truck className="w-8 h-8" />
                         </div>
-                        <h3 className="text-xl font-bold text-slate-900 mb-2">No active trips</h3>
-                        <p className="text-slate-500 text-[14.5px] mb-8 max-w-sm">There are no trips currently active in the system.</p>
+                        <h3 className="text-xl font-bold text-slate-900 mb-2">
+                          {searchQuery ? "No matching trips found" : "No active trips"}
+                        </h3>
+                        <p className="text-slate-500 text-[14.5px] mb-8 max-w-sm">
+                          {searchQuery ? `No trips matched "${searchQuery}". Try a different search.` : "There are no trips currently active in the system."}
+                        </p>
                       </div>
                     </Td>
                   </tr>
                 ) : (
-                  trips.map(trip => (
+                  filteredTrips.map(trip => (
                     <tr key={trip.id} className="hover:bg-slate-50 transition-colors">
                       <Td className="font-mono font-semibold text-[12.5px]">
                         TRP-{1000 + trip.id}
-                        {getLegBadge(trip.legType)}
+                        {getLegBadge(trip.legType, trip.serviceScope)}
                       </Td>
                       <Td className="text-[12px]">
-                        {trip.legType === 'InboundLeg1' ? (
-                          trip.indent?.warehouseLocation 
-                            ? <>{trip.indent?.source} &rarr; <span className="font-semibold text-purple-600">{trip.indent?.warehouseLocation}</span></>
-                            : <>{trip.indent?.source} &rarr; {trip.indent?.destination}</>
-                        ) : trip.legType === 'OutboundLeg2' ? (
-                          trip.indent?.warehouseLocation 
-                            ? <><span className="font-semibold text-purple-600">{trip.indent?.warehouseLocation}</span> &rarr; {trip.indent?.destination}</>
-                            : <><span className="font-semibold text-purple-600">{trip.indent?.destination}</span> &rarr; {trip.indent?.source} <span className="text-slate-400 text-[10px] ml-1">(Return)</span></>
+                        {trip.indent?.warehouseLocation ? (
+                          <div className="flex flex-col gap-1">
+                            {/* Prominently show ALL locations: Source -> Hub (Hub) -> Destination */}
+                            <div className="flex items-center gap-1.5 flex-wrap font-semibold text-slate-900 text-[12.5px]">
+                              <span>{trip.indent?.source}</span>
+                              <span className="text-slate-400">→</span>
+                              <span className="font-bold text-amber-700 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded text-[11px]">
+                                {trip.indent?.warehouseLocation} (Hub)
+                              </span>
+                              <span className="text-slate-400">→</span>
+                              <span>{trip.indent?.destination}</span>
+                            </div>
+                            {/* Clear Leg / Vendor Quoted Coverage Badge */}
+                            <div>
+                              {trip.legType === 'InboundLeg1' || trip.serviceScope === 'SourceToHub' ? (
+                                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10.5px] font-bold bg-blue-50 text-blue-700 border border-blue-200">
+                                  📍 Leg 1: {trip.indent?.source} → {trip.indent?.warehouseLocation} (Hub)
+                                </span>
+                              ) : trip.legType === 'OutboundLeg2' ? (
+                                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10.5px] font-bold bg-purple-50 text-purple-700 border border-purple-200">
+                                  📍 Leg 2: {trip.indent?.warehouseLocation} (Hub) → {trip.indent?.destination}
+                                </span>
+                              ) : (
+                                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10.5px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                  🛣️ Entire Route: {trip.indent?.source} → {trip.indent?.destination}
+                                </span>
+                              )}
+                            </div>
+                          </div>
                         ) : (
-                          <>{trip.indent?.source} &rarr; {trip.indent?.destination}</>
+                          <span className="font-medium text-slate-800">{trip.indent?.source} &rarr; {trip.indent?.destination}</span>
                         )}
                       </Td>
                       <Td className="text-[12px] font-mono">{trip.vehicle?.vehicleNumber || "—"}</Td>
@@ -408,7 +537,7 @@ export default function TripsPage() {
                             onClick={() => handleCreateOutboundLeg(trip.id)}
                             className="bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200 px-3 py-1.5 rounded-lg text-[11.5px] font-bold uppercase tracking-wide transition-colors"
                           >
-                            {trip.indent?.warehouseLocation ? "+ Dispatch from Hub (Leg 2)" : "+ Add Next Leg"}
+                            + Dispatch from Hub (Leg 2)
                           </button>
                         )}
                         {trip.legType === "OutboundLeg2" && (
@@ -438,17 +567,21 @@ export default function TripsPage() {
           </div>
         ) : (
           <div className="flex flex-col min-h-0 flex-1">
-            {trips.length === 0 ? (
+            {filteredTrips.length === 0 ? (
               <div className="bg-white rounded-2xl border border-dashed border-slate-300 p-20 flex flex-col items-center justify-center text-center mt-2">
                 <div className="w-16 h-16 bg-slate-100 text-slate-400 rounded-full flex items-center justify-center mb-6">
                   <Truck className="w-8 h-8" />
                 </div>
-                <h3 className="text-xl font-bold text-slate-900 mb-2">No active trips</h3>
-                <p className="text-slate-500 text-[14.5px] mb-8 max-w-sm">There are no trips currently active in the system.</p>
+                <h3 className="text-xl font-bold text-slate-900 mb-2">
+                  {searchQuery ? "No matching trips found" : "No active trips"}
+                </h3>
+                <p className="text-slate-500 text-[14.5px] mb-8 max-w-sm">
+                  {searchQuery ? `No trips matched "${searchQuery}". Try a different search.` : "There are no trips currently active in the system."}
+                </p>
               </div>
             ) : (
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {trips.map(trip => (
+                {filteredTrips.map(trip => (
                   <div key={trip.id} className="bg-white rounded-2xl p-0 shadow-sm border border-slate-200 overflow-hidden flex flex-col">
                     {/* Ticket Header */}
                     <div className="bg-slate-50/80 p-4 border-b border-slate-100 flex justify-between items-center">
@@ -459,7 +592,7 @@ export default function TripsPage() {
                         <div>
                           <div className="font-mono font-bold text-slate-900 text-sm">
                             TRP-{1000 + trip.id}
-                            {getLegBadge(trip.legType)}
+                            {getLegBadge(trip.legType, trip.serviceScope)}
                           </div>
                           <div className="text-[11px] text-slate-500 font-medium mt-0.5">
                             {trip.vehicle?.vehicleNumber || 'No Vehicle'} • {trip.driver?.name || 'No Driver'}
@@ -473,39 +606,54 @@ export default function TripsPage() {
                     
                     {/* Ticket Route */}
                     <div className="px-5 py-5 border-b border-slate-100 border-dashed relative">
-                      <div className="flex items-center gap-4">
-                        <div className="flex-1">
-                          <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Source</div>
-                          <div className="font-semibold text-slate-800 text-sm truncate">
-                            {trip.legType === 'OutboundLeg2' && trip.indent?.warehouseLocation ? (
-                              <span className="text-purple-600">{trip.indent?.warehouseLocation}</span>
+                      {trip.indent?.warehouseLocation ? (
+                        <div className="space-y-2">
+                          <div className="flex items-center gap-1.5 flex-wrap font-semibold text-slate-800 text-xs">
+                            <span>{trip.indent?.source}</span>
+                            <span className="text-slate-300">→</span>
+                            <span className="font-bold text-amber-700 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded text-[10px]">
+                              {trip.indent?.warehouseLocation} (Hub)
+                            </span>
+                            <span className="text-slate-300">→</span>
+                            <span>{trip.indent?.destination}</span>
+                          </div>
+                          <div>
+                            {trip.legType === 'InboundLeg1' || trip.serviceScope === 'SourceToHub' ? (
+                              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-200">
+                                📍 Leg 1: {trip.indent?.source} → {trip.indent?.warehouseLocation} (Hub)
+                              </span>
+                            ) : trip.legType === 'OutboundLeg2' ? (
+                              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-purple-50 text-purple-700 border border-purple-200">
+                                📍 Leg 2: {trip.indent?.warehouseLocation} (Hub) → {trip.indent?.destination}
+                              </span>
                             ) : (
-                              trip.indent?.source || '—'
+                              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                🛣️ Entire Route: {trip.indent?.source} → {trip.indent?.destination}
+                              </span>
                             )}
                           </div>
                         </div>
-                        <div className="flex-shrink-0 flex items-center justify-center">
-                          <div className="w-8 h-px bg-slate-300"></div>
-                          <Link href={`/trips/${trip.id}/tracking`}>
-                            <button className="w-8 h-8 rounded-full border-2 border-sky-200 hover:border-sky-400 hover:bg-sky-50 flex items-center justify-center mx-1 bg-white shadow-sm z-10 transition-colors" title="Track Trip">
-                              <MapPin className="w-3.5 h-3.5 text-sky-500" />
-                            </button>
-                          </Link>
-                          <div className="w-8 h-px bg-slate-300"></div>
-                        </div>
-                        <div className="flex-1 text-right">
-                          <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Destination</div>
-                          <div className="font-semibold text-slate-800 text-sm truncate">
-                            {trip.legType === 'InboundLeg1' && trip.indent?.warehouseLocation ? (
-                              <span className="text-purple-600">{trip.indent?.warehouseLocation}</span>
-                            ) : trip.legType === 'OutboundLeg2' && !trip.indent?.warehouseLocation ? (
-                              <>{trip.indent?.source} <span className="text-slate-400 text-[10px] ml-1">(Return)</span></>
-                            ) : (
-                              trip.indent?.destination || '—'
-                            )}
+                      ) : (
+                        <div className="flex items-center gap-4">
+                          <div className="flex-1">
+                            <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Source</div>
+                            <div className="font-semibold text-slate-800 text-sm truncate">{trip.indent?.source || '—'}</div>
+                          </div>
+                          <div className="flex-shrink-0 flex items-center justify-center">
+                            <div className="w-8 h-px bg-slate-300"></div>
+                            <Link href={`/trips/${trip.id}/tracking`}>
+                              <button className="w-8 h-8 rounded-full border-2 border-sky-200 hover:border-sky-400 hover:bg-sky-50 flex items-center justify-center mx-1 bg-white shadow-sm z-10 transition-colors" title="Track Trip">
+                                <MapPin className="w-3.5 h-3.5 text-sky-500" />
+                              </button>
+                            </Link>
+                            <div className="w-8 h-px bg-slate-300"></div>
+                          </div>
+                          <div className="flex-1 text-right">
+                            <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Destination</div>
+                            <div className="font-semibold text-slate-800 text-sm truncate">{trip.indent?.destination || '—'}</div>
                           </div>
                         </div>
-                      </div>
+                      )}
                     </div>
                     
                     {/* Progress Track */}
@@ -551,7 +699,7 @@ export default function TripsPage() {
                           onClick={() => handleCreateOutboundLeg(trip.id)}
                           className="flex-1 bg-purple-50 hover:bg-purple-600 hover:text-white text-purple-700 font-bold py-2.5 rounded-xl transition-all text-[13px]"
                         >
-                          {trip.indent?.warehouseLocation ? "+ Dispatch from Hub" : "+ Add Next Leg"}
+                          + Dispatch from Hub (Leg 2)
                         </button>
                       )}
                       {trip.lrNumber && (

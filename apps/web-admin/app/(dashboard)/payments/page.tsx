@@ -9,6 +9,7 @@ export default function PaymentsPage() {
   const [payments, setPayments] = useState<any[]>([]);
   const [trips, setTrips] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState("");
   
   // Slide Over State
   const [isPanelOpen, setIsPanelOpen] = useState(false);
@@ -18,6 +19,19 @@ export default function PaymentsPage() {
     amount: "",
     type: "Advance",
     utrNumber: "",
+  });
+
+  const filteredPayments = payments.filter((p) => {
+    if (!searchQuery.trim()) return true;
+    const q = searchQuery.toLowerCase().trim();
+    return (
+      p.tripId?.toString().includes(q) ||
+      `trp-${p.tripId}`.toLowerCase().includes(q) ||
+      p.type?.toLowerCase().includes(q) ||
+      p.utrNumber?.toLowerCase().includes(q) ||
+      p.amount?.toString().includes(q) ||
+      p.status?.toLowerCase().includes(q)
+    );
   });
 
   const loadData = async () => {
@@ -89,13 +103,24 @@ export default function PaymentsPage() {
           
           <div className="h-[24px] w-[1px] bg-slate-200"></div>
 
-          <div className="relative">
+          <div className="relative flex items-center">
             <Search className="w-[16px] h-[16px] text-slate-400 absolute left-[14px] top-1/2 -translate-y-1/2" />
             <input 
               type="text" 
-              placeholder="Search transactions..." 
-              className="w-[240px] h-[42px] bg-white border border-slate-200 rounded-[12px] pl-[40px] pr-[14px] text-[14px] outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all shadow-sm"
+              placeholder="Search by trip #, UTR, type..." 
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-[240px] h-[42px] bg-white border border-slate-200 rounded-[12px] pl-[40px] pr-[32px] text-[14px] outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all shadow-sm"
             />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery("")}
+                className="absolute right-[10px] top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-0.5"
+                title="Clear search"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            )}
           </div>
           
           <div className="flex bg-white border border-slate-200 rounded-[12px] p-1 shadow-sm">
@@ -128,7 +153,7 @@ export default function PaymentsPage() {
         <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm flex items-center justify-between">
           <div>
             <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1">Recorded Transactions</div>
-            <div className="text-2xl font-black text-slate-800">{payments.length}</div>
+            <div className="text-2xl font-black text-slate-800">{filteredPayments.length}</div>
           </div>
           <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center border border-blue-100">
             <List className="w-5 h-5 text-blue-500" />
@@ -149,22 +174,34 @@ export default function PaymentsPage() {
                   </div>
                 </Td>
               </tr>
-            ) : payments.length === 0 ? (
+            ) : filteredPayments.length === 0 ? (
               <tr>
                 <Td colSpan={6} className="text-center py-20">
                   <div className="flex flex-col items-center justify-center">
                     <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mb-4 border border-slate-100">
                       <Wallet className="w-8 h-8 text-slate-300" />
                     </div>
-                    <h3 className="text-[16px] font-bold text-slate-800 mb-1">No Transactions Found</h3>
+                    <h3 className="text-[16px] font-bold text-slate-800 mb-1">
+                      {searchQuery ? "No Matching Transactions" : "No Transactions Found"}
+                    </h3>
                     <p className="text-[14px] text-slate-500 max-w-sm mx-auto">
-                      There are no payments recorded in the ledger yet.
+                      {searchQuery
+                        ? `No payments matched "${searchQuery}". Try another search term.`
+                        : "There are no payments recorded in the ledger yet."}
                     </p>
+                    {searchQuery && (
+                      <button
+                        onClick={() => setSearchQuery("")}
+                        className="mt-4 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold px-4 py-2 rounded-xl text-xs transition-all"
+                      >
+                        Clear Search Filter
+                      </button>
+                    )}
                   </div>
                 </Td>
               </tr>
             ) : (
-              payments.sort((a,b) => new Date(b.paymentDate).getTime() - new Date(a.paymentDate).getTime()).map(payment => (
+              filteredPayments.sort((a,b) => new Date(b.paymentDate).getTime() - new Date(a.paymentDate).getTime()).map(payment => (
                 <tr key={payment.id} className="hover:bg-slate-50/80 transition-colors border-b border-slate-100 last:border-0">
                   <Td className="font-medium text-slate-600">{new Date(payment.paymentDate).toLocaleDateString()}</Td>
                   <Td className="font-mono text-[13px] font-bold text-slate-600">TRP-{payment.tripId}</Td>

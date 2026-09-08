@@ -24,6 +24,7 @@ export default function ProcurementDashboard() {
   const [loadingBids, setLoadingBids] = useState(false);
   const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
   const [expandedBidId, setExpandedBidId] = useState<number | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
     loadData();
@@ -77,7 +78,10 @@ export default function ProcurementDashboard() {
   const copyRfqToWhatsApp = () => {
     if (!selectedIndent) return;
     const formattedTime = formatTime12H(rfqLoadingTime || selectedIndent.loadingTime);
-    const msg = `📢 *NEW RFQ / LOAD ENQUIRY*\n*Indent Ref*: IND-${1000 + selectedIndent.id}\n*Route*: ${selectedIndent.source} → ${selectedIndent.destination}\n*Material*: ${selectedIndent.material} (${selectedIndent.weight} Tons)\n*Vehicle Required*: ${selectedIndent.vehicleType}\n\n📅 *Pickup Date*: ${rfqLoadingDate ? new Date(rfqLoadingDate).toLocaleDateString() : (selectedIndent.loadingDate ? new Date(selectedIndent.loadingDate).toLocaleDateString() : '')}\n⏰ *Pickup Reporting Time*: ${formattedTime || 'Immediate'}\n\nPlease reply with your best freight rate and vehicle availability.`;
+    const routeText = selectedIndent.warehouseLocation
+      ? `${selectedIndent.source} ➔ ${selectedIndent.warehouseLocation} (Hub) ➔ ${selectedIndent.destination}`
+      : `${selectedIndent.source} ➔ ${selectedIndent.destination}`;
+    const msg = `📢 *NEW RFQ / LOAD ENQUIRY*\n*Indent Ref*: IND-${1000 + selectedIndent.id}\n*Route*: ${routeText}\n*Material*: ${selectedIndent.material} (${selectedIndent.weight} Tons)\n*Vehicle Required*: ${selectedIndent.vehicleType}\n\n📅 *Pickup Date*: ${rfqLoadingDate ? new Date(rfqLoadingDate).toLocaleDateString() : (selectedIndent.loadingDate ? new Date(selectedIndent.loadingDate).toLocaleDateString() : '')}\n⏰ *Pickup Reporting Time*: ${formattedTime || 'Immediate'}\n\nPlease reply with your best freight rate and vehicle availability.`;
     navigator.clipboard.writeText(msg);
     alert("RFQ details copied to clipboard with Pickup Date & Time! You can paste this to vendors on WhatsApp.");
   };
@@ -110,6 +114,23 @@ export default function ProcurementDashboard() {
     }
   };
 
+  const filteredIndents = indents.filter((indent) => {
+    if (!searchQuery.trim()) return true;
+    const q = searchQuery.toLowerCase().trim();
+    return (
+      `ind-${1000 + indent.id}`.toLowerCase().includes(q) ||
+      indent.id.toString().includes(q) ||
+      indent.customer?.name?.toLowerCase().includes(q) ||
+      indent.source?.toLowerCase().includes(q) ||
+      indent.destination?.toLowerCase().includes(q) ||
+      indent.warehouseLocation?.toLowerCase().includes(q) ||
+      indent.material?.toLowerCase().includes(q) ||
+      indent.vehicleType?.toLowerCase().includes(q) ||
+      indent.status?.toLowerCase().includes(q) ||
+      indent.rfqStatus?.toLowerCase().includes(q)
+    );
+  });
+
   return (
     <div className="relative h-full flex flex-col">
       {/* HEADER SECTION */}
@@ -124,9 +145,19 @@ export default function ProcurementDashboard() {
             <Search className="w-[16px] h-[16px] text-slate-400 absolute left-[14px] top-1/2 -translate-y-1/2" />
             <input 
               type="text" 
-              placeholder="Search indents..." 
-              className="w-[240px] h-[42px] bg-white border border-slate-200 rounded-[12px] pl-[40px] pr-[14px] text-[14px] outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all shadow-sm"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search by ID, customer, route..." 
+              className="w-[280px] h-[42px] bg-white border border-slate-200 rounded-[12px] pl-[40px] pr-[36px] text-[14px] outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all shadow-sm"
             />
+            {searchQuery && (
+              <button 
+                onClick={() => setSearchQuery("")}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            )}
           </div>
           
           <div className="flex bg-white border border-slate-200 rounded-[12px] p-1 shadow-sm">
@@ -149,36 +180,50 @@ export default function ProcurementDashboard() {
                     </div>
                   </Td>
                 </tr>
-              ) : indents.length === 0 ? (
+              ) : filteredIndents.length === 0 ? (
                 <tr>
                   <Td colSpan={7} className="text-center py-20">
                     <div className="flex flex-col items-center justify-center">
                       <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mb-4 border border-slate-100">
                         <Send className="w-8 h-8 text-slate-300" />
                       </div>
-                      <h3 className="text-[16px] font-bold text-slate-800 mb-1">No Active Procurements</h3>
-                      <p className="text-[14px] text-slate-500 max-w-sm mx-auto">
-                        There are no active indents requiring vendor bidding right now.
+                      <h3 className="text-[16px] font-bold text-slate-800 mb-1">
+                        {searchQuery ? "No matching procurements found" : "No Active Procurements"}
+                      </h3>
+                      <p className="text-[14px] text-slate-500 max-w-sm mx-auto text-center">
+                        {searchQuery ? `No records matched "${searchQuery}". Try another search term.` : "There are no active indents requiring vendor bidding right now."}
                       </p>
                     </div>
                   </Td>
                 </tr>
               ) : (
-                indents.map((indent) => (
+                filteredIndents.map((indent) => (
                   <tr key={indent.id} className="hover:bg-slate-50/80 transition-colors border-b border-slate-100 last:border-0">
                     <Td className="font-mono text-[13px] font-semibold text-slate-600">IND-{1000 + indent.id}</Td>
                     <Td className="font-semibold text-slate-800">{indent.customer?.name}</Td>
                     <Td>
-                      <div className="flex items-center gap-2">
-                        <span className="text-[13px] font-medium text-slate-700 max-w-[120px] truncate">{indent.source}</span>
-                        <span className="text-slate-300">→</span>
-                        <span className="text-[13px] font-medium text-slate-700 max-w-[120px] truncate">{indent.destination}</span>
-                      </div>
-                      {indent.loadingDate && (
-                        <div className="text-[11px] text-slate-500 mt-0.5">
-                          Pickup: {new Date(indent.loadingDate).toLocaleDateString()} {indent.loadingTime ? `@ ${formatTime12H(indent.loadingTime)}` : ''}
+                      <div className="flex flex-col gap-0.5">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className="text-[13px] font-medium text-slate-700">{indent.source}</span>
+                          {indent.warehouseLocation ? (
+                            <>
+                              <span className="text-slate-300">→</span>
+                              <span className="text-[11px] font-bold text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200">
+                                {indent.warehouseLocation} (Hub)
+                              </span>
+                              <span className="text-slate-300">→</span>
+                            </>
+                          ) : (
+                            <span className="text-slate-300">→</span>
+                          )}
+                          <span className="text-[13px] font-medium text-slate-700">{indent.destination}</span>
                         </div>
-                      )}
+                        {indent.loadingDate && (
+                          <div className="text-[11px] text-slate-500 mt-0.5">
+                            Pickup: {new Date(indent.loadingDate).toLocaleDateString()} {indent.loadingTime ? `@ ${formatTime12H(indent.loadingTime)}` : ''}
+                          </div>
+                        )}
+                      </div>
                     </Td>
                     <Td>
                       <div className="text-[13px] font-medium text-slate-800">{indent.material}</div>
@@ -244,19 +289,21 @@ export default function ProcurementDashboard() {
             <div className="flex justify-center p-16">
               <Activity className="animate-spin text-blue-600 w-8 h-8" />
             </div>
-          ) : indents.length === 0 ? (
+          ) : filteredIndents.length === 0 ? (
             <div className="bg-white rounded-2xl border border-dashed border-slate-300 p-20 flex flex-col items-center justify-center text-center mt-2">
               <div className="w-16 h-16 bg-slate-100 text-slate-400 rounded-full flex items-center justify-center mb-6">
                 <Send className="w-8 h-8 text-slate-300" />
               </div>
-              <h3 className="text-[16px] font-bold text-slate-800 mb-1">No Active Procurements</h3>
+              <h3 className="text-[16px] font-bold text-slate-800 mb-1">
+                {searchQuery ? "No matching procurements found" : "No Active Procurements"}
+              </h3>
               <p className="text-[14px] text-slate-500 max-w-sm mx-auto">
-                There are no active indents requiring vendor bidding right now.
+                {searchQuery ? `No records matched "${searchQuery}". Try another search term.` : "There are no active indents requiring vendor bidding right now."}
               </p>
             </div>
           ) : (
             <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-              {indents.map(indent => (
+              {filteredIndents.map(indent => (
                 <div key={indent.id} className="bg-white rounded-2xl p-0 shadow-sm border border-slate-200 overflow-hidden flex flex-col">
                   {/* Ticket Header */}
                   <div className="bg-slate-50/80 p-4 border-b border-slate-100 flex justify-between items-center">
@@ -283,23 +330,42 @@ export default function ProcurementDashboard() {
                   
                   {/* Ticket Route */}
                   <div className="px-5 py-5 border-b border-slate-100 border-dashed relative">
-                    <div className="flex items-center gap-4">
-                      <div className="flex-1">
-                        <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Source</div>
-                        <div className="font-semibold text-slate-800 text-sm truncate" title={indent.source}>{indent.source}</div>
-                      </div>
-                      <div className="flex-shrink-0 flex items-center justify-center">
-                        <div className="w-8 h-px bg-slate-300"></div>
-                        <div className="w-6 h-6 rounded-full border border-slate-200 flex items-center justify-center mx-1 bg-white shadow-sm z-10">
-                          <MapPin className="w-3 h-3 text-blue-500" />
+                    {indent.warehouseLocation ? (
+                      <div className="flex items-center justify-between gap-1.5 text-xs">
+                        <div className="flex-1 min-w-0">
+                          <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Source</div>
+                          <div className="font-semibold text-slate-800 truncate text-sm" title={indent.source}>{indent.source}</div>
                         </div>
-                        <div className="w-8 h-px bg-slate-300"></div>
+                        <div className="flex flex-col items-center shrink-0 px-2">
+                          <span className="text-[10px] font-bold text-amber-800 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded shadow-xs">
+                            via {indent.warehouseLocation} (Hub)
+                          </span>
+                          <span className="text-slate-300 text-xs mt-0.5">➔</span>
+                        </div>
+                        <div className="flex-1 min-w-0 text-right">
+                          <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Destination</div>
+                          <div className="font-semibold text-slate-800 truncate text-sm" title={indent.destination}>{indent.destination}</div>
+                        </div>
                       </div>
-                      <div className="flex-1 text-right">
-                        <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Destination</div>
-                        <div className="font-semibold text-slate-800 text-sm truncate" title={indent.destination}>{indent.destination}</div>
+                    ) : (
+                      <div className="flex items-center gap-4">
+                        <div className="flex-1">
+                          <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Source</div>
+                          <div className="font-semibold text-slate-800 text-sm truncate" title={indent.source}>{indent.source}</div>
+                        </div>
+                        <div className="flex-shrink-0 flex items-center justify-center">
+                          <div className="w-8 h-px bg-slate-300"></div>
+                          <div className="w-6 h-6 rounded-full border border-slate-200 flex items-center justify-center mx-1 bg-white shadow-sm z-10">
+                            <MapPin className="w-3 h-3 text-blue-500" />
+                          </div>
+                          <div className="w-8 h-px bg-slate-300"></div>
+                        </div>
+                        <div className="flex-1 text-right">
+                          <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Destination</div>
+                          <div className="font-semibold text-slate-800 text-sm truncate" title={indent.destination}>{indent.destination}</div>
+                        </div>
                       </div>
-                    </div>
+                    )}
                   </div>
                   
                   {/* Ticket Details */}
@@ -386,8 +452,23 @@ export default function ProcurementDashboard() {
           <div className="bg-sky-50 border border-sky-200/80 p-5 rounded-2xl text-sm shadow-sm space-y-3">
             <div className="text-[11px] font-bold text-sky-700 uppercase tracking-wider">Trip & Load Requirement</div>
             <div>
-              <strong className="text-slate-900 text-[15px] flex items-center gap-1.5"><MapPin className="w-4 h-4 text-sky-600 shrink-0"/> {selectedIndent?.source} → {selectedIndent?.destination}</strong>
-              <div className="mt-1 text-slate-600 text-xs font-medium">
+              <div className="text-slate-900 text-[15px] font-bold flex items-center gap-1.5 flex-wrap">
+                <MapPin className="w-4 h-4 text-sky-600 shrink-0"/>
+                <span>{selectedIndent?.source}</span>
+                {selectedIndent?.warehouseLocation ? (
+                  <>
+                    <span className="text-slate-400">→</span>
+                    <span className="text-[12px] font-bold text-amber-800 bg-amber-100 border border-amber-300 px-1.5 py-0.5 rounded">
+                      {selectedIndent.warehouseLocation} (Hub)
+                    </span>
+                    <span className="text-slate-400">→</span>
+                  </>
+                ) : (
+                  <span className="text-slate-400">→</span>
+                )}
+                <span>{selectedIndent?.destination}</span>
+              </div>
+              <div className="mt-1.5 text-slate-600 text-xs font-medium">
                 Required: <strong className="text-slate-800">{selectedIndent?.vehicleType}</strong> ({selectedIndent?.weight} Tons • {selectedIndent?.material || 'Goods'})
               </div>
             </div>
@@ -529,6 +610,24 @@ export default function ProcurementDashboard() {
                         )}
                       </div>
 
+                      {bid.serviceScope === "SourceToHub" && (
+                        <div className="mb-3 bg-amber-50 border border-amber-200 rounded-lg p-2.5">
+                          <div className="flex items-center gap-1.5 text-[11px] font-bold text-amber-900">
+                            <span className="w-2 h-2 rounded-full bg-amber-500"></span>
+                            <span>Scope: Source to Hub Only (Leg 1)</span>
+                          </div>
+                          <p className="text-[11px] text-amber-700 mt-0.5">
+                            Vendor available for Leg 1 only. Next leg (Hub → Dest) will require a separate vendor or fleet assignment.
+                          </p>
+                        </div>
+                      )}
+                      {bid.serviceScope === "EntireRoute" && (
+                        <div className="mb-3 bg-emerald-50 border border-emerald-200 rounded-lg px-2.5 py-1.5 flex items-center gap-1.5 text-[11px] font-bold text-emerald-800">
+                          <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+                          <span>Scope: Entire Route (Source → Hub → Destination)</span>
+                        </div>
+                      )}
+
                       {bid.availableDate && (
                         <div className="mb-3 text-[11px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-1.5 rounded-lg flex items-center gap-1.5 w-max">
                           <Calendar className="w-3.5 h-3.5" />
@@ -546,8 +645,16 @@ export default function ProcurementDashboard() {
                       </div>
 
                       {expandedBidId === bid.id && (
-                        <div className="mt-4 p-3 bg-white border border-slate-200 rounded-lg shadow-sm">
-                          <div className="mb-3">
+                        <div className="mt-4 p-3 bg-white border border-slate-200 rounded-lg shadow-sm space-y-3">
+                          <div>
+                            <div className="text-[10px] uppercase font-bold text-slate-400 mb-1">Route Coverage / Scope</div>
+                            <div className="text-[13px] text-slate-800 font-bold">
+                              {bid.serviceScope === "SourceToHub" 
+                                ? "Source to Hub Only (Leg 1)" 
+                                : "Entire Route (Source to Destination)"}
+                            </div>
+                          </div>
+                          <div>
                              <div className="text-[10px] uppercase font-bold text-slate-400 mb-1">Proposed Vehicle</div>
                              <div className="text-[13px] text-slate-800 font-medium">{bid.proposedVehicleType || "Not Specified"}</div>
                           </div>

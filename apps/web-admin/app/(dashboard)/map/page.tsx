@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import dynamic from 'next/dynamic';
-import { Loader2, Truck, Navigation, Clock, AlertTriangle, Search } from "lucide-react";
+import { Loader2, Truck, Navigation, Clock, AlertTriangle, Search, X } from "lucide-react";
 
 // Dynamically import the entire Map component to strictly avoid any SSR/Node DOM issues
 const FleetMap = dynamic(() => import('@/components/FleetMap'), { 
@@ -45,6 +45,19 @@ const initialFleet = [
 export default function GlobalMapDashboard() {
   const [activeVehicle, setActiveVehicle] = useState<any>(null);
   const [fleet, setFleet] = useState(initialFleet);
+  const [searchQuery, setSearchQuery] = useState("");
+
+  const filteredFleet = fleet.filter(v => {
+    if (!searchQuery.trim()) return true;
+    const q = searchQuery.toLowerCase().trim();
+    return (
+      v.num?.toLowerCase().includes(q) ||
+      v.driver?.toLowerCase().includes(q) ||
+      v.source?.toLowerCase().includes(q) ||
+      v.dest?.toLowerCase().includes(q) ||
+      v.status?.toLowerCase().includes(q)
+    );
+  });
   
   // Animation loop to simulate movement
   useEffect(() => {
@@ -83,51 +96,78 @@ export default function GlobalMapDashboard() {
             <h1 className="text-xl font-black tracking-tight text-slate-900 mb-1">Fleet Tracker</h1>
             <p className="text-xs text-slate-500 font-semibold mb-4">Live GPS & Telematics Integration</p>
             
-            <div className="relative">
-              <Search className="w-4 h-4 absolute left-3 top-2.5 text-slate-400" />
+            <div className="relative flex items-center">
+              <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
               <input 
                 type="text" 
-                placeholder="Search vehicle or driver..." 
-                className="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                placeholder="Search vehicle, driver, route..." 
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-9 pr-8 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
               />
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery("")}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-0.5"
+                  title="Clear search"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              )}
             </div>
           </div>
 
           <div className="flex-1 overflow-y-auto p-4 space-y-3">
-            {fleet.map((v) => (
-              <div 
-                key={v.id} 
-                onClick={() => setActiveVehicle(activeVehicle?.id === v.id ? null : v)}
-                className={`p-4 rounded-xl border cursor-pointer transition-all ${
-                  activeVehicle?.id === v.id 
-                    ? 'border-blue-500 bg-blue-50 shadow-md ring-1 ring-blue-500' 
-                    : 'border-slate-200 bg-white hover:border-blue-300 hover:shadow-sm'
-                }`}
-              >
-                <div className="flex justify-between items-start mb-2">
-                  <div>
-                    <h3 className="font-bold text-slate-900">{v.num}</h3>
-                    <p className="text-xs text-slate-500 flex items-center gap-1">
-                      <Navigation className="w-3 h-3" /> {v.source} to {v.dest}
-                    </p>
-                  </div>
-                  {v.status === 'Moving' && <span className="bg-green-100 text-green-700 text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wider animate-pulse flex items-center gap-1"><span className="w-1.5 h-1.5 bg-green-500 rounded-full"/> Moving</span>}
-                  {v.status === 'Delayed' && <span className="bg-blue-100 text-blue-800 text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wider flex items-center gap-1"><span className="w-1.5 h-1.5 bg-blue-600 rounded-full"/> Delayed</span>}
-                  {v.status === 'Halted' && <span className="bg-red-100 text-red-700 text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wider flex items-center gap-1"><span className="w-1.5 h-1.5 bg-red-500 rounded-full"/> Halted</span>}
-                </div>
-
-                <div className="grid grid-cols-2 gap-2 mt-3 pt-3 border-t border-slate-100/50">
-                  <div className="flex flex-col">
-                    <span className="text-[10px] text-slate-400 font-bold uppercase">Speed</span>
-                    <span className="text-sm font-semibold text-slate-700">{v.speed} km/h</span>
-                  </div>
-                  <div className="flex flex-col">
-                    <span className="text-[10px] text-slate-400 font-bold uppercase">ETA</span>
-                    <span className="text-sm font-semibold text-slate-700">{v.eta}</span>
-                  </div>
-                </div>
+            {filteredFleet.length === 0 ? (
+              <div className="text-center py-10 px-4">
+                <p className="text-xs font-semibold text-slate-500">
+                  {searchQuery ? `No vehicles matched "${searchQuery}"` : "No vehicles currently active"}
+                </p>
+                {searchQuery && (
+                  <button
+                    onClick={() => setSearchQuery("")}
+                    className="mt-2 text-xs font-semibold text-blue-600 hover:underline"
+                  >
+                    Clear Search
+                  </button>
+                )}
               </div>
-            ))}
+            ) : (
+              filteredFleet.map((v) => (
+                <div 
+                  key={v.id} 
+                  onClick={() => setActiveVehicle(activeVehicle?.id === v.id ? null : v)}
+                  className={`p-4 rounded-xl border cursor-pointer transition-all ${
+                    activeVehicle?.id === v.id 
+                      ? 'border-blue-500 bg-blue-50 shadow-md ring-1 ring-blue-500' 
+                      : 'border-slate-200 bg-white hover:border-blue-300 hover:shadow-sm'
+                  }`}
+                >
+                  <div className="flex justify-between items-start mb-2">
+                    <div>
+                      <h3 className="font-bold text-slate-900">{v.num}</h3>
+                      <p className="text-xs text-slate-500 flex items-center gap-1">
+                        <Navigation className="w-3 h-3" /> {v.source} to {v.dest}
+                      </p>
+                    </div>
+                    {v.status === 'Moving' && <span className="bg-green-100 text-green-700 text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wider animate-pulse flex items-center gap-1"><span className="w-1.5 h-1.5 bg-green-500 rounded-full"/> Moving</span>}
+                    {v.status === 'Delayed' && <span className="bg-blue-100 text-blue-800 text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wider flex items-center gap-1"><span className="w-1.5 h-1.5 bg-blue-600 rounded-full"/> Delayed</span>}
+                    {v.status === 'Halted' && <span className="bg-red-100 text-red-700 text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wider flex items-center gap-1"><span className="w-1.5 h-1.5 bg-red-500 rounded-full"/> Halted</span>}
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2 mt-3 pt-3 border-t border-slate-100/50">
+                    <div className="flex flex-col">
+                      <span className="text-[10px] text-slate-400 font-bold uppercase">Speed</span>
+                      <span className="text-sm font-semibold text-slate-700">{v.speed} km/h</span>
+                    </div>
+                    <div className="flex flex-col">
+                      <span className="text-[10px] text-slate-400 font-bold uppercase">ETA</span>
+                      <span className="text-sm font-semibold text-slate-700">{v.eta}</span>
+                    </div>
+                  </div>
+                </div>
+              ))
+            )}
           </div>
         </div>
 

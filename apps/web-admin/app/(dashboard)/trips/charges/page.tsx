@@ -302,9 +302,19 @@ export default function AdditionalChargesPage() {
                       <div className="font-mono text-xs font-bold text-blue-600 hover:underline cursor-pointer">
                         TRP-{1000 + (charge.tripId || 0)}
                       </div>
-                      <div className="text-[11px] font-semibold text-slate-700 mt-0.5 flex items-center gap-1">
+                      <div className="text-[11px] font-semibold text-slate-700 mt-0.5 flex items-center gap-1 flex-wrap">
                         <span>{indent?.source || "Route N/A"}</span>
-                        <ArrowRight className="w-2.5 h-2.5 text-slate-400" />
+                        {indent?.warehouseLocation ? (
+                          <>
+                            <ArrowRight className="w-2.5 h-2.5 text-slate-400" />
+                            <span className="font-bold text-amber-700 bg-amber-50 px-1 py-0.2 rounded border border-amber-200 text-[10px]">
+                              {indent.warehouseLocation} (Hub)
+                            </span>
+                            <ArrowRight className="w-2.5 h-2.5 text-slate-400" />
+                          </>
+                        ) : (
+                          <ArrowRight className="w-2.5 h-2.5 text-slate-400" />
+                        )}
                         <span>{indent?.destination || ""}</span>
                       </div>
                     </Td>

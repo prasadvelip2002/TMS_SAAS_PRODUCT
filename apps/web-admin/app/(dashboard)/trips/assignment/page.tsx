@@ -11,12 +11,30 @@ export default function AssignmentPage() {
   const [vendors, setVendors] = useState<any[]>([]);
   const [vehicles, setVehicles] = useState<any[]>([]);
   const [drivers, setDrivers] = useState<any[]>([]);
+  const [searchQuery, setSearchQuery] = useState("");
   
   const [loading, setLoading] = useState(true);
   const [selectedIndent, setSelectedIndent] = useState<any | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSidePanelOpen, setIsSidePanelOpen] = useState(false);
   const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
+
+  const filteredIndents = indents.filter((item) => {
+    if (!searchQuery.trim()) return true;
+    const q = searchQuery.toLowerCase().trim();
+    return (
+      item.id?.toString().toLowerCase().includes(q) ||
+      `ind-${1000 + item.indentId}`.toLowerCase().includes(q) ||
+      (item.tripId ? `trp-${1000 + item.tripId}`.toLowerCase().includes(q) : false) ||
+      item.customer?.name?.toLowerCase().includes(q) ||
+      item.source?.toLowerCase().includes(q) ||
+      item.destination?.toLowerCase().includes(q) ||
+      item.warehouseLocation?.toLowerCase().includes(q) ||
+      item.vehicleType?.toLowerCase().includes(q) ||
+      item.material?.toLowerCase().includes(q) ||
+      item.status?.toLowerCase().includes(q)
+    );
+  });
 
   const [formData, setFormData] = useState({
     vendorId: "",
@@ -49,23 +67,24 @@ export default function AssignmentPage() {
 
       const items: any[] = [];
 
-      // 1. Process Indents for Leg 1 (or Direct)
+      // 1. Process Indents for Leg 1 (or Direct / EntireRoute)
       (indData || []).forEach((indent: any) => {
         const indentTrips = (tripsData || []).filter((t: any) => t.indentId === indent.id);
-        const leg1Trip = indentTrips.find((t: any) => t.legType === "InboundLeg1" || (!t.legType && !t.parentTripId) || t.legType === "Direct");
+        const leg1Trip = indentTrips.find((t: any) => t.legType === "InboundLeg1" || (!t.legType && !t.parentTripId) || t.legType === "Direct" || t.legType === "EntireRoute");
 
-        // Needs Leg 1 assignment if:
+        // Needs assignment if:
         // - Indent is New/Pending and no trip assigned yet, OR
-        // - Leg 1 trip exists but doesn't have vehicle or driver assigned
+        // - Leg 1 / EntireRoute trip exists but doesn't have vehicle or driver assigned
         if (!leg1Trip && (indent.status === "New" || indent.status === "Pending")) {
           items.push({
             id: `ind-${indent.id}-leg1`,
             indentId: indent.id,
             tripId: null,
             legType: indent.warehouseLocation ? "InboundLeg1" : "Direct",
+            serviceScope: null,
             customer: indent.customer,
             source: indent.source,
-            destination: indent.warehouseLocation || indent.destination,
+            destination: indent.destination,
             finalDestination: indent.destination,
             warehouseLocation: indent.warehouseLocation,
             vehicleType: indent.vehicleType,
@@ -82,10 +101,11 @@ export default function AssignmentPage() {
             id: `trip-${leg1Trip.id}`,
             indentId: indent.id,
             tripId: leg1Trip.id,
-            legType: leg1Trip.legType || (indent.warehouseLocation ? "InboundLeg1" : "Direct"),
+            legType: leg1Trip.legType || (indent.warehouseLocation ? (leg1Trip.serviceScope === "SourceToHub" ? "InboundLeg1" : "EntireRoute") : "Direct"),
+            serviceScope: leg1Trip.serviceScope,
             customer: indent.customer,
             source: indent.source,
-            destination: indent.warehouseLocation || indent.destination,
+            destination: indent.destination,
             finalDestination: indent.destination,
             warehouseLocation: indent.warehouseLocation,
             vehicleType: indent.vehicleType,
@@ -109,11 +129,12 @@ export default function AssignmentPage() {
             indentId: trip.indentId,
             tripId: trip.id,
             legType: "OutboundLeg2",
+            serviceScope: trip.serviceScope,
             customer: indent?.customer,
-            source: indent?.warehouseLocation || "Central Hub",
-            destination: indent?.destination,
-            finalDestination: indent?.destination,
-            warehouseLocation: indent?.warehouseLocation,
+            source: indent?.source || trip.source,
+            destination: indent?.destination || trip.destination,
+            finalDestination: indent?.destination || trip.destination,
+            warehouseLocation: indent?.warehouseLocation || trip.warehouseLocation,
             vehicleType: indent?.vehicleType || "Standard Truck",
             weight: indent?.weight || 0,
             material: indent?.material || "Cargo",
@@ -239,13 +260,24 @@ export default function AssignmentPage() {
         </div>
         
         <div className="flex items-center gap-[12px]">
-          <div className="relative">
-            <Search className="w-[16px] h-[16px] text-slate-400 absolute left-[14px] top-1/2 -translate-y-1/2" />
+          <div className="relative flex items-center">
+            <Search className="w-[16px] h-[16px] text-slate-400 absolute left-[14px] top-1/2 -translate-y-1/2 pointer-events-none" />
             <input 
               type="text" 
-              placeholder="Search indents..." 
-              className="w-[240px] h-[42px] bg-white border border-slate-200 rounded-[12px] pl-[40px] pr-[14px] text-[14px] outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all shadow-sm"
+              placeholder="Search indents by ID, customer, route, vehicle..." 
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-[240px] md:w-[280px] h-[42px] bg-white border border-slate-200 rounded-[12px] pl-[40px] pr-[34px] text-[14px] outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all shadow-sm"
             />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery("")}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-1 rounded-full hover:bg-slate-100"
+                title="Clear search"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
           </div>
           
           <div className="flex bg-white border border-slate-200 rounded-[12px] p-1 shadow-sm">
@@ -268,55 +300,101 @@ export default function AssignmentPage() {
                     </div>
                   </Td>
                 </tr>
-              ) : indents.length === 0 ? (
+              ) : filteredIndents.length === 0 ? (
                 <tr>
                   <Td colSpan={6} className="text-center py-20">
                     <div className="flex flex-col items-center justify-center">
                       <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mb-4 border border-slate-100">
                         <Box className="w-8 h-8 text-slate-300" />
                       </div>
-                      <h3 className="text-[16px] font-bold text-slate-800 mb-1">No Pending Indents</h3>
-                      <p className="text-[14px] text-slate-500 max-w-sm mx-auto">
-                        All indents have been assigned or there are no active indents requiring assignments right now.
+                      <h3 className="text-[16px] font-bold text-slate-800 mb-1">
+                        {searchQuery ? "No matching indents found" : "No Pending Indents"}
+                      </h3>
+                      <p className="text-[14px] text-slate-500 max-w-sm mx-auto mb-4">
+                        {searchQuery 
+                          ? `No indents matched "${searchQuery}".` 
+                          : "All indents have been assigned or there are no active indents requiring assignments right now."}
                       </p>
+                      {searchQuery && (
+                        <button
+                          onClick={() => setSearchQuery("")}
+                          className="bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs px-4 py-2 rounded-xl transition-all"
+                        >
+                          Clear Filter
+                        </button>
+                      )}
                     </div>
                   </Td>
                 </tr>
               ) : (
-                indents.map((item) => (
+                filteredIndents.map((item) => (
                   <tr 
                     key={item.id} 
                     className="hover:bg-slate-50/80 transition-colors border-b border-slate-100 last:border-0" 
                   >
                     <Td className="font-mono text-[13px] font-semibold text-slate-600">
-                      <div className="flex items-center gap-1.5">
+                      <div className="flex items-center gap-1.5 flex-wrap">
                         <span>{item.tripId ? `TRP-${1000 + item.tripId}` : `IND-${1000 + item.indentId}`}</span>
-                        {item.legType === "InboundLeg1" && (
-                          <span className="px-1.5 py-0.5 bg-blue-100 text-blue-700 rounded text-[9px] font-bold uppercase">Leg 1</span>
-                        )}
-                        {item.legType === "OutboundLeg2" && (
-                          <span className="px-1.5 py-0.5 bg-purple-100 text-purple-700 rounded text-[9px] font-bold uppercase">Leg 2</span>
+                        {item.warehouseLocation && (
+                          <>
+                            {(item.legType === "InboundLeg1" || item.serviceScope === "SourceToHub") && (
+                              <span className="px-1.5 py-0.5 bg-blue-100 text-blue-700 rounded text-[9px] font-bold uppercase">Leg 1</span>
+                            )}
+                            {item.legType === "OutboundLeg2" && (
+                              <span className="px-1.5 py-0.5 bg-purple-100 text-purple-700 rounded text-[9px] font-bold uppercase">Leg 2</span>
+                            )}
+                            {item.legType !== "InboundLeg1" && item.legType !== "OutboundLeg2" && item.serviceScope !== "SourceToHub" && (
+                              <span className="px-1.5 py-0.5 bg-emerald-100 text-emerald-700 rounded text-[9px] font-bold uppercase">Full Route</span>
+                            )}
+                          </>
                         )}
                       </div>
                     </Td>
                     <Td className="font-semibold text-slate-800">{item.customer?.name || "Unknown"}</Td>
                     <Td>
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="text-[13px] font-medium text-slate-700">{item.source}</span>
-                        <span className="text-slate-300">→</span>
-                        {item.legType === "InboundLeg1" ? (
-                          <span className="text-[13px] font-bold text-purple-700">{item.destination} <span className="text-blue-500 font-bold text-[10px] uppercase ml-1">(Hub)</span></span>
-                        ) : item.legType === "OutboundLeg2" ? (
+                      <div className="flex flex-col gap-1">
+                        {/* All locations: Source -> Hub (Hub) -> Destination matching Screenshot 3 */}
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className="text-[13px] font-medium text-slate-700">{item.source}</span>
+                          {item.warehouseLocation ? (
+                            <>
+                              <span className="text-slate-300">→</span>
+                              <span className="text-[11px] font-bold text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200">
+                                {item.warehouseLocation} (Hub)
+                              </span>
+                              <span className="text-slate-300">→</span>
+                            </>
+                          ) : (
+                            <span className="text-slate-300">→</span>
+                          )}
                           <span className="text-[13px] font-medium text-slate-700">{item.destination}</span>
-                        ) : (
-                          <span className="text-[13px] font-medium text-slate-700">{item.destination}</span>
+                        </div>
+
+                        {/* Leg assignment scope badge */}
+                        {item.warehouseLocation && (
+                          <div>
+                            {item.legType === "InboundLeg1" || item.serviceScope === "SourceToHub" ? (
+                              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10.5px] font-bold bg-blue-50 text-blue-700 border border-blue-200">
+                                📍 Leg 1: {item.source} → {item.warehouseLocation} (Hub)
+                              </span>
+                            ) : item.legType === "OutboundLeg2" ? (
+                              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10.5px] font-bold bg-purple-50 text-purple-700 border border-purple-200">
+                                📍 Leg 2: {item.warehouseLocation} (Hub) → {item.destination}
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10.5px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                🛣️ Entire Route: {item.source} → {item.destination}
+                              </span>
+                            )}
+                          </div>
+                        )}
+
+                        {item.loadingDate && (
+                          <div className="text-[11px] text-slate-500 mt-0.5">
+                            Schedule: {new Date(item.loadingDate).toLocaleDateString()} {item.loadingTime ? `@ ${formatTime12H(item.loadingTime)}` : ''}
+                          </div>
                         )}
                       </div>
-                      {item.loadingDate && (
-                        <div className="text-[11px] text-slate-500 mt-0.5">
-                          Schedule: {new Date(item.loadingDate).toLocaleDateString()} {item.loadingTime ? `@ ${formatTime12H(item.loadingTime)}` : ''}
-                        </div>
-                      )}
                     </Td>
                     <Td>
                       <div className="text-[13px] font-medium text-slate-800">{item.vehicleType}</div>
@@ -354,19 +432,31 @@ export default function AssignmentPage() {
             <div className="flex justify-center p-16">
               <Activity className="animate-spin text-blue-600 w-8 h-8" />
             </div>
-          ) : indents.length === 0 ? (
+          ) : filteredIndents.length === 0 ? (
             <div className="bg-white rounded-2xl border border-dashed border-slate-300 p-20 flex flex-col items-center justify-center text-center mt-2">
               <div className="w-16 h-16 bg-slate-100 text-slate-400 rounded-full flex items-center justify-center mb-6">
                 <Box className="w-8 h-8 text-slate-300" />
               </div>
-              <h3 className="text-[16px] font-bold text-slate-800 mb-1">No Pending Indents</h3>
-              <p className="text-[14px] text-slate-500 max-w-sm mx-auto">
-                All indents have been assigned or there are no active indents requiring assignments right now.
+              <h3 className="text-[16px] font-bold text-slate-800 mb-1">
+                {searchQuery ? "No matching indents found" : "No Pending Indents"}
+              </h3>
+              <p className="text-[14px] text-slate-500 max-w-sm mx-auto mb-4">
+                {searchQuery 
+                  ? `No indents matched "${searchQuery}".` 
+                  : "All indents have been assigned or there are no active indents requiring assignments right now."}
               </p>
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery("")}
+                  className="bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs px-4 py-2 rounded-xl transition-all"
+                >
+                  Clear Filter
+                </button>
+              )}
             </div>
           ) : (
             <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-              {indents.map(item => (
+              {filteredIndents.map(item => (
                 <div key={item.id} className="bg-white rounded-2xl p-0 shadow-sm border border-slate-200 overflow-hidden flex flex-col">
                   {/* Ticket Header */}
                   <div className="bg-slate-50/80 p-4 border-b border-slate-100 flex justify-between items-center">
@@ -377,11 +467,18 @@ export default function AssignmentPage() {
                       <div>
                         <div className="font-mono font-bold text-slate-900 text-sm flex items-center gap-1.5">
                           <span>{item.tripId ? `TRP-${1000 + item.tripId}` : `IND-${1000 + item.indentId}`}</span>
-                          {item.legType === "InboundLeg1" && (
-                            <span className="px-1.5 py-0.5 bg-blue-100 text-blue-700 rounded text-[9px] font-bold uppercase">Leg 1</span>
-                          )}
-                          {item.legType === "OutboundLeg2" && (
-                            <span className="px-1.5 py-0.5 bg-purple-100 text-purple-700 rounded text-[9px] font-bold uppercase">Leg 2</span>
+                          {item.warehouseLocation && (
+                            <>
+                              {(item.legType === "InboundLeg1" || item.serviceScope === "SourceToHub") && (
+                                <span className="px-1.5 py-0.5 bg-blue-100 text-blue-700 rounded text-[9px] font-bold uppercase">Leg 1</span>
+                              )}
+                              {item.legType === "OutboundLeg2" && (
+                                <span className="px-1.5 py-0.5 bg-purple-100 text-purple-700 rounded text-[9px] font-bold uppercase">Leg 2</span>
+                              )}
+                              {item.legType !== "InboundLeg1" && item.legType !== "OutboundLeg2" && item.serviceScope !== "SourceToHub" && (
+                                <span className="px-1.5 py-0.5 bg-emerald-100 text-emerald-700 rounded text-[9px] font-bold uppercase">Full Route</span>
+                              )}
+                            </>
                           )}
                         </div>
                         <div className="text-[11px] text-slate-500 font-medium mt-0.5 line-clamp-1">{item.customer?.name || "Unknown"}</div>
@@ -400,31 +497,52 @@ export default function AssignmentPage() {
                   
                   {/* Ticket Route */}
                   <div className="px-5 py-5 border-b border-slate-100 border-dashed relative">
-                    <div className="flex items-center gap-4">
-                      <div className="flex-1">
-                        <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">
-                          {item.legType === 'OutboundLeg2' ? 'Hub (Origin)' : 'Source'}
+                    {item.warehouseLocation ? (
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-1.5 flex-wrap font-semibold text-slate-800 text-xs">
+                          <span>{item.source}</span>
+                          <span className="text-slate-300">→</span>
+                          <span className="font-bold text-amber-700 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded text-[10px]">
+                            {item.warehouseLocation} (Hub)
+                          </span>
+                          <span className="text-slate-300">→</span>
+                          <span>{item.destination}</span>
                         </div>
-                        <div className="font-semibold text-slate-800 text-sm truncate" title={item.source}>{item.source}</div>
-                      </div>
-                      <div className="flex-shrink-0 flex items-center justify-center">
-                        <div className="w-8 h-px bg-slate-300"></div>
-                        <div className="w-6 h-6 rounded-full border border-slate-200 flex items-center justify-center mx-1 bg-white shadow-sm z-10">
-                          {item.legType === 'InboundLeg1' ? (
-                            <span className="text-[9px] font-bold text-blue-600">HUB</span>
+                        <div>
+                          {item.legType === 'InboundLeg1' || item.serviceScope === 'SourceToHub' ? (
+                            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-200">
+                              📍 Leg 1: {item.source} → {item.warehouseLocation} (Hub)
+                            </span>
+                          ) : item.legType === 'OutboundLeg2' ? (
+                            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-purple-50 text-purple-700 border border-purple-200">
+                              📍 Leg 2: {item.warehouseLocation} (Hub) → {item.destination}
+                            </span>
                           ) : (
-                            <span className="text-[10px]">→</span>
+                            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                              🛣️ Entire Route: {item.source} → {item.destination}
+                            </span>
                           )}
                         </div>
-                        <div className="w-8 h-px bg-slate-300"></div>
                       </div>
-                      <div className="flex-1 text-right">
-                        <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">
-                          {item.legType === 'InboundLeg1' ? 'Hub (Destination)' : 'Destination'}
+                    ) : (
+                      <div className="flex items-center gap-4">
+                        <div className="flex-1">
+                          <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Source</div>
+                          <div className="font-semibold text-slate-800 text-sm truncate" title={item.source}>{item.source}</div>
                         </div>
-                        <div className="font-semibold text-slate-800 text-sm truncate" title={item.destination}>{item.destination}</div>
+                        <div className="flex-shrink-0 flex items-center justify-center">
+                          <div className="w-8 h-px bg-slate-300"></div>
+                          <div className="w-6 h-6 rounded-full border border-slate-200 flex items-center justify-center mx-1 bg-white shadow-sm z-10">
+                            <span className="text-[10px]">→</span>
+                          </div>
+                          <div className="w-8 h-px bg-slate-300"></div>
+                        </div>
+                        <div className="flex-1 text-right">
+                          <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Destination</div>
+                          <div className="font-semibold text-slate-800 text-sm truncate" title={item.destination}>{item.destination}</div>
+                        </div>
                       </div>
-                    </div>
+                    )}
                   </div>
                   
                   {/* Ticket Details */}
@@ -476,19 +594,32 @@ export default function AssignmentPage() {
       >
         <div className="px-8 py-6 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
           <div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               <h2 className="text-xl font-bold text-slate-800">
                 {selectedIndent?.legType === "OutboundLeg2" ? "Assign Outbound Leg 2" : "Assign Trip"}
               </h2>
-              {selectedIndent?.legType === "InboundLeg1" && (
-                <span className="px-2 py-0.5 bg-blue-100 text-blue-700 rounded text-[10px] font-bold uppercase">Leg 1 (To Hub)</span>
-              )}
-              {selectedIndent?.legType === "OutboundLeg2" && (
-                <span className="px-2 py-0.5 bg-purple-100 text-purple-700 rounded text-[10px] font-bold uppercase">Leg 2 (To Dest)</span>
+              {selectedIndent?.warehouseLocation && (
+                <>
+                  {(selectedIndent.legType === "InboundLeg1" || selectedIndent.serviceScope === "SourceToHub") && (
+                    <span className="px-2 py-0.5 bg-blue-100 text-blue-700 rounded text-[10px] font-bold uppercase">Leg 1 (To Hub)</span>
+                  )}
+                  {selectedIndent.legType === "OutboundLeg2" && (
+                    <span className="px-2 py-0.5 bg-purple-100 text-purple-700 rounded text-[10px] font-bold uppercase">Leg 2 (To Dest)</span>
+                  )}
+                  {selectedIndent.legType !== "InboundLeg1" && selectedIndent.legType !== "OutboundLeg2" && selectedIndent.serviceScope !== "SourceToHub" && (
+                    <span className="px-2 py-0.5 bg-emerald-100 text-emerald-700 rounded text-[10px] font-bold uppercase">Entire Route</span>
+                  )}
+                </>
               )}
             </div>
             <div className="text-[13px] text-slate-500 mt-1 font-medium flex items-center gap-2 flex-wrap">
-              <span>{selectedIndent ? `${selectedIndent.source} → ${selectedIndent.destination}` : ""}</span>
+              {selectedIndent?.warehouseLocation ? (
+                <span className="flex items-center gap-1 font-medium text-slate-700">
+                  {selectedIndent.source} → <span className="font-bold text-amber-700 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded text-[10.5px]">{selectedIndent.warehouseLocation} (Hub)</span> → {selectedIndent.destination}
+                </span>
+              ) : (
+                <span>{selectedIndent ? `${selectedIndent.source} → ${selectedIndent.destination}` : ""}</span>
+              )}
               <span className="text-slate-400">•</span>
               <span>{selectedIndent?.weight}T</span>
             </div>

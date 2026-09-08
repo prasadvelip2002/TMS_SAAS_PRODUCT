@@ -22,11 +22,17 @@ export default function VendorBiddingPage() {
   const [remarks, setRemarks] = useState("");
   const [availableDate, setAvailableDate] = useState("");
   const [availableTime, setAvailableTime] = useState("10:00");
+  const [serviceScope, setServiceScope] = useState("SourceToHub");
 
   useEffect(() => {
     fetchApi(`/Procurement/RFQ/${token}`)
       .then(data => {
         setRfqDetails(data);
+        if (data?.indent?.warehouseLocation) {
+          setServiceScope("SourceToHub");
+        } else {
+          setServiceScope("EntireRoute");
+        }
         if (data?.indent?.loadingDate) {
           setAvailableDate(new Date(data.indent.loadingDate).toISOString().split('T')[0]);
         }
@@ -55,6 +61,7 @@ export default function VendorBiddingPage() {
           quotedRate: parseFloat(rate),
           proposedVehicleType: vehicle,
           remarks: remarks,
+          serviceScope: rfqDetails?.indent?.warehouseLocation ? serviceScope : "EntireRoute",
           availableDate: availableDate ? new Date(availableDate).toISOString() : null,
           availableTime: availableTime || null
         })
@@ -114,10 +121,20 @@ export default function VendorBiddingPage() {
               <div className="grid grid-cols-2 gap-3">
                 <div className="bg-white p-2.5 rounded-lg border border-slate-100">
                   <div className="text-[10px] text-slate-400 font-bold uppercase mb-1">Route</div>
-                  <div className="text-[13px] font-semibold text-slate-800 flex flex-col">
-                    <span>{rfqDetails.indent?.source}</span>
-                    <span className="text-slate-300">↓</span>
-                    <span>{rfqDetails.indent?.destination}</span>
+                  <div className="text-[13px] font-semibold text-slate-800 flex flex-col gap-0.5">
+                    <span className="flex items-center gap-1.5">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0"></span>
+                      <span className="truncate">{rfqDetails.indent?.source}</span>
+                    </span>
+                    {rfqDetails.indent?.warehouseLocation && (
+                      <span className="flex items-center gap-1 text-amber-700 font-bold text-[11px] bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200 w-fit my-0.5">
+                        ↳ Hub: {rfqDetails.indent.warehouseLocation}
+                      </span>
+                    )}
+                    <span className="flex items-center gap-1.5">
+                      <span className="w-1.5 h-1.5 rounded-full bg-rose-500 shrink-0"></span>
+                      <span className="truncate">{rfqDetails.indent?.destination}</span>
+                    </span>
                   </div>
                 </div>
                 
@@ -148,8 +165,34 @@ export default function VendorBiddingPage() {
             </div>
           )}
 
+          {rfqDetails?.indent?.warehouseLocation && (
+            <div className="bg-amber-50/80 border border-amber-200 rounded-xl p-3.5 space-y-1.5">
+              <label className="block text-xs font-bold text-amber-900 uppercase">
+                Trip Coverage / Availability <span className="text-red-500">*</span>
+              </label>
+              <select
+                value={serviceScope}
+                onChange={(e) => setServiceScope(e.target.value)}
+                className="w-full px-3 py-2.5 rounded-xl border border-amber-300 bg-white font-semibold text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 shadow-sm"
+                required
+              >
+                <option value="SourceToHub">Source to Hub Only ({rfqDetails.indent?.source} → {rfqDetails.indent?.warehouseLocation})</option>
+                <option value="EntireRoute">Entire Route ({rfqDetails.indent?.source} → {rfqDetails.indent?.warehouseLocation} → {rfqDetails.indent?.destination})</option>
+              </select>
+              <p className="text-[11px] text-amber-800 leading-snug">
+                {serviceScope === "SourceToHub" 
+                  ? "✓ Quoting for Leg 1 to the Hub only. Transitflow can arrange a separate vehicle/driver for Leg 2." 
+                  : "✓ Quoting for the entire route (pickup at source, via hub, to final destination)."}
+              </p>
+            </div>
+          )}
+
           <div>
-            <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">Your Quoted Rate (₹) *</label>
+            <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">
+              {rfqDetails?.indent?.warehouseLocation && serviceScope === "SourceToHub" 
+                ? `Your Quoted Rate for Leg 1 (₹) *` 
+                : `Your Quoted Rate (₹) *`}
+            </label>
             <input 
               type="number" 
               required

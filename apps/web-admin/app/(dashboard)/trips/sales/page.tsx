@@ -63,6 +63,7 @@ export default function SalesDashboard() {
 
   // Sales Quotations across all indents to track Vendor vs Own Fleet
   const [allSqs, setAllSqs] = useState<any[]>([]);
+  const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
     loadData();
@@ -287,11 +288,15 @@ export default function SalesDashboard() {
       : '';
 
     let message = "";
+    const routeDisplay = selectedIndent?.warehouseLocation
+      ? `${selectedIndent.source} ➔ ${selectedIndent.warehouseLocation} (Hub) ➔ ${selectedIndent.destination}`
+      : `${selectedIndent.source} to ${selectedIndent.destination}`;
+
     if (isContract) {
       // Contract customer: Order details & Fixed Contract Rate ONLY. No margins or internal operating costs exposed.
       message = `Hello ${selectedIndent?.customer?.name},\n\n` +
         `Here is our Order Confirmation for your transport booking (IND-${1000 + selectedIndent.id}):\n\n` +
-        `*Route*: ${selectedIndent.source} to ${selectedIndent.destination}${pickupInfo}\n` +
+        `*Route*: ${routeDisplay}${pickupInfo}\n` +
         `*Cargo*: ${selectedIndent.material} (${selectedIndent.weight} Tons)\n` +
         `*Vehicle Required*: ${selectedIndent.vehicleType}\n\n` +
         `*Agreed Contract Rate*: ₹${Number(sq.sellingPrice).toLocaleString('en-IN')}\n\n` +
@@ -301,7 +306,7 @@ export default function SalesDashboard() {
       // Spot customer: Sales quotation with selling price
       message = `Hello ${selectedIndent?.customer?.name},\n\n` +
         `Here is our Sales Quotation for your transport request (IND-${1000 + selectedIndent.id}):\n\n` +
-        `*Route*: ${selectedIndent.source} to ${selectedIndent.destination}${pickupInfo}\n` +
+        `*Route*: ${routeDisplay}${pickupInfo}\n` +
         `*Cargo*: ${selectedIndent.material} (${selectedIndent.weight} Tons)\n` +
         `*Vehicle Required*: ${selectedIndent.vehicleType}\n\n` +
         `*Total Quotation (Selling Price)*: ₹${Number(sq.sellingPrice).toLocaleString('en-IN')}\n\n` +
@@ -312,6 +317,24 @@ export default function SalesDashboard() {
     navigator.clipboard.writeText(message);
     alert("Quotation copied to clipboard! You can now paste it into WhatsApp.");
   };
+
+  const filteredIndents = indents.filter((indent) => {
+    if (!searchQuery.trim()) return true;
+    const q = searchQuery.toLowerCase().trim();
+    const fulfillment = getIndentFulfillment(indent);
+    return (
+      `ind-${1000 + indent.id}`.toLowerCase().includes(q) ||
+      indent.id.toString().includes(q) ||
+      indent.customer?.name?.toLowerCase().includes(q) ||
+      indent.source?.toLowerCase().includes(q) ||
+      indent.destination?.toLowerCase().includes(q) ||
+      indent.warehouseLocation?.toLowerCase().includes(q) ||
+      indent.material?.toLowerCase().includes(q) ||
+      indent.vehicleType?.toLowerCase().includes(q) ||
+      indent.status?.toLowerCase().includes(q) ||
+      fulfillment?.vendorName?.toLowerCase().includes(q)
+    );
+  });
 
   return (
     <div className="relative h-full flex flex-col">
@@ -327,9 +350,19 @@ export default function SalesDashboard() {
             <Search className="w-[16px] h-[16px] text-slate-400 absolute left-[14px] top-1/2 -translate-y-1/2" />
             <input 
               type="text" 
-              placeholder="Search indents..." 
-              className="w-[240px] h-[42px] bg-white border border-slate-200 rounded-[12px] pl-[40px] pr-[14px] text-[14px] outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all shadow-sm"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search by ID, customer, route..." 
+              className="w-[280px] h-[42px] bg-white border border-slate-200 rounded-[12px] pl-[40px] pr-[36px] text-[14px] outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all shadow-sm"
             />
+            {searchQuery && (
+              <button 
+                onClick={() => setSearchQuery("")}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            )}
           </div>
         </div>
       </div>
@@ -347,22 +380,24 @@ export default function SalesDashboard() {
                   </div>
                 </Td>
               </tr>
-            ) : indents.length === 0 ? (
+            ) : filteredIndents.length === 0 ? (
               <tr>
                 <Td colSpan={7} className="text-center py-20">
                   <div className="flex flex-col items-center justify-center">
                     <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mb-4 border border-slate-100">
                       <FileText className="w-8 h-8 text-slate-300" />
                     </div>
-                    <span className="text-[15px] font-semibold text-slate-700">No Sales Activities</span>
+                    <span className="text-[15px] font-semibold text-slate-700">
+                      {searchQuery ? "No Matching Sales Records" : "No Sales Activities"}
+                    </span>
                     <span className="text-[13px] text-slate-400 mt-1 max-w-[320px] text-center">
-                      Shortlist a supplier quotation from the Procurement RFQ module to generate customer pricing.
+                      {searchQuery ? `No results found for "${searchQuery}". Try a different term.` : "Shortlist a supplier quotation from the Procurement RFQ module to generate customer pricing."}
                     </span>
                   </div>
                 </Td>
               </tr>
             ) : (
-              indents.map((indent) => {
+              filteredIndents.map((indent) => {
                 const isContract = isContractCustomer(indent);
                 const fulfillment = getIndentFulfillment(indent);
 
@@ -388,14 +423,28 @@ export default function SalesDashboard() {
                       </div>
                     </Td>
                     <Td>
-                      <div className="text-[13px] font-semibold text-slate-800">
-                        {indent.source} <span className="text-slate-400">→</span> {indent.destination}
-                      </div>
-                      {indent.loadingDate && (
-                        <div className="text-[11px] text-slate-500 mt-0.5">
-                          Pickup: {new Date(indent.loadingDate).toLocaleDateString()} {indent.loadingTime ? `@ ${formatTime12H(indent.loadingTime)}` : ''}
+                      <div className="flex flex-col gap-0.5">
+                        <div className="text-[13px] font-semibold text-slate-800 flex items-center gap-1.5 flex-wrap">
+                          <span>{indent.source}</span>
+                          {indent.warehouseLocation ? (
+                            <>
+                              <span className="text-slate-300">→</span>
+                              <span className="text-[11px] font-bold text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200">
+                                {indent.warehouseLocation} (Hub)
+                              </span>
+                              <span className="text-slate-300">→</span>
+                            </>
+                          ) : (
+                            <span className="text-slate-300">→</span>
+                          )}
+                          <span>{indent.destination}</span>
                         </div>
-                      )}
+                        {indent.loadingDate && (
+                          <div className="text-[11px] text-slate-500 mt-0.5">
+                            Pickup: {new Date(indent.loadingDate).toLocaleDateString()} {indent.loadingTime ? `@ ${formatTime12H(indent.loadingTime)}` : ''}
+                          </div>
+                        )}
+                      </div>
                     </Td>
                     <Td>
                       <div className="text-[13px] font-medium text-slate-800">{indent.material}</div>
@@ -549,9 +598,23 @@ export default function SalesDashboard() {
               <span className="text-slate-500 font-medium">Customer:</span>
               <span className="text-slate-900 font-bold">{selectedIndent?.customer?.name}</span>
             </div>
-            <div className="flex justify-between">
+            <div className="flex justify-between items-center">
               <span className="text-slate-500 font-medium">Route:</span>
-              <span className="text-slate-900 font-bold">{selectedIndent?.source} → {selectedIndent?.destination}</span>
+              <span className="text-slate-900 font-bold flex items-center gap-1 flex-wrap">
+                <span>{selectedIndent?.source}</span>
+                {selectedIndent?.warehouseLocation ? (
+                  <>
+                    <span className="text-slate-400">→</span>
+                    <span className="text-amber-800 bg-amber-100 border border-amber-300 px-1.5 py-0.5 rounded text-[11px] font-bold">
+                      {selectedIndent.warehouseLocation} (Hub)
+                    </span>
+                    <span className="text-slate-400">→</span>
+                  </>
+                ) : (
+                  <span className="text-slate-400">→</span>
+                )}
+                <span>{selectedIndent?.destination}</span>
+              </span>
             </div>
             <div className="flex justify-between">
               <span className="text-slate-500 font-medium">Cargo & Vehicle:</span>
@@ -649,6 +712,16 @@ export default function SalesDashboard() {
                   <div>
                     <div className="text-slate-800 font-bold text-base">{vendorQuote.vendor?.name}</div>
                     <div className="text-sm text-slate-500">{vendorQuote.proposedVehicleType}</div>
+                    {vendorQuote.serviceScope === "SourceToHub" && (
+                      <div className="mt-2 bg-amber-100/70 text-amber-900 border border-amber-300 px-2 py-1 rounded-md text-[11px] font-bold w-fit flex items-center gap-1">
+                        <span>📍 Quoted for Leg 1 Only (Source → Hub)</span>
+                      </div>
+                    )}
+                    {vendorQuote.serviceScope === "EntireRoute" && (
+                      <div className="mt-2 bg-emerald-100/70 text-emerald-900 border border-emerald-300 px-2 py-1 rounded-md text-[11px] font-bold w-fit flex items-center gap-1">
+                        <span>🛣️ Quoted for Full Route (Source → Hub → Destination)</span>
+                      </div>
+                    )}
                     {(vendorQuote.availableDate || vendorQuote.availableTime) && (
                       <div className="mt-2 inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 border border-emerald-200 text-[11px] font-medium">
                         <span>Vehicle Available:</span>
