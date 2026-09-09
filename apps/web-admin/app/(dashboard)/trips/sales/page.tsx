@@ -140,9 +140,17 @@ export default function SalesDashboard() {
 
   const isContractCustomer = (indent: any) => {
     if (!indent) return false;
-    return indent.pricingModel === "AnnualContract" || 
-           indent.customer?.customerType === "Contract" || 
-           (Number(indent.customerRate) > 0);
+    // Explicit CaseToCase pricing model is ALWAYS Spot
+    if (indent.pricingModel === "CaseToCase") return false;
+    // If pricingModel is explicitly AnnualContract, it's Contract
+    if (indent.pricingModel === "AnnualContract") return true;
+    // Check customer type: Spot customers are Spot
+    if (indent.customer?.customerType === "Spot") return false;
+    // Check if customer has an active annual rate contract
+    if (indent.customer?.customerType === "Contract" || (indent.customer?.rateContract && indent.customer.rateContract !== "Draft")) {
+      return true;
+    }
+    return false;
   };
 
   const calculateOperatingExpenses = () => {
@@ -177,7 +185,7 @@ export default function SalesDashboard() {
     } else {
       setBaseRate(0);
       setMargin(0);
-      setSellingPrice(0);
+      setSellingPrice(Number(indent.customerRate) || 0);
     }
 
     try {
