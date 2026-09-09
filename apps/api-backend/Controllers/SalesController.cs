@@ -29,7 +29,28 @@ namespace api_backend.Controllers
                 .ThenInclude(v => v.Vendor)
                 .OrderByDescending(s => s.CreatedAt)
                 .ToListAsync();
-            return Ok(sqs);
+
+            var pos = await _context.CustomerPurchaseOrders
+                .ToListAsync();
+
+            var result = sqs.Select(s => new
+            {
+                s.Id,
+                s.IndentId,
+                s.CustomerId,
+                s.WinningVendorQuotationId,
+                s.WinningVendorQuotation,
+                s.BaseRate,
+                s.Margin,
+                s.SellingPrice,
+                s.Status,
+                s.LegType,
+                s.TripId,
+                s.CreatedAt,
+                PONumber = pos.FirstOrDefault(p => p.SalesQuotationId == s.Id || p.IndentId == s.IndentId)?.PONumber
+            });
+
+            return Ok(result);
         }
 
         // GET: api/Sales/Quotations/{indentId}
@@ -42,7 +63,29 @@ namespace api_backend.Controllers
                 .ThenInclude(v => v.Vendor)
                 .Where(s => s.IndentId == indentId)
                 .ToListAsync();
-            return Ok(sqs);
+
+            var pos = await _context.CustomerPurchaseOrders
+                .Where(p => p.IndentId == indentId)
+                .ToListAsync();
+
+            var result = sqs.Select(s => new
+            {
+                s.Id,
+                s.IndentId,
+                s.CustomerId,
+                s.WinningVendorQuotationId,
+                s.WinningVendorQuotation,
+                s.BaseRate,
+                s.Margin,
+                s.SellingPrice,
+                s.Status,
+                s.LegType,
+                s.TripId,
+                s.CreatedAt,
+                PONumber = pos.FirstOrDefault(p => p.SalesQuotationId == s.Id || p.IndentId == s.IndentId)?.PONumber
+            });
+
+            return Ok(result);
         }
 
         // POST: api/Sales/GenerateSQ/{indentId}
