@@ -7,7 +7,7 @@ import {
   Loader2, FileText, CheckCircle, Search, Grid, List, Plus, DollarSign, X, 
   MessageCircle, Calculator, SlidersHorizontal, Fuel, Truck, Utensils, 
   Receipt, AlertTriangle, TrendingUp, TrendingDown, Percent, Lock, Building2, 
-  Calendar, Info, HelpCircle
+  Calendar, Info, HelpCircle, CheckCircle2, Clock, ArrowRight
 } from "lucide-react";
 import { formatTime12H } from "@/lib/utils";
 
@@ -44,6 +44,7 @@ const defaultCostBreakdown: CostBreakdown = {
 export default function SalesDashboard() {
   const [indents, setIndents] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [salesTab, setSalesTab] = useState<'pending' | 'completed'>('pending');
   
   // Panel state
   const [selectedIndent, setSelectedIndent] = useState<any>(null);
@@ -65,6 +66,17 @@ export default function SalesDashboard() {
   const [allSqs, setAllSqs] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
 
+  const isCompletedIndent = (indent: any) => {
+    if (!indent) return false;
+    if (["PO_Received", "Pending Assignment", "Assigned", "Started", "InTransit", "Delivered", "Closed"].includes(indent.status)) {
+      return true;
+    }
+    if (allSqs.some((sq: any) => sq.indentId === indent.id && (sq.status === "Approved" || sq.status === "PO_Received"))) {
+      return true;
+    }
+    return false;
+  };
+
   useEffect(() => {
     loadData();
   }, []);
@@ -77,14 +89,7 @@ export default function SalesDashboard() {
         fetchApi("/Sales/Quotations").catch(() => [])
       ]);
       setAllSqs(sqsData || []);
-      setIndents((indentsData || []).filter((i: any) => 
-        i.status === "New" ||
-        i.status === "Pending" ||
-        i.status === "Supplier_Shortlisted" || 
-        i.status === "SQ_Generated" || 
-        i.status === "PO_Received" ||
-        i.status === "Assigned"
-      ));
+      setIndents(Array.isArray(indentsData) ? indentsData : []);
     } catch (error) {
       console.error(error);
     } finally {
@@ -191,6 +196,14 @@ export default function SalesDashboard() {
         // Fetch Sales Quotes
         const sqs = await fetchApi(`/Sales/Quotations/${indent.id}`);
         setSalesQuotes(sqs);
+        if (sqs && sqs.length > 0) {
+          const activeSq = sqs[0];
+          if (activeSq.poNumber) setPoNumber(activeSq.poNumber);
+          if (activeSq.sellingPrice) setSellingPrice(Number(activeSq.sellingPrice));
+          if (activeSq.baseRate) setBaseRate(Number(activeSq.baseRate));
+          if (activeSq.margin) setMargin(Number(activeSq.margin));
+          if (activeSq.winningVendorQuotation) setVendorQuote(activeSq.winningVendorQuotation);
+        }
       }
     } catch (e) {
       console.error("Failed to load details");
@@ -276,8 +289,9 @@ export default function SalesDashboard() {
         method: "POST",
         body: JSON.stringify({ poNumber })
       });
-      alert("Customer PO Accepted! Trip is now ready. Proceed to Trip Assignment to assign vehicle & driver.");
+      alert("Customer PO Accepted! Trip is now ready. Order moved to Completed tab.");
       setIsPanelOpen(false);
+      setSalesTab('completed');
       loadData();
     } catch (e) {
       alert("Failed to accept Customer PO");
@@ -323,10 +337,26 @@ export default function SalesDashboard() {
     alert("Quotation copied to clipboard! You can now paste it into WhatsApp.");
   };
 
-  const filteredIndents = indents.filter((indent) => {
+  const pendingCount = indents.filter(i => 
+    !isCompletedIndent(i) && (i.status === "New" || i.status === "Pending" || i.status === "Supplier_Shortlisted" || i.status === "SQ_Generated")
+  ).length;
+
+  const completedCount = indents.filter(i => isCompletedIndent(i)).length;
+
+  const tabIndents = indents.filter((indent) => {
+    if (salesTab === 'pending') {
+      return !isCompletedIndent(indent) && (indent.status === "New" || indent.status === "Pending" || indent.status === "Supplier_Shortlisted" || indent.status === "SQ_Generated");
+    } else {
+      return isCompletedIndent(indent);
+    }
+  });
+
+  const filteredIndents = tabIndents.filter((indent) => {
     if (!searchQuery.trim()) return true;
     const q = searchQuery.toLowerCase().trim();
     const fulfillment = getIndentFulfillment(indent);
+    const sq = allSqs.find((s: any) => s.indentId === indent.id);
+    const poNum = sq?.poNumber || "";
     return (
       `ind-${1000 + indent.id}`.toLowerCase().includes(q) ||
       indent.id.toString().includes(q) ||
@@ -337,7 +367,8 @@ export default function SalesDashboard() {
       indent.material?.toLowerCase().includes(q) ||
       indent.vehicleType?.toLowerCase().includes(q) ||
       indent.status?.toLowerCase().includes(q) ||
-      fulfillment?.vendorName?.toLowerCase().includes(q)
+      fulfillment?.vendorName?.toLowerCase().includes(q) ||
+      poNum.toLowerCase().includes(q)
     );
   });
 
@@ -351,13 +382,49 @@ export default function SalesDashboard() {
         </div>
         
         <div className="flex items-center gap-[12px]">
+          {/* PENDING & COMPLETED TAB SWITCHER */}
+          <div className="flex bg-slate-100 p-1 rounded-xl border border-slate-200 shadow-2xs">
+            <button
+              onClick={() => setSalesTab('pending')}
+              className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                salesTab === 'pending'
+                  ? 'bg-white text-slate-900 shadow-xs border border-slate-200/60'
+                  : 'text-slate-500 hover:text-slate-900'
+              }`}
+            >
+              <Clock className="w-3.5 h-3.5 text-amber-500" />
+              <span>Pending</span>
+              <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-bold ${
+                salesTab === 'pending' ? 'bg-amber-100 text-amber-800' : 'bg-slate-200 text-slate-600'
+              }`}>
+                {pendingCount}
+              </span>
+            </button>
+            <button
+              onClick={() => setSalesTab('completed')}
+              className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                salesTab === 'completed'
+                  ? 'bg-white text-slate-900 shadow-xs border border-slate-200/60'
+                  : 'text-slate-500 hover:text-slate-900'
+              }`}
+            >
+              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
+              <span>Completed</span>
+              <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-bold ${
+                salesTab === 'completed' ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-200 text-slate-600'
+              }`}>
+                {completedCount}
+              </span>
+            </button>
+          </div>
+
           <div className="relative">
             <Search className="w-[16px] h-[16px] text-slate-400 absolute left-[14px] top-1/2 -translate-y-1/2" />
             <input 
               type="text" 
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search by ID, customer, route..." 
+              placeholder="Search by ID, customer, route, PO..." 
               className="w-[280px] h-[42px] bg-white border border-slate-200 rounded-[12px] pl-[40px] pr-[36px] text-[14px] outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all shadow-sm"
             />
             {searchQuery && (
@@ -393,10 +460,10 @@ export default function SalesDashboard() {
                       <FileText className="w-8 h-8 text-slate-300" />
                     </div>
                     <span className="text-[15px] font-semibold text-slate-700">
-                      {searchQuery ? "No Matching Sales Records" : "No Sales Activities"}
+                      {searchQuery ? "No Matching Sales Records" : (salesTab === 'pending' ? "No Pending Quotations" : "No Completed Orders Yet")}
                     </span>
-                    <span className="text-[13px] text-slate-400 mt-1 max-w-[320px] text-center">
-                      {searchQuery ? `No results found for "${searchQuery}". Try a different term.` : "Shortlist a supplier quotation from the Procurement RFQ module to generate customer pricing."}
+                    <span className="text-[13px] text-slate-400 mt-1 max-w-[340px] text-center">
+                      {searchQuery ? `No results found for "${searchQuery}". Try a different term.` : (salesTab === 'pending' ? "Shortlist a supplier quotation from Procurement RFQ or start an Own Fleet quotation." : "Confirmed orders with accepted customer POs will remain visible here.")}
                     </span>
                   </div>
                 </Td>
@@ -490,54 +557,61 @@ export default function SalesDashboard() {
                     </Td>
                     <Td>
                       <Badge color={
+                        isCompletedIndent(indent) ? "green" :
                         indent.status === "Supplier_Shortlisted" ? "orange" :
                         indent.status === "SQ_Generated" ? "blue" :
-                        indent.status === "PO_Received" || indent.status === "Assigned" ? "green" :
-                        indent.status === "New" || indent.status === "Pending" ? "blue" :
+                        indent.status === "New" || indent.status === "Pending" ? "purple" :
                         "grey"
                       }>
                         {indent.status === "Assigned" ? "Trip Generated" : 
-                         (indent.status === "New" || indent.status === "Pending") ? "Ready for SQ (Own Fleet)" : indent.status}
+                         indent.status === "Pending Assignment" ? "PO Accepted (Ready to Assign)" :
+                         indent.status === "PO_Received" ? "PO Accepted" :
+                         (indent.status === "New" || indent.status === "Pending") ? "Ready for SQ (Own Fleet)" : 
+                         indent.status === "Supplier_Shortlisted" ? "Shortlisted (Ready for SQ)" :
+                         indent.status === "SQ_Generated" ? "SQ Sent (Waiting PO)" : indent.status}
                       </Badge>
                     </Td>
                     <Td>
                       <div className="flex gap-2">
-                        {(indent.status === "New" || indent.status === "Pending") && (
+                        {isCompletedIndent(indent) ? (
                           <button 
                             onClick={() => openPanel(indent)}
-                            className="bg-purple-50 text-purple-700 border border-purple-200 px-3 py-1.5 rounded-xl text-[12px] font-bold hover:bg-purple-100 transition-colors flex items-center gap-1.5"
-                          >
-                            <Plus className="w-3.5 h-3.5" /> Generate SQ (Own Fleet)
-                          </button>
-                        )}
-                        {indent.status === "Supplier_Shortlisted" && (
-                          <button 
-                            onClick={() => openPanel(indent)}
-                            className="bg-blue-50 text-blue-700 border border-blue-200 px-3 py-1.5 rounded-xl text-[12px] font-bold hover:bg-blue-100 transition-colors flex items-center gap-1.5"
-                          >
-                            <Plus className="w-3.5 h-3.5" /> Generate SQ
-                          </button>
-                        )}
-                        {indent.status === "SQ_Generated" && (
-                          <button 
-                            onClick={() => openPanel(indent)}
-                            className={`px-3 py-1.5 rounded-xl text-[12px] font-bold transition-colors flex items-center gap-1.5 border ${
-                              fulfillment.isVendor 
-                                ? 'bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100' 
-                                : 'bg-purple-50 text-purple-700 border-purple-200 hover:bg-purple-100'
-                            }`}
-                          >
-                            <CheckCircle className="w-3.5 h-3.5" /> 
-                            {fulfillment.isVendor ? "Accept PO (Vendor)" : "Accept PO (Own Fleet)"}
-                          </button>
-                        )}
-                        {(indent.status === "PO_Received" || indent.status === "Assigned") && (
-                          <button 
-                            onClick={() => openPanel(indent)}
-                            className="bg-slate-100 text-slate-600 border border-slate-200 px-3 py-1.5 rounded-xl text-[12px] font-bold hover:bg-slate-200 transition-colors flex items-center gap-1.5"
+                            className="bg-emerald-50 text-emerald-700 border border-emerald-200 px-3.5 py-1.5 rounded-xl text-[12px] font-bold hover:bg-emerald-100 transition-colors flex items-center gap-1.5 shadow-2xs"
                           >
                             <List className="w-3.5 h-3.5" /> View Details
                           </button>
+                        ) : (
+                          <>
+                            {(indent.status === "New" || indent.status === "Pending") && (
+                              <button 
+                                onClick={() => openPanel(indent)}
+                                className="bg-purple-50 text-purple-700 border border-purple-200 px-3 py-1.5 rounded-xl text-[12px] font-bold hover:bg-purple-100 transition-colors flex items-center gap-1.5"
+                              >
+                                <Plus className="w-3.5 h-3.5" /> Generate SQ (Own Fleet)
+                              </button>
+                            )}
+                            {indent.status === "Supplier_Shortlisted" && (
+                              <button 
+                                onClick={() => openPanel(indent)}
+                                className="bg-blue-50 text-blue-700 border border-blue-200 px-3 py-1.5 rounded-xl text-[12px] font-bold hover:bg-blue-100 transition-colors flex items-center gap-1.5"
+                              >
+                                <Plus className="w-3.5 h-3.5" /> Generate SQ
+                              </button>
+                            )}
+                            {indent.status === "SQ_Generated" && (
+                              <button 
+                                onClick={() => openPanel(indent)}
+                                className={`px-3 py-1.5 rounded-xl text-[12px] font-bold transition-colors flex items-center gap-1.5 border ${
+                                  fulfillment.isVendor 
+                                    ? 'bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100' 
+                                    : 'bg-purple-50 text-purple-700 border-purple-200 hover:bg-purple-100'
+                                }`}
+                              >
+                                <CheckCircle className="w-3.5 h-3.5" /> 
+                                {fulfillment.isVendor ? "Accept PO (Vendor)" : "Accept PO (Own Fleet)"}
+                              </button>
+                            )}
+                          </>
                         )}
                       </div>
                     </Td>
@@ -563,7 +637,9 @@ export default function SalesDashboard() {
           <div>
             <div className="flex items-center gap-2">
               <h2 className="text-xl font-bold text-slate-800">
-                {(selectedIndent?.status === "New" || selectedIndent?.status === "Pending") 
+                {isCompletedIndent(selectedIndent)
+                  ? "Order & Quotation Details"
+                  : (selectedIndent?.status === "New" || selectedIndent?.status === "Pending") 
                   ? "Generate SQ (Own Fleet)" 
                   : selectedIndent?.status === "Supplier_Shortlisted" 
                   ? (isContractCustomer(selectedIndent) ? "Contract Booking & SQ" : "Generate Sales Quotation")
@@ -628,7 +704,7 @@ export default function SalesDashboard() {
           </div>
 
           {/* OWN FLEET QUOTATION FORM */}
-          {(selectedIndent?.status === "New" || selectedIndent?.status === "Pending") && (
+          {!isCompletedIndent(selectedIndent) && (selectedIndent?.status === "New" || selectedIndent?.status === "Pending") && (
             <div className="space-y-6">
               <div className="bg-purple-50 border border-purple-200 rounded-xl p-4">
                 <div className="text-[11px] font-bold text-purple-700 uppercase tracking-wider mb-1">Own Fleet Direct Booking</div>
@@ -786,7 +862,7 @@ export default function SalesDashboard() {
           )}
 
           {/* 3RD PARTY SUPPLIER QUOTATION FLOW */}
-          {selectedIndent?.status === "Supplier_Shortlisted" && vendorQuote && (
+          {!isCompletedIndent(selectedIndent) && selectedIndent?.status === "Supplier_Shortlisted" && vendorQuote && (
             <div className="space-y-6">
               <div className="bg-slate-50 border border-slate-200 rounded-xl p-5">
                 <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2">Winning Supplier Rate</div>
@@ -1000,7 +1076,7 @@ export default function SalesDashboard() {
           )}
 
           {/* ACTIVE SALES QUOTATION READY FOR PO */}
-          {selectedIndent?.status === "SQ_Generated" && salesQuotes.length > 0 && (
+          {!isCompletedIndent(selectedIndent) && selectedIndent?.status === "SQ_Generated" && salesQuotes.length > 0 && (
             <div className="space-y-6">
               <div className="bg-blue-50 border border-blue-200 rounded-xl p-5 shadow-sm">
                 <div className="text-[11px] font-bold text-blue-400 uppercase tracking-wider mb-2">Active Sales Quotation</div>
@@ -1115,36 +1191,102 @@ export default function SalesDashboard() {
             </div>
           )}
 
-          {/* APPROVED / ASSIGNED TRIP STATUS */}
-          {(selectedIndent?.status === "PO_Received" || selectedIndent?.status === "Assigned") && salesQuotes.length > 0 && (
-            <div className="space-y-6">
-              <div className="bg-green-50 border border-green-200 rounded-xl p-5 shadow-sm">
-                <div className="text-[11px] font-bold text-green-600 uppercase tracking-wider mb-2">Approved Sales Quotation</div>
-                <div className="flex justify-between items-end">
-                  <div>
-                    <div className="text-green-900 font-bold text-xl">₹{salesQuotes[0].sellingPrice?.toLocaleString('en-IN')}</div>
-                    <div className="text-xs text-green-700 mt-1">Confirmed Booking</div>
-                  </div>
+          {/* COMPLETED ORDER & ACCEPTED PO DETAILS */}
+          {isCompletedIndent(selectedIndent) && (
+            <div className="space-y-5">
+              {/* Confirmed Rate Card */}
+              <div className="bg-emerald-50/80 border border-emerald-200 rounded-2xl p-5 shadow-xs">
+                <div className="flex justify-between items-center mb-2">
+                  <span className="text-[11px] font-bold text-emerald-700 uppercase tracking-wider flex items-center gap-1.5">
+                    <CheckCircle className="w-3.5 h-3.5 text-emerald-600" /> Confirmed Sales Booking
+                  </span>
                   <Badge color="green">PO Accepted</Badge>
                 </div>
+                <div className="text-3xl font-black text-emerald-950 tracking-tight">
+                  ₹{Number(salesQuotes[0]?.sellingPrice || selectedIndent?.customerRate || sellingPrice || 0).toLocaleString('en-IN')}
+                </div>
+                <div className="text-xs text-emerald-700 font-medium mt-1">
+                  Agreed Customer Rate (Selling Price)
+                </div>
+
+                {(poNumber || salesQuotes[0]?.poNumber) && (
+                  <div className="mt-4 pt-3 border-t border-emerald-200/80 flex items-center justify-between text-xs">
+                    <span className="text-emerald-800 font-semibold">Customer PO Number:</span>
+                    <span className="font-mono font-bold bg-white text-emerald-900 px-3 py-1 rounded-lg border border-emerald-300 shadow-2xs">
+                      {poNumber || salesQuotes[0]?.poNumber}
+                    </span>
+                  </div>
+                )}
+
+                <button 
+                  onClick={copyToWhatsApp}
+                  className="mt-4 w-full bg-emerald-600 hover:bg-emerald-700 text-white py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-colors shadow-sm"
+                >
+                  <MessageCircle className="w-4 h-4" /> 
+                  Copy Order Confirmation for WhatsApp
+                </button>
               </div>
 
-              <div>
-                <div className="space-y-4 border border-green-200 p-5 rounded-xl bg-white shadow-sm flex flex-col items-center justify-center text-center">
-                  <div className="w-12 h-12 bg-green-100 text-green-600 rounded-full flex items-center justify-center mb-2">
-                    <CheckCircle className="w-6 h-6" />
-                  </div>
-                  <div>
-                    <h3 className="text-sm font-bold text-slate-800 mb-1">Customer PO Accepted</h3>
-                    <p className="text-xs text-slate-500 mb-3">Trip has been generated successfully.</p>
-                    <a 
-                      href="/trips/assignment" 
-                      className="inline-flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold px-4 py-2 rounded-lg transition-colors shadow-sm"
-                    >
-                      Go to Trip Assignment →
-                    </a>
-                  </div>
+              {/* Financial & Fulfillment Breakdown */}
+              <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-xs space-y-3.5 text-xs">
+                <div className="font-bold text-slate-800 uppercase text-[11px] tracking-wider pb-2 border-b border-slate-100 flex items-center justify-between">
+                  <span>Financial & Fulfillment Summary</span>
+                  <span className={`px-2.5 py-0.5 rounded-full text-[10.5px] font-bold border ${
+                    vendorQuote || salesQuotes[0]?.winningVendorQuotation 
+                      ? 'bg-blue-50 text-blue-700 border-blue-200' 
+                      : 'bg-purple-50 text-purple-700 border-purple-200'
+                  }`}>
+                    {vendorQuote || salesQuotes[0]?.winningVendorQuotation ? "Vendor Fulfillment" : "Company Own Fleet"}
+                  </span>
                 </div>
+
+                <div className="flex justify-between items-center text-slate-600">
+                  <span>Customer Selling Rate:</span>
+                  <span className="font-bold text-slate-900 text-[13px]">₹{Number(salesQuotes[0]?.sellingPrice || sellingPrice || 0).toLocaleString('en-IN')}</span>
+                </div>
+
+                <div className="flex justify-between items-center text-slate-600">
+                  <span>{vendorQuote || salesQuotes[0]?.winningVendorQuotation ? "Transporter Buy Rate:" : "Estimated Fleet Base Cost:"}</span>
+                  <span className="font-bold text-slate-900 text-[13px]">₹{Number(salesQuotes[0]?.baseRate || baseRate || vendorQuote?.quotedRate || 0).toLocaleString('en-IN')}</span>
+                </div>
+
+                <div className="flex justify-between items-center text-slate-800 pt-2.5 border-t border-slate-100 font-bold">
+                  <span className="text-emerald-700 flex items-center gap-1">
+                    <TrendingUp className="w-3.5 h-3.5" /> Company Margin:
+                  </span>
+                  <span className="text-[15px] font-black text-emerald-700">
+                    +₹{Number(
+                      salesQuotes[0]?.margin ?? 
+                      margin ?? 
+                      ((Number(salesQuotes[0]?.sellingPrice || sellingPrice || 0)) - (Number(salesQuotes[0]?.baseRate || baseRate || vendorQuote?.quotedRate || 0)))
+                    ).toLocaleString('en-IN')}
+                  </span>
+                </div>
+
+                {(vendorQuote?.vendor?.name || salesQuotes[0]?.winningVendorQuotation?.vendor?.name) && (
+                  <div className="pt-2.5 border-t border-slate-100 flex justify-between items-center text-slate-500">
+                    <span>Awarded Transporter:</span>
+                    <span className="font-bold text-slate-800">
+                      {vendorQuote?.vendor?.name || salesQuotes[0]?.winningVendorQuotation?.vendor?.name}
+                    </span>
+                  </div>
+                )}
+              </div>
+
+              {/* Trip Assignment Banner */}
+              <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 text-center space-y-2">
+                <div className="text-xs font-semibold text-slate-700">
+                  Trip ready for vehicle and driver assignment
+                </div>
+                <p className="text-[11px] text-slate-500">
+                  Dispatch fleet operations or assign 3rd-party vendor vehicle from the Trip Assignment module.
+                </p>
+                <a 
+                  href="/trips/assignment" 
+                  className="inline-flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold px-4 py-2 rounded-xl transition-colors shadow-sm mt-1"
+                >
+                  Go to Trip Assignment →
+                </a>
               </div>
             </div>
           )}
@@ -1153,7 +1295,22 @@ export default function SalesDashboard() {
 
         {/* BOTTOM ACTION BUTTON */}
         <div className="p-6 border-t border-slate-100 bg-white">
-          {(selectedIndent?.status === "New" || selectedIndent?.status === "Pending") ? (
+          {isCompletedIndent(selectedIndent) ? (
+            <div className="flex gap-3">
+              <button 
+                onClick={() => setIsPanelOpen(false)}
+                className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-3.5 px-4 rounded-xl transition-all text-xs"
+              >
+                Close Details
+              </button>
+              <a 
+                href="/trips/assignment"
+                className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3.5 px-4 rounded-xl transition-all shadow-md shadow-blue-600/20 text-xs flex items-center justify-center gap-1.5"
+              >
+                Trip Assignment <ArrowRight className="w-3.5 h-3.5" />
+              </a>
+            </div>
+          ) : (selectedIndent?.status === "New" || selectedIndent?.status === "Pending") ? (
             <button 
               onClick={handleGenerateSQ}
               disabled={sellingPrice <= 0}
@@ -1165,11 +1322,7 @@ export default function SalesDashboard() {
              <button 
                onClick={handleGenerateSQ}
                disabled={!isContractCustomer(selectedIndent) && margin <= 0}
-               className={`w-full text-white font-bold py-3.5 px-6 rounded-xl transition-all shadow-lg flex items-center justify-center gap-2 disabled:opacity-50 ${
-                 isContractCustomer(selectedIndent) 
-                   ? 'bg-blue-600 hover:bg-blue-700 shadow-blue-600/20' 
-                   : 'bg-blue-600 hover:bg-blue-700 shadow-blue-600/20'
-               }`}
+               className="w-full text-white font-bold py-3.5 px-6 rounded-xl transition-all shadow-lg flex items-center justify-center gap-2 disabled:opacity-50 bg-blue-600 hover:bg-blue-700 shadow-blue-600/20"
              >
                {isContractCustomer(selectedIndent) ? "Confirm Contract Booking & Generate SQ" : "Generate & Send SQ"}
              </button>

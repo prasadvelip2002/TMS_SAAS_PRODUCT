@@ -32,13 +32,14 @@ export function Panel({ children, title, hint, className = "" }: { children: Rea
   );
 }
 
-export function Badge({ children, color = "grey" }: { children: React.ReactNode, color?: 'blue' | 'orange' | 'green' | 'red' | 'grey' }) {
+export function Badge({ children, color = "grey" }: { children: React.ReactNode, color?: 'blue' | 'orange' | 'green' | 'red' | 'grey' | 'purple' }) {
   const colors = {
     blue: "bg-route-soft text-route",
     orange: "bg-signal-soft text-[#B8501E]",
     green: "bg-depot-soft text-depot",
     red: "bg-alert-soft text-alert",
-    grey: "bg-[#EEF0F4] text-muted-text"
+    grey: "bg-[#EEF0F4] text-muted-text",
+    purple: "bg-purple-50 text-purple-700"
   };
   return (
     <span className={`font-body text-[11px] font-semibold px-[9px] py-[3px] rounded-[20px] inline-block ${colors[color]}`}>

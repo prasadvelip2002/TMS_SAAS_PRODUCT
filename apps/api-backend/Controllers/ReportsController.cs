@@ -29,6 +29,7 @@ namespace api_backend.Controllers
                 .Include(t => t.Vendor)
                 .Include(t => t.Vehicle)
                 .Include(t => t.AdditionalCharges)
+                .Include(t => t.Invoice)
                 .OrderByDescending(t => t.CreatedAt)
                 .Select(t => new
                 {
@@ -39,9 +40,14 @@ namespace api_backend.Controllers
                     WarehouseLocation = t.Indent != null ? t.Indent.WarehouseLocation : null,
                     Destination = t.Indent != null ? t.Indent.Destination : "N/A",
                     LegType = t.LegType,
+                    Material = t.Indent != null ? t.Indent.Material : "General Freight",
+                    Weight = t.Indent != null ? t.Indent.Weight : 0m,
                     Vehicle = t.Vehicle != null ? t.Vehicle.VehicleNumber : "N/A",
                     VendorName = t.Vendor != null ? t.Vendor.Name : (t.LegType == "Direct" ? "Own Fleet" : "N/A"),
                     Status = t.Status,
+                    InvoiceNumber = t.Invoice != null ? t.Invoice.InvoiceNumber : null,
+                    IsBilled = t.InvoiceId != null,
+                    IsVendorSettled = t.IsVendorSettled,
                     CustomerRate = t.CustomerRate ?? t.Indent.CustomerRate ?? t.FreightCharges,
                     SupplierRate = t.SupplierRate ?? 0m,
                     FuelAdvance = t.FuelAdvance ?? 0m,
