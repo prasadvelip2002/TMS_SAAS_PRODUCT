@@ -140,7 +140,9 @@ namespace api_backend.Controllers
                 .Include(t => t.Vehicle)
                 .Include(t => t.Driver)
                 .Include(t => t.Payments)
+                .Include(t => t.AdditionalCharges)
                 .Include(t => t.Invoice)
+                .OrderByDescending(t => t.CreatedAt)
                 .ToListAsync();
 
             if (User.IsInRole("Driver"))

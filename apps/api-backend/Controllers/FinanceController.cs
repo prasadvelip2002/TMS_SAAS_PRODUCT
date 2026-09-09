@@ -33,6 +33,7 @@ namespace api_backend.Controllers
                 .Include(t => t.Indent)
                     .ThenInclude(i => i.Customer)
                 .Include(t => t.Payments)
+                .Include(t => t.AdditionalCharges)
                 .Where(t => t.Status == "Closed" && t.VendorId != null)
                 .ToListAsync();
 
@@ -172,7 +173,9 @@ namespace api_backend.Controllers
                 }
                 else
                 {
-                    decimal addChargesSum = t.AdditionalCharges?.Sum(ac => ac.Amount) ?? 0;
+                    decimal addChargesSum = t.AdditionalCharges?
+                        .Where(ac => ac.BillableToCustomer && (ac.Status == "Approved" || string.IsNullOrEmpty(ac.Status)))
+                        .Sum(ac => ac.Amount) ?? 0;
                     decimal customerAgreedRate = 0;
                     if (tripSqMapForInvoice.TryGetValue(t.Id, out var directSqP) && directSqP > 0)
                     {

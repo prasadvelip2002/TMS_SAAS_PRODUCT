@@ -194,7 +194,10 @@ export default function VendorSettlementDashboard() {
 
               return filteredTrips.map((trip) => {
                 const baseAmount = trip.supplierRate || trip.freightCharges || 0;
-                const balance = baseAmount + (trip.tollCharges || 0) - (trip.advanceAmount || 0);
+                const vendorAddCharges = (trip.additionalCharges || [])
+                  .filter((c: any) => c.payableToVendor && (c.status === "Approved" || !c.status))
+                  .reduce((acc: number, c: any) => acc + (Number(c.amount) || 0), 0);
+                const balance = baseAmount + (trip.tollCharges || 0) + vendorAddCharges - (trip.advanceAmount || 0);
                 return (
                   <tr key={trip.id} className="hover:bg-slate-50/80 transition-colors border-b border-slate-100 last:border-0">
                     <Td className="font-mono text-[13px] font-semibold text-slate-600">

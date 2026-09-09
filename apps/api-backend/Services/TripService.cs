@@ -193,9 +193,11 @@ namespace api_backend.Services
             if (trip == null) throw new Exception("Trip not found.");
 
             decimal totalPayments = trip.Payments?.Sum(p => p.Amount) ?? 0;
-            decimal approvedExtraCharges = trip.AdditionalCharges?.Where(a => a.Status == "Approved").Sum(a => a.Amount) ?? 0;
+            decimal approvedVendorExtraCharges = trip.AdditionalCharges?
+                .Where(a => (a.Status == "Approved" || string.IsNullOrEmpty(a.Status)) && a.PayableToVendor)
+                .Sum(a => a.Amount) ?? 0;
 
-            trip.BalanceAmount = trip.FreightCharges + approvedExtraCharges - totalPayments;
+            trip.BalanceAmount = trip.FreightCharges + approvedVendorExtraCharges - totalPayments;
             
             await _context.SaveChangesAsync();
 

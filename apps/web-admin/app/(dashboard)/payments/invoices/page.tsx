@@ -70,7 +70,9 @@ export default function CustomerInvoicingDashboard() {
         const base = (t.customerRate && t.customerRate > 0)
           ? t.customerRate
           : ((t.indent?.customerRate && t.indent.customerRate > 0) ? t.indent.customerRate : (t.freightCharges || 0));
-        const addChargesSum = (t.additionalCharges || []).reduce((acc: number, c: any) => acc + (c.amount || 0), 0);
+        const addChargesSum = (t.additionalCharges || [])
+          .filter((c: any) => c.billableToCustomer && (c.status === "Approved" || !c.status))
+          .reduce((acc: number, c: any) => acc + (Number(c.amount) || 0), 0);
         ratesMap[t.id] = base + (t.tollCharges || 0) + addChargesSum;
       });
       setCustomRates(ratesMap);
