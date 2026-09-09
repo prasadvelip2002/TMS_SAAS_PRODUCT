@@ -929,26 +929,37 @@ export default function SalesDashboard() {
                     /* SPOT CUSTOMER SPECIFIC PRICING VIEW */
                     <div className="space-y-4">
                       <div>
-                        <div className="flex justify-between items-center mb-1">
-                          <label className="text-sm font-semibold text-slate-700">Add Margin</label>
+                        <div className="flex justify-between items-center mb-1.5">
+                          <label className="text-sm font-semibold text-slate-700">Applied Margin (₹)</label>
                           <button 
                             type="button" 
                             onClick={() => setIsCostModalOpen(true)}
-                            className="text-[11px] text-blue-600 font-semibold hover:underline flex items-center gap-1"
+                            className="text-[11px] text-blue-600 font-bold hover:underline flex items-center gap-1 bg-blue-50 border border-blue-200 px-2 py-0.5 rounded-lg hover:bg-blue-100 transition-colors"
                           >
-                            <Percent className="w-3 h-3" /> Calculate by %
+                            <SlidersHorizontal className="w-3 h-3 text-blue-500" /> Set in Cost Sheet →
                           </button>
                         </div>
-                        <div className="relative">
-                          <DollarSign className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                        <div 
+                          className="relative cursor-pointer"
+                          onClick={() => setIsCostModalOpen(true)}
+                          title="Click to configure margin in Trip Cost Sheet & Margin Calculator"
+                        >
+                          <span className="text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 font-bold text-sm">₹</span>
                           <input 
                             type="number" 
                             value={margin || ""}
-                            onChange={(e) => setMargin(Number(e.target.value))}
-                            className="w-full h-[42px] bg-slate-50 border border-slate-200 rounded-lg pl-9 pr-3 text-sm focus:border-blue-500 focus:bg-white outline-none transition-all font-semibold"
-                            placeholder="e.g. 5000"
+                            readOnly
+                            disabled
+                            className="w-full h-[42px] bg-slate-100/80 border border-slate-200 rounded-lg pl-8 pr-32 text-sm font-bold text-slate-800 outline-none cursor-pointer select-none"
+                            placeholder="0 (Click to configure)"
                           />
+                          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[11px] font-bold text-slate-500 bg-white px-2 py-0.5 rounded border border-slate-200 flex items-center gap-1 shadow-2xs pointer-events-none">
+                            <Lock className="w-3 h-3 text-slate-400" /> From Cost Sheet
+                          </span>
                         </div>
+                        <span className="text-[11px] text-slate-400 mt-1 block">
+                          Margin is calculated and updated from the Trip Cost Sheet & Margin Calculator.
+                        </span>
                       </div>
                       
                       <div className="border-t border-slate-100 pt-4 mt-2 space-y-2">
@@ -958,7 +969,16 @@ export default function SalesDashboard() {
                         </div>
                         {operatingExpenses > 0 && (
                           <div className="flex justify-between items-center text-sm font-medium text-slate-500">
-                            <span>Estimated Operating Expenses</span>
+                            <span className="flex items-center gap-1.5">
+                              Estimated Operating Expenses
+                              <button
+                                type="button"
+                                onClick={() => setIsCostModalOpen(true)}
+                                className="text-[10px] font-bold text-blue-600 bg-blue-50 hover:bg-blue-100 border border-blue-200 px-1.5 py-0.5 rounded flex items-center gap-1 transition-colors shadow-2xs"
+                              >
+                                <Receipt className="w-2.5 h-2.5 text-blue-500" /> View Charges
+                              </button>
+                            </span>
                             <span>+ ₹{operatingExpenses.toLocaleString('en-IN')}</span>
                           </div>
                         )}
