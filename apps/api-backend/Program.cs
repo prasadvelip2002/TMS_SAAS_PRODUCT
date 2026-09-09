@@ -74,8 +74,10 @@ using (var scope = app.Services.CreateScope())
         db.Database.ExecuteSqlRaw("ALTER TABLE \"Trips\" ALTER COLUMN \"DriverId\" DROP NOT NULL;");
         db.Database.ExecuteSqlRaw("ALTER TABLE \"VendorQuotations\" ADD COLUMN IF NOT EXISTS \"ServiceScope\" text;");
         db.Database.ExecuteSqlRaw("ALTER TABLE \"Trips\" ADD COLUMN IF NOT EXISTS \"ServiceScope\" text;");
+        db.Database.ExecuteSqlRaw("ALTER TABLE \"Trips\" ADD COLUMN IF NOT EXISTS \"CostBreakdownJson\" text;");
         db.Database.ExecuteSqlRaw("ALTER TABLE \"SalesQuotations\" ADD COLUMN IF NOT EXISTS \"LegType\" text;");
         db.Database.ExecuteSqlRaw("ALTER TABLE \"SalesQuotations\" ADD COLUMN IF NOT EXISTS \"TripId\" integer;");
+        db.Database.ExecuteSqlRaw("ALTER TABLE \"SalesQuotations\" ADD COLUMN IF NOT EXISTS \"CostBreakdownJson\" text;");
         db.Database.ExecuteSqlRaw(@"
             UPDATE ""Trips"" t
             SET ""ServiceScope"" = COALESCE(vq.""ServiceScope"", 'EntireRoute')

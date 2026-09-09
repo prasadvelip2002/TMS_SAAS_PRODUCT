@@ -23,6 +23,8 @@ namespace api_backend.Models
         public int? TripId { get; set; }
         public Trip? Trip { get; set; }
 
+        public string? CostBreakdownJson { get; set; }
+
         public int TenantId { get; set; }
         public Tenant? Tenant { get; set; }
 

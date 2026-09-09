@@ -211,6 +211,12 @@ export default function SalesDashboard() {
           if (activeSq.baseRate) setBaseRate(Number(activeSq.baseRate));
           if (activeSq.margin) setMargin(Number(activeSq.margin));
           if (activeSq.winningVendorQuotation) setVendorQuote(activeSq.winningVendorQuotation);
+          if (activeSq.costBreakdownJson) {
+            try {
+              const parsed = JSON.parse(activeSq.costBreakdownJson);
+              setCostBreakdown(parsed);
+            } catch (err) {}
+          }
         }
       }
     } catch (e) {
@@ -271,6 +277,8 @@ export default function SalesDashboard() {
         ? "InboundLeg1" 
         : (selectedIndent?.warehouseLocation ? "EntireRoute" : "Direct");
 
+      const costJson = operatingExpenses > 0 ? JSON.stringify(costBreakdown) : null;
+
       await fetchApi(`/Sales/GenerateSQ/${selectedIndent.id}`, {
         method: "POST",
         body: JSON.stringify({
@@ -278,7 +286,8 @@ export default function SalesDashboard() {
           baseRate: Number(baseRate || vendorQuote?.quotedRate || 0),
           margin: Number(margin),
           sellingPrice: finalSellingPrice,
-          legType: legType
+          legType: legType,
+          costBreakdownJson: costJson
         })
       });
       alert(isContract ? "Contract Booking confirmed and SQ generated!" : (legType === "InboundLeg1" ? "Leg 1 Sales Quotation generated successfully!" : "Sales Quotation (SQ) generated successfully!"));

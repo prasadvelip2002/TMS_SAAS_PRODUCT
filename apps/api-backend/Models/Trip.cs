@@ -69,5 +69,7 @@ namespace api_backend.Models
         public int? InvoiceId { get; set; }
         public Invoice? Invoice { get; set; }
         public bool IsVendorSettled { get; set; } = false;
+
+        public string? CostBreakdownJson { get; set; }
     }
 }

@@ -46,6 +46,7 @@ namespace api_backend.Controllers
                 s.Status,
                 s.LegType,
                 s.TripId,
+                s.CostBreakdownJson,
                 s.CreatedAt,
                 PONumber = pos.FirstOrDefault(p => p.SalesQuotationId == s.Id || p.IndentId == s.IndentId)?.PONumber
             });
@@ -81,6 +82,7 @@ namespace api_backend.Controllers
                 s.Status,
                 s.LegType,
                 s.TripId,
+                s.CostBreakdownJson,
                 s.CreatedAt,
                 PONumber = pos.FirstOrDefault(p => p.SalesQuotationId == s.Id || p.IndentId == s.IndentId)?.PONumber
             });
@@ -149,6 +151,7 @@ namespace api_backend.Controllers
                 Status = "Generated",
                 LegType = legType,
                 TripId = request.TripId,
+                CostBreakdownJson = request.CostBreakdownJson,
                 TenantId = indent.TenantId,
                 CompanyId = indent.CompanyId
             };
@@ -235,6 +238,7 @@ namespace api_backend.Controllers
             trip.SupplierRate = sq.WinningVendorQuotation?.QuotedRate ?? 0;
             trip.CustomerRate = sq.SellingPrice; // Set agreed price with margin for this leg
             trip.FixedRate = sq.WinningVendorQuotation?.QuotedRate ?? 0;
+            trip.CostBreakdownJson = sq.CostBreakdownJson;
             trip.TenantId = sq.TenantId;
             trip.CompanyId = sq.CompanyId;
 
@@ -282,6 +286,7 @@ namespace api_backend.Controllers
         public decimal? SellingPrice { get; set; }
         public string? LegType { get; set; }
         public int? TripId { get; set; }
+        public string? CostBreakdownJson { get; set; }
     }
 
     public class ApproveSQRequest

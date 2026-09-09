@@ -19,7 +19,10 @@ import {
   CheckCircle2, 
   Receipt,
   RotateCcw,
-  ArrowUpRight
+  ArrowUpRight,
+  FileText,
+  Eye,
+  Info
 } from "lucide-react";
 
 function PremiumKpiCard({ title, value, subtext, trend, icon: Icon, colorClass }: any) {
@@ -47,6 +50,9 @@ export default function ReportsPage() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'trips' | 'customers' | 'vendors'>('trips');
   
+  // Expenses Modal
+  const [selectedTripForExpenses, setSelectedTripForExpenses] = useState<any | null>(null);
+
   // Filters
   const [searchQuery, setSearchQuery] = useState("");
   const [dateFilter, setDateFilter] = useState("all"); // all, this_month, last_month, last_30, last_90
@@ -196,7 +202,7 @@ export default function ReportsPage() {
   // CSV Export - Now accurately downloads filtered selection
   const downloadCSV = () => {
     if (activeTab === 'trips') {
-      const headers = ["Trip ID", "Date", "Customer", "Route", "Material", "Weight (Tons)", "Vendor", "Vehicle", "Status", "Billed", "Invoice #", "Selling Price (₹)", "Supplier Cost (₹)", "Fuel (₹)", "Toll (₹)", "Extra Charges (₹)", "Total Cost (₹)", "Gross Margin (₹)", "Margin %"];
+      const headers = ["Trip ID", "Date", "Customer", "Pricing Model", "Route", "Material", "Weight (Tons)", "Carrier / Vendor", "Fleet Type", "Vehicle", "Status", "Billed", "Invoice #", "Customer Selling Price (₹)", "Supplier Cost (₹)", "Fuel (₹)", "Toll (₹)", "Extra & Operating Expenses (₹)", "Total Direct Cost (₹)", "Net Gross Margin (₹)", "Margin %", "Sales Agreed Margin (₹)"];
       const rows = filteredReports.map(r => {
         const routeStr = r.warehouseLocation 
           ? `${r.source} -> ${r.warehouseLocation} (Hub) -> ${r.destination}`
@@ -206,10 +212,12 @@ export default function ReportsPage() {
           r.tripId,
           new Date(r.date).toLocaleDateString(),
           `"${(r.customerName || '').replace(/"/g, '""')}"`,
+          r.pricingModel || "Spot",
           `"${routeStr.replace(/"/g, '""')}"`,
           `"${(r.material || '').replace(/"/g, '""')}"`,
           r.weight || 0,
           `"${(r.vendorName || '').replace(/"/g, '""')}"`,
+          r.isOwnFleet ? "Own Fleet" : "3rd Party Vendor",
           `"${(r.vehicle || '').replace(/"/g, '""')}"`,
           r.status,
           r.isBilled ? "Yes" : "No",
@@ -221,7 +229,8 @@ export default function ReportsPage() {
           r.extraCharges || 0,
           r.totalCost || 0,
           r.margin || 0,
-          marginPct
+          marginPct,
+          r.salesMargin || 0
         ].join(",");
       });
 
@@ -525,8 +534,17 @@ export default function ReportsPage() {
 
                       {/* Customer & Material */}
                       <Td>
-                        <div className="font-bold text-slate-800 max-w-[170px] truncate" title={r.customerName}>
-                          {r.customerName}
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className="font-bold text-slate-800 max-w-[130px] truncate" title={r.customerName}>
+                            {r.customerName}
+                          </span>
+                          <span className={`text-[9.5px] font-black uppercase px-1.5 py-0.2 rounded border tracking-wide ${
+                            r.pricingModel === 'Contract' 
+                              ? 'bg-indigo-50 text-indigo-700 border-indigo-200' 
+                              : 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                          }`}>
+                            {r.pricingModel || 'Spot'}
+                          </span>
                         </div>
                         <div className="text-[11px] text-slate-500 mt-0.5">
                           {r.material || "General Freight"} • {r.weight || 0}t
@@ -553,8 +571,15 @@ export default function ReportsPage() {
 
                       {/* Carrier & Vehicle */}
                       <Td>
-                        <div className="font-semibold text-slate-800 max-w-[140px] truncate" title={r.vendorName}>
-                          {r.vendorName}
+                        <div className="flex items-center gap-1.5">
+                          <span className="font-semibold text-slate-800 max-w-[120px] truncate" title={r.vendorName}>
+                            {r.vendorName}
+                          </span>
+                          {r.isOwnFleet && (
+                            <span className="text-[9px] font-bold uppercase bg-purple-100 text-purple-800 px-1.5 py-0.2 rounded">
+                              Fleet
+                            </span>
+                          )}
                         </div>
                         <div className="text-[11px] font-mono text-slate-500 mt-0.5">
                           {r.vehicle}
@@ -563,41 +588,84 @@ export default function ReportsPage() {
 
                       {/* Customer Rate */}
                       <Td>
-                        <span className="font-bold text-blue-700 text-sm">
-                          ₹{(r.customerRate || 0).toLocaleString('en-IN')}
-                        </span>
+                        <div>
+                          <span className="font-bold text-blue-700 text-sm block">
+                            ₹{(r.customerRate || 0).toLocaleString('en-IN')}
+                          </span>
+                          <span className="text-[10px] text-slate-400 font-medium">Customer Price</span>
+                        </div>
                       </Td>
 
                       {/* Direct Costs Breakdown */}
                       <Td>
-                        <div className="space-y-0.5 min-w-[150px]">
-                          <div className="flex justify-between text-[11px] text-slate-500">
-                            <span>Supplier:</span>
-                            <span className="font-semibold text-slate-700">₹{(r.supplierRate || 0).toLocaleString('en-IN')}</span>
+                        {r.isOwnFleet ? (
+                          <div className="space-y-1 min-w-[165px]">
+                            <div className="flex items-center justify-between">
+                              <span className="text-[10px] font-bold uppercase tracking-wider text-purple-700 bg-purple-50 border border-purple-200 px-1.5 py-0.2 rounded">
+                                Own Fleet Ops
+                              </span>
+                            </div>
+                            <div className="flex justify-between items-center text-[11px] text-slate-700">
+                              <span className="font-semibold">Operating & Extra:</span>
+                              <span className="font-bold text-slate-900">₹{(r.extraCharges || 0).toLocaleString('en-IN')}</span>
+                            </div>
+                            {/* Small button to view itemised expenses */}
+                            {r.extraChargesBreakdown && r.extraChargesBreakdown.length > 0 && (
+                              <button
+                                type="button"
+                                onClick={() => setSelectedTripForExpenses(r)}
+                                className="w-full mt-1 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 hover:border-blue-300 rounded-lg py-1 px-2 text-[10.5px] font-bold flex items-center justify-center gap-1 transition-all shadow-2xs group"
+                              >
+                                <Eye className="w-3 h-3 text-blue-600 group-hover:scale-110 transition-transform" />
+                                <span>View Breakdown ({r.extraChargesBreakdown.length})</span>
+                              </button>
+                            )}
+                            <div className="flex justify-between text-[11px] font-black pt-1 border-t border-slate-100 text-slate-900">
+                              <span>Total Cost:</span>
+                              <span>₹{(r.totalCost || 0).toLocaleString('en-IN')}</span>
+                            </div>
                           </div>
-                          {r.fuelAdvance > 0 && (
+                        ) : (
+                          <div className="space-y-0.5 min-w-[165px]">
                             <div className="flex justify-between text-[11px] text-slate-500">
-                              <span>Fuel:</span>
-                              <span>₹{(r.fuelAdvance || 0).toLocaleString('en-IN')}</span>
+                              <span>Supplier Rate:</span>
+                              <span className="font-semibold text-slate-800">₹{(r.supplierRate || 0).toLocaleString('en-IN')}</span>
                             </div>
-                          )}
-                          {r.tollCharges > 0 && (
-                            <div className="flex justify-between text-[11px] text-slate-500">
-                              <span>Toll:</span>
-                              <span>₹{(r.tollCharges || 0).toLocaleString('en-IN')}</span>
+                            {r.fuelAdvance > 0 && (
+                              <div className="flex justify-between text-[11px] text-slate-500">
+                                <span>Fuel Advance:</span>
+                                <span>₹{(r.fuelAdvance || 0).toLocaleString('en-IN')}</span>
+                              </div>
+                            )}
+                            {r.tollCharges > 0 && (
+                              <div className="flex justify-between text-[11px] text-slate-500">
+                                <span>Toll:</span>
+                                <span>₹{(r.tollCharges || 0).toLocaleString('en-IN')}</span>
+                              </div>
+                            )}
+                            {r.extraCharges > 0 && (
+                              <div className="flex justify-between text-[11px] text-amber-700 bg-amber-50/60 px-1 py-0.5 rounded font-semibold">
+                                <span>Extra Charges:</span>
+                                <span className="font-bold">₹{(r.extraCharges || 0).toLocaleString('en-IN')}</span>
+                              </div>
+                            )}
+                            {/* Small button if extra charges exist */}
+                            {r.extraChargesBreakdown && r.extraChargesBreakdown.length > 0 && (
+                              <button
+                                type="button"
+                                onClick={() => setSelectedTripForExpenses(r)}
+                                className="w-full mt-1 bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 hover:border-amber-300 rounded-lg py-1 px-2 text-[10.5px] font-bold flex items-center justify-center gap-1 transition-all shadow-2xs group"
+                              >
+                                <Eye className="w-3 h-3 text-amber-600 group-hover:scale-110 transition-transform" />
+                                <span>View Extra ({r.extraChargesBreakdown.length})</span>
+                              </button>
+                            )}
+                            <div className="flex justify-between text-[11px] font-black pt-1 border-t border-slate-100 text-slate-900">
+                              <span>Total Cost:</span>
+                              <span>₹{(r.totalCost || 0).toLocaleString('en-IN')}</span>
                             </div>
-                          )}
-                          {r.extraCharges > 0 && (
-                            <div className="flex justify-between text-[11px] text-amber-600">
-                              <span>Extra:</span>
-                              <span className="font-bold">₹{(r.extraCharges || 0).toLocaleString('en-IN')}</span>
-                            </div>
-                          )}
-                          <div className="flex justify-between text-[11px] font-bold pt-1 border-t border-slate-100 text-slate-800">
-                            <span>Total Cost:</span>
-                            <span>₹{(r.totalCost || 0).toLocaleString('en-IN')}</span>
                           </div>
-                        </div>
+                        )}
                       </Td>
 
                       {/* Gross Margin */}
@@ -606,9 +674,16 @@ export default function ReportsPage() {
                           <span className={`font-black text-sm block ${isProfitable ? 'text-emerald-700' : 'text-rose-600'}`}>
                             {isProfitable ? '+' : ''}₹{(r.margin || 0).toLocaleString('en-IN')}
                           </span>
-                          <span className={`text-[10.5px] font-bold inline-block mt-0.5 px-1.5 py-0.2 rounded border ${isProfitable ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-rose-50 text-rose-700 border-rose-200'}`}>
-                            {marginPct}% margin
-                          </span>
+                          <div className="flex items-center gap-1 mt-0.5 flex-wrap">
+                            <span className={`text-[10px] font-bold inline-block px-1.5 py-0.2 rounded border ${isProfitable ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-rose-50 text-rose-700 border-rose-200'}`}>
+                              {marginPct}% margin
+                            </span>
+                            {r.salesMargin > 0 && r.salesMargin !== r.margin && (
+                              <span className="text-[10px] text-slate-400 font-medium" title={`Sales agreed margin was ₹${r.salesMargin.toLocaleString('en-IN')}`}>
+                                (Sales: ₹{r.salesMargin.toLocaleString('en-IN')})
+                              </span>
+                            )}
+                          </div>
                         </div>
                       </Td>
 
@@ -786,6 +861,143 @@ export default function ReportsPage() {
                 ))
               )}
             </ProtoTable>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: ITEMISED EXTRA & OPERATING EXPENSES BREAKDOWN */}
+      {selectedTripForExpenses && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
+          <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-2xl w-full max-h-[90vh] flex flex-col overflow-hidden animate-in zoom-in-95 duration-200">
+            {/* Modal Header */}
+            <div className="px-6 py-5 border-b border-slate-200 flex items-start justify-between bg-slate-50/80">
+              <div>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="font-mono font-bold text-sm text-blue-700 bg-blue-50 px-2 py-0.5 rounded border border-blue-200">
+                    {selectedTripForExpenses.tripId}
+                  </span>
+                  <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded-full border ${
+                    selectedTripForExpenses.isOwnFleet 
+                      ? 'bg-purple-50 text-purple-700 border-purple-200' 
+                      : 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                  }`}>
+                    {selectedTripForExpenses.isOwnFleet ? 'Own Fleet Direct Asset' : '3rd Party Vendor Trip'}
+                  </span>
+                  <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded-full border ${
+                    selectedTripForExpenses.pricingModel === 'Contract'
+                      ? 'bg-indigo-50 text-indigo-700 border-indigo-200'
+                      : 'bg-amber-50 text-amber-700 border-amber-200'
+                  }`}>
+                    {selectedTripForExpenses.pricingModel || 'Spot'} Pricing
+                  </span>
+                </div>
+                <h3 className="text-lg font-black text-slate-900 mt-2">
+                  Itemised Direct Operating & Extra Expenses
+                </h3>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Customer: <strong className="text-slate-800">{selectedTripForExpenses.customerName}</strong> • Route: <strong className="text-slate-800">{selectedTripForExpenses.source} → {selectedTripForExpenses.destination}</strong>
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setSelectedTripForExpenses(null)}
+                className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-200/60 rounded-xl transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Financial Summary Strip */}
+            <div className="px-6 py-3 bg-slate-900 text-white grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+              <div>
+                <span className="text-slate-400 block text-[10.5px]">Selling Price (Rev):</span>
+                <span className="font-bold text-white text-sm">₹{(selectedTripForExpenses.customerRate || 0).toLocaleString('en-IN')}</span>
+              </div>
+              <div>
+                <span className="text-slate-400 block text-[10.5px]">{selectedTripForExpenses.isOwnFleet ? 'Vehicle Buy Cost:' : 'Supplier Freight:'}</span>
+                <span className="font-bold text-slate-200 text-sm">₹{(selectedTripForExpenses.supplierRate || 0).toLocaleString('en-IN')}</span>
+              </div>
+              <div>
+                <span className="text-slate-400 block text-[10.5px]">Total Extra / Ops:</span>
+                <span className="font-bold text-amber-400 text-sm">₹{(selectedTripForExpenses.extraCharges || 0).toLocaleString('en-IN')}</span>
+              </div>
+              <div>
+                <span className="text-slate-400 block text-[10.5px]">Realized Gross Margin:</span>
+                <span className={`font-black text-sm ${(selectedTripForExpenses.margin || 0) >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                  {(selectedTripForExpenses.margin || 0) >= 0 ? '+' : ''}₹{(selectedTripForExpenses.margin || 0).toLocaleString('en-IN')}
+                </span>
+              </div>
+            </div>
+
+            {/* Expenses Table */}
+            <div className="p-6 overflow-y-auto max-h-[50vh]">
+              {(!selectedTripForExpenses.extraChargesBreakdown || selectedTripForExpenses.extraChargesBreakdown.length === 0) ? (
+                <div className="text-center py-10 text-slate-400 text-xs font-semibold">
+                  No itemised extra expenses were recorded for this trip.
+                </div>
+              ) : (
+                <table className="w-full text-xs text-left">
+                  <thead>
+                    <tr className="border-b border-slate-200 text-slate-400 uppercase tracking-wider text-[10px] font-bold">
+                      <th className="py-2.5 px-3">#</th>
+                      <th className="py-2.5 px-3">Expense Head</th>
+                      <th className="py-2.5 px-3">Category / Source</th>
+                      <th className="py-2.5 px-3">Remarks / Description</th>
+                      <th className="py-2.5 px-3 text-right">Amount (₹)</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {selectedTripForExpenses.extraChargesBreakdown.map((item: any, idx: number) => (
+                      <tr key={idx} className="hover:bg-slate-50/80 transition-colors">
+                        <td className="py-3 px-3 font-mono text-slate-400 font-bold">{idx + 1}</td>
+                        <td className="py-3 px-3 font-bold text-slate-800">{item.title}</td>
+                        <td className="py-3 px-3">
+                          <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-extrabold ${
+                            item.source === 'Sales Cost Sheet' 
+                              ? 'bg-blue-50 text-blue-700 border border-blue-200' 
+                              : 'bg-amber-50 text-amber-700 border border-amber-200'
+                          }`}>
+                            {item.source}
+                          </span>
+                        </td>
+                        <td className="py-3 px-3 text-slate-500 max-w-[200px] truncate" title={item.description || ''}>
+                          {item.description || '—'}
+                        </td>
+                        <td className="py-3 px-3 text-right font-black text-slate-900">
+                          ₹{Number(item.amount || 0).toLocaleString('en-IN')}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                  <tfoot>
+                    <tr className="border-t-2 border-slate-200 font-bold text-slate-900 bg-slate-50/60">
+                      <td colSpan={4} className="py-3 px-3 text-right uppercase tracking-wider text-[11px]">
+                        Total Extra Operating Expenses:
+                      </td>
+                      <td className="py-3 px-3 text-right font-black text-blue-700 text-sm">
+                        ₹{(selectedTripForExpenses.extraCharges || 0).toLocaleString('en-IN')}
+                      </td>
+                    </tr>
+                  </tfoot>
+                </table>
+              )}
+            </div>
+
+            {/* Modal Footer */}
+            <div className="px-6 py-4 border-t border-slate-200 bg-slate-50 flex flex-col sm:flex-row items-center justify-between gap-3">
+              <div className="text-[11px] text-slate-500 text-center sm:text-left">
+                {selectedTripForExpenses.isOwnFleet 
+                  ? "✓ Gross Margin is calculated as Customer Selling Price minus Total Operating Expenses."
+                  : "✓ Realized margin equals Sales Quotation agreed margin minus any on-road route charges."}
+              </div>
+              <button
+                type="button"
+                onClick={() => setSelectedTripForExpenses(null)}
+                className="bg-slate-900 hover:bg-slate-800 text-white font-bold py-2 px-5 rounded-xl text-xs transition-colors shadow-xs w-full sm:w-auto"
+              >
+                Done
+              </button>
+            </div>
           </div>
         </div>
       )}
