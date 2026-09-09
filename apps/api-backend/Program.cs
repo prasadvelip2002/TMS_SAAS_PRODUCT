@@ -74,6 +74,8 @@ using (var scope = app.Services.CreateScope())
         db.Database.ExecuteSqlRaw("ALTER TABLE \"Trips\" ALTER COLUMN \"DriverId\" DROP NOT NULL;");
         db.Database.ExecuteSqlRaw("ALTER TABLE \"VendorQuotations\" ADD COLUMN IF NOT EXISTS \"ServiceScope\" text;");
         db.Database.ExecuteSqlRaw("ALTER TABLE \"Trips\" ADD COLUMN IF NOT EXISTS \"ServiceScope\" text;");
+        db.Database.ExecuteSqlRaw("ALTER TABLE \"SalesQuotations\" ADD COLUMN IF NOT EXISTS \"LegType\" text;");
+        db.Database.ExecuteSqlRaw("ALTER TABLE \"SalesQuotations\" ADD COLUMN IF NOT EXISTS \"TripId\" integer;");
         db.Database.ExecuteSqlRaw(@"
             UPDATE ""Trips"" t
             SET ""ServiceScope"" = COALESCE(vq.""ServiceScope"", 'EntireRoute')
@@ -92,6 +94,30 @@ using (var scope = app.Services.CreateScope())
             UPDATE ""Trips""
             SET ""Status"" = 'Pending Assignment'
             WHERE (""VehicleId"" IS NULL OR ""DriverId"" IS NULL) AND ""Status"" = 'Assigned';
+
+            UPDATE ""SalesQuotations"" sq
+            SET ""LegType"" = CASE 
+                WHEN vq.""ServiceScope"" = 'SourceToHub' THEN 'InboundLeg1'
+                WHEN vq.""ServiceScope"" = 'EntireRoute' THEN 'EntireRoute'
+                ELSE 'Direct'
+            END
+            FROM ""VendorQuotations"" vq
+            WHERE sq.""WinningVendorQuotationId"" = vq.""Id"" AND sq.""LegType"" IS NULL;
+
+            UPDATE ""Trips"" t
+            SET ""CustomerRate"" = sq.""SellingPrice""
+            FROM ""SalesQuotations"" sq
+            WHERE t.""IndentId"" = sq.""IndentId"" 
+              AND (sq.""Status"" = 'Approved' OR sq.""Status"" = 'PO_Received')
+              AND sq.""SellingPrice"" > 0
+              AND (t.""LegType"" = 'InboundLeg1' OR t.""LegType"" = 'EntireRoute' OR t.""LegType"" = 'Direct');
+
+            UPDATE ""Indents"" i
+            SET ""CustomerRate"" = sq.""SellingPrice""
+            FROM ""SalesQuotations"" sq
+            WHERE i.""Id"" = sq.""IndentId"" 
+              AND (sq.""Status"" = 'Approved' OR sq.""Status"" = 'PO_Received')
+              AND sq.""SellingPrice"" > 0;
         ");
     }
     catch (Exception ex)

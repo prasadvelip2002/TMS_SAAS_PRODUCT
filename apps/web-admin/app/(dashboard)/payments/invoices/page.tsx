@@ -67,7 +67,9 @@ export default function CustomerInvoicingDashboard() {
 
       const ratesMap: Record<number, number> = {};
       data.forEach((t: any) => {
-        const base = t.customerRate ?? t.indent?.customerRate ?? t.freightCharges ?? 0;
+        const base = (t.customerRate && t.customerRate > 0)
+          ? t.customerRate
+          : ((t.indent?.customerRate && t.indent.customerRate > 0) ? t.indent.customerRate : (t.freightCharges || 0));
         const addChargesSum = (t.additionalCharges || []).reduce((acc: number, c: any) => acc + (c.amount || 0), 0);
         ratesMap[t.id] = base + (t.tollCharges || 0) + addChargesSum;
       });
@@ -333,7 +335,9 @@ export default function CustomerInvoicingDashboard() {
                 
                 <div className="flex-1 overflow-y-auto divide-y divide-slate-100 bg-white">
                   {unbilledTrips.map(trip => {
-                    const baseFreight = trip.customerRate ?? trip.indent?.customerRate ?? trip.freightCharges ?? 0;
+                    const baseFreight = (trip.customerRate && trip.customerRate > 0)
+                      ? trip.customerRate
+                      : ((trip.indent?.customerRate && trip.indent.customerRate > 0) ? trip.indent.customerRate : (trip.freightCharges || 0));
                     const addCharges = trip.additionalCharges || [];
                     const addChargesTotal = addCharges.reduce((acc: number, c: any) => acc + (c.amount || 0), 0);
 
@@ -355,7 +359,7 @@ export default function CustomerInvoicingDashboard() {
                         <div className="flex-1">
                           <div className="flex justify-between items-center mb-1 gap-2">
                             <div className="flex items-center gap-2">
-                              <span className="font-mono text-[13px] font-bold text-slate-800 group-hover:text-blue-600 transition-colors">TRP-{trip.id}</span>
+                              <span className="font-mono text-[13px] font-bold text-slate-800 group-hover:text-blue-600 transition-colors">TRP-{trip.id >= 1000 ? trip.id : 1000 + trip.id}</span>
                               {!trip.vendorId && (
                                 <span className="bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-bold px-1.5 py-0.5 rounded">
                                   Own Fleet
@@ -377,19 +381,47 @@ export default function CustomerInvoicingDashboard() {
                             </div>
                           </div>
                           <div className="text-[12px] font-medium text-slate-600 flex items-center gap-1.5 flex-wrap">
-                            <span>{trip.indent?.source}</span>
-                            <span className="text-slate-400">→</span>
-                            {trip.indent?.warehouseLocation && (
+                            {trip.legType === "InboundLeg1" ? (
                               <>
-                                <span className="font-semibold text-purple-600">{trip.indent?.warehouseLocation} <span className="text-[10px] font-bold text-blue-500 uppercase">(Hub)</span></span>
-                                <span className="text-slate-400">→</span>
+                                <span>{trip.indent?.source}</span>
+                                <span className="text-slate-300">→</span>
+                                <span className="text-[11px] font-bold text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200">
+                                  {trip.indent?.warehouseLocation} (Hub)
+                                </span>
+                                <span className="px-1.5 py-0.5 bg-blue-50 text-blue-700 border border-blue-200 text-[10px] font-bold rounded ml-1">
+                                  Leg 1
+                                </span>
                               </>
-                            )}
-                            <span>{trip.indent?.destination}</span>
-                            {trip.indent?.warehouseLocation && (
-                              <span className="px-1.5 py-0.5 bg-blue-50 text-blue-700 border border-blue-200 text-[10px] font-bold rounded ml-1">
-                                Full Route
-                              </span>
+                            ) : trip.legType === "OutboundLeg2" ? (
+                              <>
+                                <span className="text-[11px] font-bold text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200">
+                                  {trip.indent?.warehouseLocation} (Hub)
+                                </span>
+                                <span className="text-slate-300">→</span>
+                                <span>{trip.indent?.destination}</span>
+                                <span className="px-1.5 py-0.5 bg-purple-50 text-purple-700 border border-purple-200 text-[10px] font-bold rounded ml-1">
+                                  Leg 2
+                                </span>
+                              </>
+                            ) : (
+                              <>
+                                <span>{trip.indent?.source}</span>
+                                <span className="text-slate-300">→</span>
+                                {trip.indent?.warehouseLocation && (
+                                  <>
+                                    <span className="text-[11px] font-bold text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200">
+                                      {trip.indent?.warehouseLocation} (Hub)
+                                    </span>
+                                    <span className="text-slate-300">→</span>
+                                  </>
+                                )}
+                                <span>{trip.indent?.destination}</span>
+                                {trip.indent?.warehouseLocation && (
+                                  <span className="px-1.5 py-0.5 bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-bold rounded ml-1">
+                                    Full Route
+                                  </span>
+                                )}
+                              </>
                             )}
                           </div>
                           

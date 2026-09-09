@@ -85,22 +85,37 @@ namespace api_backend.Services
             }
 
             // Single Customer Invoice: Inbound Leg 1 is internal (CustomerRate = 0),
-            // while Outbound Leg 2, EntireRoute, or Direct trip carries the full customer agreed rate.
+            // while Outbound Leg 2, EntireRoute, or Direct trip carries the full customer agreed rate (from approved SQ with margin).
             if (trip.LegType == "InboundLeg1")
             {
                 trip.CustomerRate = 0;
                 indent.Status = "Assigned";
             }
-            else if (trip.LegType == "OutboundLeg2")
-            {
-                trip.CustomerRate = indent.CustomerRate;
-                indent.Status = "Outbound_Assigned";
-            }
             else
             {
-                // EntireRoute or Direct
-                trip.CustomerRate = indent.CustomerRate;
-                indent.Status = "Assigned";
+                // Retrieve the approved SQ selling price (vendor rate + margin) if available
+                var approvedSq = await _context.SalesQuotations
+                    .Where(sq => sq.IndentId == indent.Id && (sq.Status == "Approved" || sq.Status == "PO_Received"))
+                    .OrderByDescending(sq => sq.Id)
+                    .FirstOrDefaultAsync();
+
+                decimal customerAgreedPrice = approvedSq?.SellingPrice 
+                    ?? (trip.CustomerRate.HasValue && trip.CustomerRate.Value > 0 ? trip.CustomerRate.Value : (indent.CustomerRate.HasValue && indent.CustomerRate.Value > 0 ? indent.CustomerRate.Value : 0));
+
+                if (customerAgreedPrice > 0)
+                {
+                    trip.CustomerRate = customerAgreedPrice;
+                    indent.CustomerRate = customerAgreedPrice;
+                }
+
+                if (trip.LegType == "OutboundLeg2")
+                {
+                    indent.Status = "Outbound_Assigned";
+                }
+                else
+                {
+                    indent.Status = "Assigned";
+                }
             }
             
             if (isNewTrip)

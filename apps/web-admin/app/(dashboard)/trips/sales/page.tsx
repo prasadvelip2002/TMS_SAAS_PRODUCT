@@ -33,8 +33,8 @@ const defaultCostBreakdown: CostBreakdown = {
   toll: 0,
   loading: 0,
   unloading: 0,
-  driverDays: 2,
-  driverDailyWage: 800,
+  driverDays: 0,
+  driverDailyWage: 0,
   otherDescription: "",
   otherAmount: 0,
   marginMode: "percentage",
@@ -167,8 +167,8 @@ export default function SalesDashboard() {
 
     if (isContract && initialContractRate > 0) {
       setSellingPrice(initialContractRate);
-      setBaseRate(initialContractRate);
-      setMargin(0);
+      setBaseRate(0);
+      setMargin(initialContractRate);
     } else {
       setBaseRate(0);
       setMargin(0);
@@ -199,7 +199,7 @@ export default function SalesDashboard() {
 
   // Cost sheet calculations
   const operatingExpenses = calculateOperatingExpenses();
-  const vehicleBaseCost = vendorQuote ? (Number(vendorQuote.quotedRate) || 0) : (Number(baseRate) || 0);
+  const vehicleBaseCost = vendorQuote ? (Number(vendorQuote.quotedRate) || 0) : 0;
   const totalTripCost = vehicleBaseCost + operatingExpenses;
 
   // Spot calculations for modal
@@ -246,16 +246,21 @@ export default function SalesDashboard() {
         ? Number(sellingPrice) 
         : (isOwnFleet ? Number(sellingPrice) : (Number(baseRate || vendorQuote?.quotedRate || 0) + Number(margin)));
 
+      const legType = vendorQuote?.serviceScope === "SourceToHub" 
+        ? "InboundLeg1" 
+        : (selectedIndent?.warehouseLocation ? "EntireRoute" : "Direct");
+
       await fetchApi(`/Sales/GenerateSQ/${selectedIndent.id}`, {
         method: "POST",
         body: JSON.stringify({
           vendorQuotationId: vendorQuote?.id || null,
           baseRate: Number(baseRate || vendorQuote?.quotedRate || 0),
           margin: Number(margin),
-          sellingPrice: finalSellingPrice
+          sellingPrice: finalSellingPrice,
+          legType: legType
         })
       });
-      alert(isContract ? "Contract Booking confirmed and SQ generated!" : "Sales Quotation (SQ) generated successfully!");
+      alert(isContract ? "Contract Booking confirmed and SQ generated!" : (legType === "InboundLeg1" ? "Leg 1 Sales Quotation generated successfully!" : "Sales Quotation (SQ) generated successfully!"));
       setIsPanelOpen(false);
       loadData();
     } catch (e) {
@@ -676,7 +681,16 @@ export default function SalesDashboard() {
                 </div>
 
                 <div>
-                  <label className="text-sm font-semibold text-slate-700 block mb-1">Estimated Fleet Operating Cost / Base (₹)</label>
+                  <div className="flex justify-between items-center mb-1.5">
+                    <label className="text-sm font-semibold text-slate-700">Estimated Fleet Operating Cost / Base (₹)</label>
+                    <button
+                      type="button"
+                      onClick={() => setIsCostModalOpen(true)}
+                      className="text-[11px] font-bold text-blue-600 hover:text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 px-2 py-0.5 rounded-lg flex items-center gap-1 transition-colors shadow-xs"
+                    >
+                      <Receipt className="w-3 h-3 text-blue-500" /> View Driver Charges
+                    </button>
+                  </div>
                   <div className="relative">
                     <span className="text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 font-bold text-sm">₹</span>
                     <input 
@@ -688,6 +702,74 @@ export default function SalesDashboard() {
                     />
                   </div>
                   <span className="text-[11px] text-slate-400 mt-1 block">Vehicle fuel, driver bata, tolls, and operating expenses</span>
+
+                  {/* ITEMISED DRIVER & ROUTE CHARGES BREAKDOWN CARD */}
+                  {operatingExpenses > 0 && (
+                    <div className="mt-3 bg-slate-50/80 border border-slate-200 rounded-xl p-3 text-xs space-y-2">
+                      <div className="flex justify-between items-center pb-1.5 border-b border-slate-200">
+                        <span className="font-bold text-slate-700 flex items-center gap-1.5">
+                          <Truck className="w-3.5 h-3.5 text-blue-600" /> Driver & Route Charges Breakdown
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => setIsCostModalOpen(true)}
+                          className="text-[11px] font-bold text-blue-600 hover:underline"
+                        >
+                          Edit Charges →
+                        </button>
+                      </div>
+                      <div className="grid grid-cols-2 gap-1.5 text-[11px]">
+                        {costBreakdown.driverDays > 0 && costBreakdown.driverDailyWage > 0 && (
+                          <div className="flex justify-between bg-white p-2 rounded-lg border border-slate-200/80">
+                            <span className="text-slate-500">Driver Wage ({costBreakdown.driverDays}d × ₹{costBreakdown.driverDailyWage}):</span>
+                            <span className="font-bold text-slate-800">₹{(costBreakdown.driverDays * costBreakdown.driverDailyWage).toLocaleString('en-IN')}</span>
+                          </div>
+                        )}
+                        {costBreakdown.driverAllowance > 0 && (
+                          <div className="flex justify-between bg-white p-2 rounded-lg border border-slate-200/80">
+                            <span className="text-slate-500">Driver Bata / Allowance:</span>
+                            <span className="font-bold text-slate-800">₹{costBreakdown.driverAllowance.toLocaleString('en-IN')}</span>
+                          </div>
+                        )}
+                        {costBreakdown.foodAllowance > 0 && (
+                          <div className="flex justify-between bg-white p-2 rounded-lg border border-slate-200/80">
+                            <span className="text-slate-500">Food Allowance:</span>
+                            <span className="font-bold text-slate-800">₹{costBreakdown.foodAllowance.toLocaleString('en-IN')}</span>
+                          </div>
+                        )}
+                        {costBreakdown.fuel > 0 && (
+                          <div className="flex justify-between bg-white p-2 rounded-lg border border-slate-200/80">
+                            <span className="text-slate-500">Fuel (Diesel):</span>
+                            <span className="font-bold text-slate-800">₹{costBreakdown.fuel.toLocaleString('en-IN')}</span>
+                          </div>
+                        )}
+                        {costBreakdown.toll > 0 && (
+                          <div className="flex justify-between bg-white p-2 rounded-lg border border-slate-200/80">
+                            <span className="text-slate-500">Toll Charges:</span>
+                            <span className="font-bold text-slate-800">₹{costBreakdown.toll.toLocaleString('en-IN')}</span>
+                          </div>
+                        )}
+                        {costBreakdown.loading > 0 && (
+                          <div className="flex justify-between bg-white p-2 rounded-lg border border-slate-200/80">
+                            <span className="text-slate-500">Loading / Hamali:</span>
+                            <span className="font-bold text-slate-800">₹{costBreakdown.loading.toLocaleString('en-IN')}</span>
+                          </div>
+                        )}
+                        {costBreakdown.unloading > 0 && (
+                          <div className="flex justify-between bg-white p-2 rounded-lg border border-slate-200/80">
+                            <span className="text-slate-500">Unloading Charges:</span>
+                            <span className="font-bold text-slate-800">₹{costBreakdown.unloading.toLocaleString('en-IN')}</span>
+                          </div>
+                        )}
+                        {costBreakdown.otherAmount > 0 && (
+                          <div className="flex justify-between bg-white p-2 rounded-lg border border-slate-200/80">
+                            <span className="text-slate-500">{costBreakdown.otherDescription || "Other / Misc"}:</span>
+                            <span className="font-bold text-slate-800">₹{costBreakdown.otherAmount.toLocaleString('en-IN')}</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 <div className="border-t border-slate-100 pt-3">
@@ -787,13 +869,29 @@ export default function SalesDashboard() {
                       </div>
 
                       <div className="border-t border-slate-100 pt-3 space-y-2 text-sm">
-                        <div className="flex justify-between items-center text-slate-500 font-medium">
-                          <span>Supplier Buying Rate</span>
-                          <span>₹{vendorQuote.quotedRate?.toLocaleString('en-IN')}</span>
-                        </div>
+                        {vendorQuote ? (
+                          <div className="flex justify-between items-center text-slate-500 font-medium">
+                            <span>Supplier Buying Rate</span>
+                            <span>₹{vendorQuote.quotedRate?.toLocaleString('en-IN')}</span>
+                          </div>
+                        ) : (
+                          <div className="flex justify-between items-center text-slate-500 font-medium">
+                            <span>Execution Mode</span>
+                            <span className="text-purple-700 font-bold bg-purple-50 border border-purple-200 px-2 py-0.5 rounded text-xs">Own Fleet Vehicle</span>
+                          </div>
+                        )}
                         {operatingExpenses > 0 && (
                           <div className="flex justify-between items-center text-slate-500 font-medium">
-                            <span>Estimated Route Operating Expenses</span>
+                            <span className="flex items-center gap-1.5">
+                              Estimated Route Operating Expenses
+                              <button
+                                type="button"
+                                onClick={() => setIsCostModalOpen(true)}
+                                className="text-[10px] font-bold text-blue-600 bg-blue-50 hover:bg-blue-100 border border-blue-200 px-1.5 py-0.5 rounded flex items-center gap-1 transition-colors shadow-2xs"
+                              >
+                                <Receipt className="w-2.5 h-2.5 text-blue-500" /> View Charges
+                              </button>
+                            </span>
                             <span>+ ₹{operatingExpenses.toLocaleString('en-IN')}</span>
                           </div>
                         )}

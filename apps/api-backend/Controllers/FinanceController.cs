@@ -76,20 +76,52 @@ namespace api_backend.Controllers
                 .Where(t => t.Status == "Closed" && t.InvoiceId == null && t.Indent.CustomerId == customerId)
                 .ToListAsync();
 
-            // Find indents that have an OutboundLeg2 (either closed or active)
-            var multiLegIndentIds = await _context.Trips
-                .Where(t => t.LegType == "OutboundLeg2" && t.Indent.CustomerId == customerId)
-                .Select(t => t.IndentId)
-                .Distinct()
+            // Map approved Sales Quotations SellingPrice (Customer agreed rate with margin per leg or full route)
+            var indentIds = trips.Select(t => t.IndentId).Distinct().ToList();
+            var approvedSqs = await _context.SalesQuotations
+                .Where(sq => indentIds.Contains(sq.IndentId) && (sq.Status == "Approved" || sq.Status == "PO_Received"))
+                .OrderByDescending(sq => sq.Id)
                 .ToListAsync();
 
-            var multiLegSet = new HashSet<int>(multiLegIndentIds);
+            var tripSqMap = approvedSqs
+                .Where(sq => sq.TripId.HasValue)
+                .GroupBy(sq => sq.TripId!.Value)
+                .ToDictionary(g => g.Key, g => g.First().SellingPrice);
 
-            // Single Invoice: InboundLeg1 is an internal transfer leg and is not billed to the customer.
-            // The customer is invoiced on the delivering leg (OutboundLeg2 or Direct) at the full agreed rate.
-            var unbilledTrips = trips.Where(t => !(t.LegType == "InboundLeg1" && multiLegSet.Contains(t.IndentId))).ToList();
+            var indentLegSqMap = approvedSqs
+                .Where(sq => !string.IsNullOrEmpty(sq.LegType))
+                .GroupBy(sq => (sq.IndentId, sq.LegType))
+                .ToDictionary(g => g.Key, g => g.First().SellingPrice);
 
-            return Ok(unbilledTrips);
+            var indentSqMap = approvedSqs
+                .GroupBy(sq => sq.IndentId)
+                .ToDictionary(g => g.Key, g => g.First().SellingPrice);
+
+            foreach (var t in trips)
+            {
+                if (tripSqMap.TryGetValue(t.Id, out var directPrice) && directPrice > 0)
+                {
+                    t.CustomerRate = directPrice;
+                }
+                else if (indentLegSqMap.TryGetValue((t.IndentId, t.LegType ?? ""), out var legPrice) && legPrice > 0)
+                {
+                    t.CustomerRate = legPrice;
+                }
+                else if (t.CustomerRate.HasValue && t.CustomerRate.Value > 0)
+                {
+                    // keep existing CustomerRate
+                }
+                else if (indentSqMap.TryGetValue(t.IndentId, out var indentPrice) && indentPrice > 0)
+                {
+                    t.CustomerRate = indentPrice;
+                }
+                else if (t.Indent?.CustomerRate.HasValue == true && t.Indent.CustomerRate.Value > 0)
+                {
+                    t.CustomerRate = t.Indent.CustomerRate.Value;
+                }
+            }
+
+            return Ok(trips);
         }
 
         // POST: api/Finance/invoice
@@ -109,6 +141,26 @@ namespace api_backend.Controllers
 
             var customerId = trips.First().Indent.CustomerId;
 
+            var reqIndentIds = trips.Select(t => t.IndentId).Distinct().ToList();
+            var approvedSqsForInvoice = await _context.SalesQuotations
+                .Where(sq => reqIndentIds.Contains(sq.IndentId) && (sq.Status == "Approved" || sq.Status == "PO_Received"))
+                .OrderByDescending(sq => sq.Id)
+                .ToListAsync();
+
+            var tripSqMapForInvoice = approvedSqsForInvoice
+                .Where(sq => sq.TripId.HasValue)
+                .GroupBy(sq => sq.TripId!.Value)
+                .ToDictionary(g => g.Key, g => g.First().SellingPrice);
+
+            var indentLegSqMapForInvoice = approvedSqsForInvoice
+                .Where(sq => !string.IsNullOrEmpty(sq.LegType))
+                .GroupBy(sq => (sq.IndentId, sq.LegType))
+                .ToDictionary(g => g.Key, g => g.First().SellingPrice);
+
+            var sqPriceMap = approvedSqsForInvoice
+                .GroupBy(sq => sq.IndentId)
+                .ToDictionary(g => g.Key, g => g.First().SellingPrice);
+
             decimal totalAmount = 0;
             foreach (var t in trips)
             {
@@ -121,7 +173,29 @@ namespace api_backend.Controllers
                 else
                 {
                     decimal addChargesSum = t.AdditionalCharges?.Sum(ac => ac.Amount) ?? 0;
-                    rate = (t.CustomerRate ?? t.Indent?.CustomerRate ?? t.FreightCharges) + (t.TollCharges ?? 0) + addChargesSum;
+                    decimal customerAgreedRate = 0;
+                    if (tripSqMapForInvoice.TryGetValue(t.Id, out var directSqP) && directSqP > 0)
+                    {
+                        customerAgreedRate = directSqP;
+                    }
+                    else if (indentLegSqMapForInvoice.TryGetValue((t.IndentId, t.LegType ?? ""), out var legSqP) && legSqP > 0)
+                    {
+                        customerAgreedRate = legSqP;
+                    }
+                    else if (t.CustomerRate.HasValue && t.CustomerRate.Value > 0)
+                    {
+                        customerAgreedRate = t.CustomerRate.Value;
+                    }
+                    else if (sqPriceMap.TryGetValue(t.IndentId, out var sqP) && sqP > 0)
+                    {
+                        customerAgreedRate = sqP;
+                    }
+                    else
+                    {
+                        customerAgreedRate = t.Indent?.CustomerRate ?? t.FreightCharges;
+                    }
+                    rate = customerAgreedRate + (t.TollCharges ?? 0) + addChargesSum;
+                    t.CustomerRate = customerAgreedRate;
                 }
                 totalAmount += rate;
             }

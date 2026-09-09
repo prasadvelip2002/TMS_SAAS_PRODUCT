@@ -98,18 +98,41 @@ export default function InvoicePDF() {
             </thead>
             <tbody className="divide-y divide-slate-100">
               {invoice.trips?.map((trip: any, idx: number) => {
-                const rowTotal = trip.freightCharges + (trip.tollCharges || 0);
+                const customerFreight = (trip.customerRate && trip.customerRate > 0)
+                  ? trip.customerRate
+                  : ((trip.indent?.customerRate && trip.indent.customerRate > 0) ? trip.indent.customerRate : (trip.freightCharges || 0));
+                const rowTotal = customerFreight + (trip.tollCharges || 0);
                 return (
                   <tr key={trip.id} className="text-slate-700">
                     <td className="py-3 px-2 align-top">{idx + 1}</td>
                     <td className="py-3 px-2 align-top">
-                      <div className="font-bold text-slate-900">TRP-{trip.id}</div>
-                      <div className="text-xs text-slate-500 mt-1">{trip.indent?.source} to {trip.indent?.destination}</div>
+                      <div className="font-bold text-slate-900 flex items-center gap-1.5">
+                        <span>TRP-{trip.id >= 1000 ? trip.id : 1000 + trip.id}</span>
+                        {trip.legType === "InboundLeg1" && (
+                          <span className="text-[10px] font-bold text-blue-700 bg-blue-50 border border-blue-200 px-1.5 py-0.2 rounded">
+                            Leg 1
+                          </span>
+                        )}
+                        {trip.legType === "OutboundLeg2" && (
+                          <span className="text-[10px] font-bold text-purple-700 bg-purple-50 border border-purple-200 px-1.5 py-0.2 rounded">
+                            Leg 2
+                          </span>
+                        )}
+                      </div>
+                      <div className="text-xs text-slate-500 mt-1">
+                        {trip.legType === "InboundLeg1"
+                          ? `${trip.indent?.source} → ${trip.indent?.warehouseLocation} (Hub)`
+                          : trip.legType === "OutboundLeg2"
+                          ? `${trip.indent?.warehouseLocation} (Hub) → ${trip.indent?.destination}`
+                          : trip.indent?.warehouseLocation 
+                          ? `${trip.indent.source} → ${trip.indent.warehouseLocation} (Hub) → ${trip.indent.destination}`
+                          : `${trip.indent?.source} to ${trip.indent?.destination}`}
+                      </div>
                     </td>
-                    <td className="py-3 px-2 align-top font-mono text-xs">{trip.vehicle?.vehicleNumber}</td>
-                    <td className="py-3 px-2 align-top text-right">{trip.freightCharges.toLocaleString('en-IN')}</td>
-                    <td className="py-3 px-2 align-top text-right">{trip.tollCharges?.toLocaleString('en-IN') || "0"}</td>
-                    <td className="py-3 px-2 align-top text-right font-semibold">{rowTotal.toLocaleString('en-IN')}</td>
+                    <td className="py-3 px-2 align-top font-mono text-xs">{trip.vehicle?.vehicleNumber || "N/A"}</td>
+                    <td className="py-3 px-2 align-top text-right">₹{customerFreight.toLocaleString('en-IN')}</td>
+                    <td className="py-3 px-2 align-top text-right">₹{trip.tollCharges?.toLocaleString('en-IN') || "0"}</td>
+                    <td className="py-3 px-2 align-top text-right font-semibold">₹{rowTotal.toLocaleString('en-IN')}</td>
                   </tr>
                 );
               })}

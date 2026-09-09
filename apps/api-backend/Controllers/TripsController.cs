@@ -96,11 +96,8 @@ namespace api_backend.Controllers
             if (leg1Trip.LegType == "Direct")
             {
                 leg1Trip.LegType = "InboundLeg1";
+                _context.Entry(leg1Trip).State = EntityState.Modified;
             }
-            // Single Invoice: Leg 1 is internal transfer (CustomerRate = 0),
-            // while Leg 2 holds the customer agreed master rate.
-            leg1Trip.CustomerRate = 0;
-            _context.Entry(leg1Trip).State = EntityState.Modified;
 
             var leg2Trip = new Trip
             {

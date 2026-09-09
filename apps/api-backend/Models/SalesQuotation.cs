@@ -18,6 +18,10 @@ namespace api_backend.Models
         public decimal SellingPrice { get; set; } // Final rate offered to customer
 
         public string Status { get; set; } = "Generated"; // Generated, Sent, Approved, Rejected, PO_Received
+        
+        public string? LegType { get; set; } // Direct, InboundLeg1, OutboundLeg2, EntireRoute
+        public int? TripId { get; set; }
+        public Trip? Trip { get; set; }
 
         public int TenantId { get; set; }
         public Tenant? Tenant { get; set; }

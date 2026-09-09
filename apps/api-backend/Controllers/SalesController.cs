@@ -74,6 +74,27 @@ namespace api_backend.Controllers
                     : (baseRate + request.Margin);
             }
 
+            string? legType = request.LegType;
+            if (string.IsNullOrEmpty(legType))
+            {
+                if (request.VendorQuotationId.HasValue && request.VendorQuotationId.Value > 0)
+                {
+                    var vendorQuote = await _context.VendorQuotations.FindAsync(request.VendorQuotationId.Value);
+                    if (vendorQuote != null)
+                    {
+                        legType = vendorQuote.ServiceScope == "SourceToHub" ? "InboundLeg1" : "EntireRoute";
+                    }
+                }
+                else if (!string.IsNullOrEmpty(indent.WarehouseLocation))
+                {
+                    legType = "EntireRoute";
+                }
+                else
+                {
+                    legType = "Direct";
+                }
+            }
+
             var sq = new SalesQuotation
             {
                 IndentId = indentId,
@@ -83,6 +104,8 @@ namespace api_backend.Controllers
                 Margin = request.Margin,
                 SellingPrice = sellingPrice,
                 Status = "Generated",
+                LegType = legType,
+                TripId = request.TripId,
                 TenantId = indent.TenantId,
                 CompanyId = indent.CompanyId
             };
@@ -112,6 +135,7 @@ namespace api_backend.Controllers
             if (sq.Indent != null)
             {
                 sq.Indent.Status = "PO_Received";
+                sq.Indent.CustomerRate = sq.SellingPrice;
             }
 
             var customerPO = new CustomerPurchaseOrder
@@ -128,38 +152,62 @@ namespace api_backend.Controllers
 
             _context.CustomerPurchaseOrders.Add(customerPO);
 
-            // Now that Customer PO is accepted, the indent is ready for assignment
             if (sq.Indent != null)
             {
                 sq.Indent.Status = "Pending Assignment";
             }
             
-            // Determine LegType & ServiceScope based on vendor quote scope
+            // Determine LegType & ServiceScope based on SQ and vendor quote scope
             string serviceScope = sq.WinningVendorQuotation?.ServiceScope ?? "EntireRoute";
-            string legType = "Direct";
-            if (!string.IsNullOrEmpty(sq.Indent?.WarehouseLocation))
+            string legType = sq.LegType ?? "Direct";
+            if (string.IsNullOrEmpty(sq.LegType))
             {
-                legType = (serviceScope == "SourceToHub") ? "InboundLeg1" : "EntireRoute";
+                if (!string.IsNullOrEmpty(sq.Indent?.WarehouseLocation))
+                {
+                    legType = (serviceScope == "SourceToHub") ? "InboundLeg1" : "EntireRoute";
+                }
             }
 
-            // Auto-generate Trip (for Own fleet, VendorId will be null and SupplierRate 0)
-            // Trip status must be Pending Assignment until vehicle and driver are assigned!
-            var trip = new Trip
+            Trip trip;
+            if (sq.TripId.HasValue && sq.TripId.Value > 0)
             {
-                IndentId = sq.IndentId,
-                LegType = legType,
-                ServiceScope = serviceScope,
-                VendorId = sq.WinningVendorQuotation?.VendorId,
-                Status = "Pending Assignment",
-                BookingType = "Fixed",
-                SupplierRate = sq.WinningVendorQuotation?.QuotedRate ?? 0,
-                CustomerRate = (legType == "InboundLeg1") ? 0 : sq.SellingPrice,
-                FixedRate = sq.WinningVendorQuotation?.QuotedRate ?? 0,
-                TenantId = sq.TenantId,
-                CompanyId = sq.CompanyId
-            };
-            _context.Trips.Add(trip);
+                trip = await _context.Trips.FindAsync(sq.TripId.Value) ?? new Trip();
+            }
+            else if (legType == "OutboundLeg2")
+            {
+                trip = await _context.Trips.FirstOrDefaultAsync(t => t.IndentId == sq.IndentId && t.LegType == "OutboundLeg2") ?? new Trip();
+            }
+            else
+            {
+                trip = await _context.Trips.FirstOrDefaultAsync(t => t.IndentId == sq.IndentId && t.LegType == legType) ?? new Trip();
+            }
+
+            bool isNewTrip = (trip.Id == 0);
+            trip.IndentId = sq.IndentId;
+            trip.LegType = legType;
+            trip.ServiceScope = serviceScope;
+            trip.VendorId = sq.WinningVendorQuotation?.VendorId;
+            trip.Status = "Pending Assignment";
+            trip.BookingType = "Fixed";
+            trip.SupplierRate = sq.WinningVendorQuotation?.QuotedRate ?? 0;
+            trip.CustomerRate = sq.SellingPrice; // Set agreed price with margin for this leg
+            trip.FixedRate = sq.WinningVendorQuotation?.QuotedRate ?? 0;
+            trip.TenantId = sq.TenantId;
+            trip.CompanyId = sq.CompanyId;
+
+            if (isNewTrip)
+            {
+                _context.Trips.Add(trip);
+            }
+            else
+            {
+                _context.Entry(trip).State = EntityState.Modified;
+            }
+
             await _context.SaveChangesAsync();
+
+            sq.TripId = trip.Id;
+            _context.Entry(sq).State = EntityState.Modified;
 
             // Auto-generate Supplier PO ONLY if it was awarded to a 3rd party vendor
             if (sq.WinningVendorQuotation != null)
@@ -175,8 +223,9 @@ namespace api_backend.Controllers
                     CompanyId = sq.CompanyId
                 };
                 _context.PurchaseOrders.Add(supplierPo);
-                await _context.SaveChangesAsync();
             }
+
+            await _context.SaveChangesAsync();
 
             return Ok(new { message = "SQ Approved, Customer PO Accepted, Trip Ready for Assignment." });
         }
@@ -188,6 +237,8 @@ namespace api_backend.Controllers
         public decimal Margin { get; set; }
         public decimal? BaseRate { get; set; }
         public decimal? SellingPrice { get; set; }
+        public string? LegType { get; set; }
+        public int? TripId { get; set; }
     }
 
     public class ApproveSQRequest
