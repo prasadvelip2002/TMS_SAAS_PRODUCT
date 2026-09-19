@@ -8,10 +8,10 @@ export function KpiCard({ n, l, dLabel, dType }: { n: string | React.ReactNode, 
   };
 
   return (
-    <div className="bg-panel border border-line rounded-[10px] p-[16px]">
-      <div className="font-disp text-[26px] font-bold">{n}</div>
-      <div className="text-[11.5px] text-muted-text mt-[2px]">{l}</div>
-      <div className={`font-mono text-[10.5px] mt-[8px] inline-block px-[7px] py-[2px] rounded-[4px] ${dColors[dType]}`}>
+    <div className="bg-panel border border-line rounded-xl p-3.5 sm:p-[16px] shadow-2xs">
+      <div className="font-disp text-xl sm:text-[26px] font-bold">{n}</div>
+      <div className="text-[11px] sm:text-[11.5px] text-muted-text mt-[2px] truncate">{l}</div>
+      <div className={`font-mono text-[10px] sm:text-[10.5px] mt-[6px] sm:mt-[8px] inline-block px-[7px] py-[2px] rounded-[4px] ${dColors[dType]}`}>
         {dLabel}
       </div>
     </div>
@@ -20,11 +20,11 @@ export function KpiCard({ n, l, dLabel, dType }: { n: string | React.ReactNode, 
 
 export function Panel({ children, title, hint, className = "" }: { children: React.ReactNode, title?: string, hint?: string, className?: string }) {
   return (
-    <div className={`bg-panel border border-line rounded-[10px] mb-[18px] overflow-hidden ${className}`}>
+    <div className={`bg-panel border border-line rounded-xl mb-4 sm:mb-[18px] overflow-hidden ${className}`}>
       {(title || hint) && (
-        <div className="px-[18px] py-[14px] border-b border-line flex items-center justify-between">
-          {title && <h3 className="font-disp text-[14.5px] font-semibold m-0">{title}</h3>}
-          {hint && <span className="text-[11.5px] text-muted-text">{hint}</span>}
+        <div className="px-4 sm:px-[18px] py-3 sm:py-[14px] border-b border-line flex items-center justify-between">
+          {title && <h3 className="font-disp text-sm sm:text-[14.5px] font-semibold m-0">{title}</h3>}
+          {hint && <span className="text-[11px] sm:text-[11.5px] text-muted-text">{hint}</span>}
         </div>
       )}
       {children}
@@ -42,7 +42,7 @@ export function Badge({ children, color = "grey" }: { children: React.ReactNode,
     purple: "bg-purple-50 text-purple-700"
   };
   return (
-    <span className={`font-body text-[11px] font-semibold px-[9px] py-[3px] rounded-[20px] inline-block ${colors[color]}`}>
+    <span className={`font-body text-[10.5px] sm:text-[11px] font-semibold px-2 sm:px-[9px] py-0.5 sm:py-[3px] rounded-[20px] inline-block whitespace-nowrap ${colors[color]}`}>
       {children}
     </span>
   );
@@ -58,7 +58,7 @@ export function ProtoButton({ children, variant = "primary", onClick, style }: {
     <button 
       onClick={onClick} 
       style={style}
-      className={`font-body font-semibold text-[12.5px] border-none rounded-[7px] px-[14px] py-[8px] cursor-pointer flex items-center justify-center gap-2 ${variants[variant]}`}
+      className={`font-body font-semibold text-[12px] sm:text-[12.5px] border-none rounded-lg px-3 sm:px-[14px] py-1.5 sm:py-[8px] cursor-pointer flex items-center justify-center gap-1.5 sm:gap-2 active:scale-95 transition-transform ${variants[variant]}`}
     >
       {children}
     </button>
@@ -68,7 +68,7 @@ export function ProtoButton({ children, variant = "primary", onClick, style }: {
 export function RouteTrack({ stages, currentIdx }: { stages: string[], currentIdx: number }) {
   const isFinal = currentIdx >= stages.length - 1;
   return (
-    <div className="flex flex-col">
+    <div className="flex flex-col min-w-[200px]">
       <div className="flex items-center mx-0 h-[16px] mt-2">
         {stages.map((stage, i) => (
           <React.Fragment key={i}>
@@ -110,27 +110,29 @@ export function RouteTrack({ stages, currentIdx }: { stages: string[], currentId
   );
 }
 
-export function ProtoTable({ headers, children, minWidth = "850px" }: { headers: React.ReactNode[], children: React.ReactNode, minWidth?: string }) {
+export function ProtoTable({ headers, children, minWidth = "750px" }: { headers: React.ReactNode[], children: React.ReactNode, minWidth?: string }) {
   return (
-    <div className="w-full max-w-full overflow-x-auto overflow-y-visible rounded-xl border border-line bg-white shadow-2xs">
-      <table className="w-full border-collapse text-[12.8px]" style={{ minWidth }}>
-        <thead className="sticky top-0 z-10">
-          <tr>
-            {headers.map((h, i) => (
-              <th key={i} className="text-left font-body font-semibold text-[11px] tracking-[0.3px] uppercase text-muted-text px-[18px] py-[10px] border-b border-line bg-[#FAFBFD] shadow-2xs whitespace-nowrap">
-                {h}
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-line">
-          {children}
-        </tbody>
-      </table>
+    <div className="w-full max-w-full overflow-hidden rounded-xl border border-line bg-white shadow-2xs">
+      <div className="w-full max-w-full overflow-x-auto custom-table-scroll touch-scroll">
+        <table className="w-full border-collapse text-[12px] sm:text-[12.8px]" style={{ minWidth }}>
+          <thead className="sticky top-0 z-10">
+            <tr>
+              {headers.map((h, i) => (
+                <th key={i} className="text-left font-body font-semibold text-[10.5px] sm:text-[11px] tracking-[0.3px] uppercase text-muted-text px-3 sm:px-[18px] py-2 sm:py-[10px] border-b border-line bg-[#FAFBFD] shadow-2xs whitespace-nowrap">
+                  {h}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-line">
+            {children}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }
 
 export function Td({ children, className = "", title, colSpan }: { children: React.ReactNode, className?: string, title?: string, colSpan?: number }) {
-  return <td className={`px-[18px] py-[11px] ${className}`} title={title} colSpan={colSpan}>{children}</td>;
+  return <td className={`px-3 sm:px-[18px] py-2.5 sm:py-[11px] ${className}`} title={title} colSpan={colSpan}>{children}</td>;
 }

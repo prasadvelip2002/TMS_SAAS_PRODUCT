@@ -267,7 +267,7 @@ export default function DashboardPage() {
     <div className="space-y-7 pb-12 animate-in fade-in slide-in-from-bottom-3 duration-500">
       
       {/* 1. EXECUTIVE HEADER */}
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 bg-gradient-to-r from-slate-900 via-slate-800 to-indigo-950 p-6 md:p-8 rounded-3xl text-white shadow-xl relative overflow-hidden">
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 bg-gradient-to-r from-slate-900 via-slate-800 to-indigo-950 p-4 sm:p-6 md:p-8 rounded-2xl sm:rounded-3xl text-white shadow-xl relative overflow-hidden">
         <div className="absolute right-0 top-0 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
         <div className="absolute -left-12 -bottom-12 w-64 h-64 bg-indigo-500/15 rounded-full blur-3xl pointer-events-none" />
 
@@ -281,20 +281,20 @@ export default function DashboardPage() {
               Updated {lastRefreshed.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
             </span>
           </div>
-          <h1 className="text-2xl md:text-3xl font-black tracking-tight text-white">
+          <h1 className="text-xl sm:text-2xl md:text-3xl font-black tracking-tight text-white">
             Operations & Financial Control Center
           </h1>
-          <p className="text-slate-300 text-sm mt-1 max-w-xl font-medium">
+          <p className="text-slate-300 text-xs sm:text-sm mt-1 max-w-xl font-medium">
             Real-time tracking of freight revenue, operational pipelines, fleet allocation, and billing milestones.
           </p>
         </div>
 
         {/* Quick Actions */}
-        <div className="relative z-10 flex flex-wrap items-center gap-2.5">
+        <div className="relative z-10 flex flex-wrap items-center gap-2 sm:gap-2.5">
           <button
             onClick={loadData}
             disabled={loading}
-            className="flex items-center gap-1.5 bg-white/10 hover:bg-white/20 text-white text-xs font-bold px-3.5 py-2.5 rounded-xl border border-white/10 transition-all active:scale-95 disabled:opacity-50"
+            className="flex items-center gap-1.5 bg-white/10 hover:bg-white/20 text-white text-xs font-bold px-3 sm:px-3.5 py-2 sm:py-2.5 rounded-xl border border-white/10 transition-all active:scale-95 disabled:opacity-50"
             title="Refresh live metrics"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
@@ -303,14 +303,14 @@ export default function DashboardPage() {
           
           <Link
             href="/trips/indents"
-            className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold px-4 py-2.5 rounded-xl shadow-md shadow-blue-900/30 transition-all hover:translate-y-[-1px] active:scale-95"
+            className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl shadow-md shadow-blue-900/30 transition-all hover:translate-y-[-1px] active:scale-95"
           >
             <span>+ Create Indent</span>
           </Link>
 
           <Link
             href="/payments/invoices"
-            className="flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold px-4 py-2.5 rounded-xl shadow-md shadow-emerald-900/30 transition-all hover:translate-y-[-1px] active:scale-95"
+            className="flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl shadow-md shadow-emerald-900/30 transition-all hover:translate-y-[-1px] active:scale-95"
           >
             <Receipt className="w-3.5 h-3.5" />
             <span>Raise Invoices</span>
@@ -672,8 +672,8 @@ export default function DashboardPage() {
             </Link>
           </div>
 
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
+          <div className="overflow-x-auto custom-table-scroll touch-scroll">
+            <table className="w-full text-left text-xs min-w-[620px]">
               <thead>
                 <tr className="border-b border-slate-100 text-slate-400 font-semibold">
                   <th className="pb-3 pl-1">Trip ID / Indent</th>

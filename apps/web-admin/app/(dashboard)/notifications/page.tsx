@@ -228,47 +228,47 @@ export default function NotificationsPage() {
   return (
     <div className="max-w-[1600px] mx-auto pb-12">
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 sm:mb-8">
         <div>
-          <div className="flex items-center gap-3">
-            <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Notifications & WhatsApp Hub</h1>
-            <span className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800 border border-emerald-200">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+            <h1 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">Notifications & WhatsApp Hub</h1>
+            <span className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-0.5 rounded-full text-[11px] sm:text-xs font-semibold bg-emerald-100 text-emerald-800 border border-emerald-200">
               <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
               WhatsApp Business API
             </span>
           </div>
-          <p className="text-sm font-medium text-slate-500 mt-1">
+          <p className="text-xs sm:text-sm font-medium text-slate-500 mt-1">
             Automated trip assignments, delivery alerts, driver reminders, and in-app system notifications.
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3">
           <button 
             onClick={loadData}
             disabled={loading}
-            className="p-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 transition-colors shadow-sm"
+            className="p-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 transition-colors shadow-sm shrink-0"
             title="Refresh logs"
           >
             <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
           </button>
           <button 
             onClick={handleOpenComposer}
-            className="flex items-center gap-2 bg-[#25D366] hover:bg-[#20ba59] text-white font-semibold px-4 py-2.5 rounded-xl shadow-[0_4px_12px_rgba(37,211,102,0.3)] hover:shadow-[0_6px_16px_rgba(37,211,102,0.4)] transition-all text-sm"
+            className="flex-1 sm:flex-initial justify-center flex items-center gap-2 bg-[#25D366] hover:bg-[#20ba59] text-white font-semibold px-3 sm:px-4 py-2.5 rounded-xl shadow-[0_4px_12px_rgba(37,211,102,0.3)] hover:shadow-[0_6px_16px_rgba(37,211,102,0.4)] transition-all text-xs sm:text-sm"
           >
-            <MessageSquare className="w-4 h-4 fill-white/20" />
-            <span>Send WhatsApp Message</span>
+            <MessageSquare className="w-4 h-4 fill-white/20 shrink-0" />
+            <span className="truncate">Send WhatsApp Message</span>
           </button>
         </div>
       </div>
 
       {/* Connection & Delivery Metrics */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 mb-8">
-        <div className="rounded-2xl border border-emerald-200 bg-gradient-to-br from-emerald-50 to-emerald-100/50 p-5 shadow-sm">
+      <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 mb-6 sm:mb-8">
+        <div className="rounded-2xl border border-emerald-200 bg-gradient-to-br from-emerald-50 to-emerald-100/50 p-4 sm:p-5 shadow-sm">
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold uppercase tracking-wider text-emerald-800">Business Channel</span>
             <ShieldCheck className="w-5 h-5 text-emerald-600" />
           </div>
-          <p className="mt-2 text-lg font-bold text-emerald-950">
+          <p className="mt-2 text-base sm:text-lg font-bold text-emerald-950">
             {statusInfo?.businessNumber || "+91 90000 12345"}
           </p>
           <div className="mt-2 flex items-center gap-2 text-xs font-medium text-emerald-700">
@@ -277,9 +277,9 @@ export default function NotificationsPage() {
           </div>
         </div>
 
-        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+        <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-5 shadow-sm">
           <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Total Sent</p>
-          <p className="mt-2 text-2xl font-bold text-slate-900">
+          <p className="mt-2 text-xl sm:text-2xl font-bold text-slate-900">
             {statusInfo?.totalSent ?? whatsAppLogs.length}
           </p>
           <p className="mt-2 text-xs text-slate-500 flex items-center gap-1">
@@ -287,9 +287,9 @@ export default function NotificationsPage() {
           </p>
         </div>
 
-        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+        <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-5 shadow-sm">
           <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Delivered & Read</p>
-          <p className="mt-2 text-2xl font-bold text-emerald-600">
+          <p className="mt-2 text-xl sm:text-2xl font-bold text-emerald-600">
             {statusInfo?.totalDelivered ?? Math.max(0, whatsAppLogs.length - 1)}
           </p>
           <p className="mt-2 text-xs text-slate-500 flex items-center gap-1">
@@ -297,56 +297,50 @@ export default function NotificationsPage() {
           </p>
         </div>
 
-        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+        <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-5 shadow-sm">
           <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Trigger Automations</p>
-          <p className="mt-2 text-2xl font-bold text-blue-600">4 Workflows</p>
+          <p className="mt-2 text-xl sm:text-2xl font-bold text-blue-600">4 Workflows</p>
           <p className="mt-2 text-xs text-slate-500">Trip Assign, Delivery, Advance, POD</p>
         </div>
       </div>
 
       {/* Tabs */}
-      <div className="flex items-center gap-2 border-b border-slate-200 mb-6">
+      <div className="flex items-center gap-2 border-b border-slate-200 mb-6 overflow-x-auto whitespace-nowrap scrollbar-hide -mx-1 px-1">
         <button
           onClick={() => setActiveTab("whatsapp")}
-          className={`flex items-center gap-2 px-5 py-3 text-sm font-semibold border-b-2 transition-all ${
+          className={`flex items-center gap-2 px-3 sm:px-5 py-2.5 sm:py-3 text-xs sm:text-sm font-semibold border-b-2 shrink-0 transition-all ${
             activeTab === "whatsapp"
               ? "border-emerald-600 text-emerald-700 bg-emerald-50/50 rounded-t-lg"
               : "border-transparent text-slate-500 hover:text-slate-800"
           }`}
         >
-          <MessageSquare className="w-4 h-4" />
-          <span>WhatsApp Outbox & Automation Logs</span>
-          <span className="ml-1.5 px-2 py-0.5 text-xs font-bold rounded-full bg-emerald-100 text-emerald-700">
-            {whatsAppLogs.length}
-          </span>
+          <MessageSquare className="w-4 h-4 shrink-0" />
+          <span>WhatsApp Outbox ({whatsAppLogs.length})</span>
         </button>
 
         <button
           onClick={() => setActiveTab("system")}
-          className={`flex items-center gap-2 px-5 py-3 text-sm font-semibold border-b-2 transition-all ${
+          className={`flex items-center gap-2 px-3 sm:px-5 py-2.5 sm:py-3 text-xs sm:text-sm font-semibold border-b-2 shrink-0 transition-all ${
             activeTab === "system"
               ? "border-blue-600 text-blue-700 bg-blue-50/50 rounded-t-lg"
               : "border-transparent text-slate-500 hover:text-slate-800"
           }`}
         >
-          <Bell className="w-4 h-4" />
-          <span>In-App System Alerts</span>
-          <span className="ml-1.5 px-2 py-0.5 text-xs font-bold rounded-full bg-blue-100 text-blue-700">
-            {notifications.length}
-          </span>
+          <Bell className="w-4 h-4 shrink-0" />
+          <span>System Alerts ({notifications.length})</span>
         </button>
       </div>
 
       {/* Search & Filter bar */}
-      <div className="bg-white rounded-2xl shadow-sm ring-1 ring-slate-200/60 p-2 mb-6 flex items-center justify-between">
-        <div className="flex items-center px-4 gap-3 flex-1">
-          <Search className="w-5 h-5 text-slate-400" />
+      <div className="bg-white rounded-2xl shadow-sm ring-1 ring-slate-200/60 p-1.5 sm:p-2 mb-6 flex items-center justify-between">
+        <div className="flex items-center px-2 sm:px-4 gap-2 sm:gap-3 flex-1">
+          <Search className="w-4 h-4 sm:w-5 sm:h-5 text-slate-400 shrink-0" />
           <input 
             type="text" 
-            placeholder={activeTab === "whatsapp" ? "Search by recipient, phone, template or message..." : "Search alerts by title or content..."}
+            placeholder={activeTab === "whatsapp" ? "Search by recipient, phone, template..." : "Search alerts by title or content..."}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full bg-transparent border-none focus:outline-none text-sm text-slate-700 font-medium placeholder:text-slate-400 py-2.5"
+            className="w-full bg-transparent border-none focus:outline-none text-xs sm:text-sm text-slate-700 font-medium placeholder:text-slate-400 py-2 sm:py-2.5"
           />
           {searchQuery && (
             <button 
@@ -543,28 +537,28 @@ export default function NotificationsPage() {
 
       {/* WhatsApp Composer Modal */}
       {isComposerOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 overflow-y-auto">
-          <div className="bg-white rounded-3xl shadow-2xl max-w-3xl w-full border border-slate-200 overflow-hidden my-8 animate-in fade-in zoom-in-95 duration-200">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-3 sm:p-4 overflow-y-auto">
+          <div className="bg-white rounded-2xl sm:rounded-3xl shadow-2xl max-w-3xl w-full border border-slate-200 overflow-hidden my-4 sm:my-8 animate-in fade-in zoom-in-95 duration-200">
             {/* Modal Header */}
-            <div className="px-6 py-4 bg-gradient-to-r from-[#075E54] to-[#128C7E] text-white flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center">
-                  <MessageSquare className="w-5 h-5 fill-white" />
+            <div className="px-4 sm:px-6 py-3.5 sm:py-4 bg-gradient-to-r from-[#075E54] to-[#128C7E] text-white flex items-center justify-between">
+              <div className="flex items-center gap-2.5 sm:gap-3">
+                <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-white/10 flex items-center justify-center shrink-0">
+                  <MessageSquare className="w-4 h-4 sm:w-5 sm:h-5 fill-white" />
                 </div>
                 <div>
-                  <h3 className="font-bold text-base tracking-tight">Compose WhatsApp Message</h3>
-                  <p className="text-xs text-white/80">Send verified business message or open direct chat</p>
+                  <h3 className="font-bold text-sm sm:text-base tracking-tight">Compose WhatsApp Message</h3>
+                  <p className="text-[11px] sm:text-xs text-white/80">Send verified business message or open direct chat</p>
                 </div>
               </div>
               <button 
                 onClick={() => setIsComposerOpen(false)}
-                className="text-white/70 hover:text-white p-1.5 rounded-full hover:bg-white/10 transition-colors"
+                className="text-white/70 hover:text-white p-1.5 rounded-full hover:bg-white/10 transition-colors shrink-0 ml-2"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            <div className="p-6 grid gap-6 md:grid-cols-12">
+            <div className="p-4 sm:p-6 grid gap-4 sm:gap-6 md:grid-cols-12 max-h-[85vh] overflow-y-auto">
               {/* Form Side */}
               <div className="md:col-span-7 space-y-4">
                 {feedback && (
@@ -635,7 +629,7 @@ export default function NotificationsPage() {
                 )}
 
                 {/* Phone & Recipient Name */}
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
                     <label className="block text-xs font-medium text-slate-600 mb-1">Name</label>
                     <input

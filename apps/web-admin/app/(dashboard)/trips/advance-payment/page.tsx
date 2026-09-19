@@ -81,23 +81,23 @@ export default function AdvancePaymentPage() {
   };
 
   return (
-    <div className="relative h-full flex flex-col">
+    <div className="relative min-h-full flex flex-col space-y-4">
       {/* HEADER SECTION */}
-      <div className="flex justify-between items-end mb-[20px] shrink-0">
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-2 shrink-0">
         <div>
-          <h1 className="font-disp font-bold text-[28px] text-slate-900 tracking-tight leading-tight">Advance Payments</h1>
-          <p className="text-[14px] text-slate-500 mt-1 font-medium">Process and track advance payments for fleet vendors.</p>
+          <h1 className="font-disp font-bold text-2xl sm:text-[28px] text-slate-900 tracking-tight leading-tight">Advance Payments</h1>
+          <p className="text-xs sm:text-[14px] text-slate-500 mt-1 font-medium">Process and track advance payments for fleet vendors.</p>
         </div>
         
-        <div className="flex items-center gap-[12px]">
-          <div className="relative flex items-center">
+        <div className="flex flex-wrap items-center gap-2.5 sm:gap-3">
+          <div className="relative flex items-center flex-1 sm:flex-initial">
             <Search className="w-[16px] h-[16px] text-slate-400 absolute left-[14px] top-1/2 -translate-y-1/2 pointer-events-none" />
             <input 
               type="text" 
               placeholder="Search by trip #, vendor, bank..." 
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-[240px] md:w-[280px] h-[42px] bg-white border border-slate-200 rounded-[12px] pl-[40px] pr-[34px] text-[14px] outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all shadow-sm"
+              className="w-full sm:w-[240px] md:w-[280px] h-[40px] sm:h-[42px] bg-white border border-slate-200 rounded-[12px] pl-[40px] pr-[34px] text-xs sm:text-[14px] outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all shadow-sm"
             />
             {searchQuery && (
               <button
@@ -110,7 +110,7 @@ export default function AdvancePaymentPage() {
             )}
           </div>
           
-          <div className="flex bg-white border border-slate-200 rounded-[12px] p-1 shadow-sm">
+          <div className="flex bg-white border border-slate-200 rounded-[12px] p-1 shadow-sm shrink-0">
             <button className="p-1.5 bg-slate-100 text-slate-800 rounded-[8px] shadow-sm"><List className="w-4 h-4" /></button>
             <button className="p-1.5 text-slate-400 hover:text-slate-800 rounded-[8px]"><Grid className="w-4 h-4" /></button>
           </div>
@@ -215,9 +215,9 @@ export default function AdvancePaymentPage() {
 
       {/* PROCESS PAYMENT SIDE PANEL */}
       <div 
-        className={`fixed top-0 right-0 h-full w-[450px] bg-white shadow-2xl z-50 transform transition-transform duration-300 ease-in-out flex flex-col border-l border-slate-200 ${isPanelOpen ? 'translate-x-0' : 'translate-x-full'}`}
+        className={`fixed top-0 right-0 h-full w-full sm:w-[450px] max-w-full bg-white shadow-2xl z-50 transform transition-transform duration-300 ease-in-out flex flex-col border-l border-slate-200 ${isPanelOpen ? 'translate-x-0' : 'translate-x-full'}`}
       >
-        <div className="px-8 py-6 border-b border-slate-100 flex items-center justify-between bg-slate-50/50 shrink-0">
+        <div className="px-4 sm:px-8 py-4 sm:py-6 border-b border-slate-100 flex items-center justify-between bg-slate-50/50 shrink-0">
           <div>
             <h2 className="text-xl font-bold text-slate-800 flex items-center gap-2">
               <CreditCard className="w-5 h-5 text-slate-400" /> Process Advance

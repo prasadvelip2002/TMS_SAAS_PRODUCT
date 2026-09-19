@@ -20,12 +20,12 @@ function SlideOver({ isOpen, onClose, title, subtitle, children }: any) {
       />
       
       {/* Slide-over Panel */}
-      <div className="relative w-full max-w-md bg-white h-full shadow-2xl flex flex-col transform transition-transform duration-300 ease-in-out border-l border-slate-200">
+      <div className="relative w-full max-w-full sm:max-w-md bg-white h-full shadow-2xl flex flex-col transform transition-transform duration-300 ease-in-out border-l border-slate-200">
          {/* Form Header */}
-         <div className="px-6 py-5 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+         <div className="px-4 sm:px-6 py-4 sm:py-5 border-b border-slate-100 flex items-center justify-between bg-slate-50/50 shrink-0">
            <div>
-             <h3 className="font-bold text-lg text-slate-900 tracking-tight">{title}</h3>
-             {subtitle && <p className="text-[13px] font-medium text-slate-500 mt-0.5">{subtitle}</p>}
+             <h3 className="font-bold text-base sm:text-lg text-slate-900 tracking-tight">{title}</h3>
+             {subtitle && <p className="text-[12px] sm:text-[13px] font-medium text-slate-500 mt-0.5">{subtitle}</p>}
            </div>
            <button 
              onClick={onClose} 
@@ -36,7 +36,7 @@ function SlideOver({ isOpen, onClose, title, subtitle, children }: any) {
          </div>
          
          {/* Form Body - Scrollable */}
-         <div className="flex-1 overflow-y-auto p-6 scrollbar-hide">
+         <div className="flex-1 overflow-y-auto p-4 sm:p-6 scrollbar-hide touch-scroll">
            {children}
          </div>
       </div>

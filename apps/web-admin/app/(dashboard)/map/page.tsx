@@ -46,6 +46,7 @@ export default function GlobalMapDashboard() {
   const [activeVehicle, setActiveVehicle] = useState<any>(null);
   const [fleet, setFleet] = useState(initialFleet);
   const [searchQuery, setSearchQuery] = useState("");
+  const [mobileView, setMobileView] = useState<'map' | 'list'>('map');
 
   const filteredFleet = fleet.filter(v => {
     if (!searchQuery.trim()) return true;
@@ -88,13 +89,35 @@ export default function GlobalMapDashboard() {
         }
       `}</style>
 
-      <div className="h-[calc(100vh-6rem)] -m-6 flex overflow-hidden animate-in fade-in duration-500 bg-slate-900">
+      <div className="h-[calc(100vh-4rem)] md:h-[calc(100vh-6rem)] -m-2.5 sm:-m-4 md:-m-6 flex flex-col md:flex-row overflow-hidden animate-in fade-in duration-500 bg-slate-900">
         
+        {/* Mobile View Switcher */}
+        <div className="md:hidden flex items-center bg-slate-950 p-2 border-b border-slate-800 gap-2 shrink-0 z-20">
+          <button 
+            onClick={() => setMobileView('map')}
+            className={`flex-1 py-2 text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-1.5 ${
+              mobileView === 'map' ? 'bg-blue-600 text-white shadow-sm' : 'bg-slate-900 text-slate-400 hover:text-white'
+            }`}
+          >
+            <Navigation className="w-3.5 h-3.5" /> Live Map
+          </button>
+          <button 
+            onClick={() => setMobileView('list')}
+            className={`flex-1 py-2 text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-1.5 ${
+              mobileView === 'list' ? 'bg-blue-600 text-white shadow-sm' : 'bg-slate-900 text-slate-400 hover:text-white'
+            }`}
+          >
+            <Truck className="w-3.5 h-3.5" /> Vehicles ({filteredFleet.length})
+          </button>
+        </div>
+
         {/* Sidebar List */}
-        <div className="w-96 bg-white flex flex-col shadow-[4px_0_24px_rgba(0,0,0,0.1)] z-10 relative">
-          <div className="p-6 border-b border-slate-100">
-            <h1 className="text-xl font-black tracking-tight text-slate-900 mb-1">Fleet Tracker</h1>
-            <p className="text-xs text-slate-500 font-semibold mb-4">Live GPS & Telematics Integration</p>
+        <div className={`w-full md:w-96 bg-white flex flex-col shadow-[4px_0_24px_rgba(0,0,0,0.1)] z-10 relative shrink-0 ${
+          mobileView === 'list' ? 'flex flex-1' : 'hidden md:flex'
+        }`}>
+          <div className="p-4 sm:p-6 border-b border-slate-100">
+            <h1 className="text-lg sm:text-xl font-black tracking-tight text-slate-900 mb-1">Fleet Tracker</h1>
+            <p className="text-xs text-slate-500 font-semibold mb-3 sm:mb-4">Live GPS & Telematics Integration</p>
             
             <div className="relative flex items-center">
               <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
@@ -103,7 +126,7 @@ export default function GlobalMapDashboard() {
                 placeholder="Search vehicle, driver, route..." 
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-9 pr-8 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                className="w-full pl-9 pr-8 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
               />
               {searchQuery && (
                 <button
@@ -117,7 +140,7 @@ export default function GlobalMapDashboard() {
             </div>
           </div>
 
-          <div className="flex-1 overflow-y-auto p-4 space-y-3">
+          <div className="flex-1 overflow-y-auto p-3 sm:p-4 space-y-3">
             {filteredFleet.length === 0 ? (
               <div className="text-center py-10 px-4">
                 <p className="text-xs font-semibold text-slate-500">
@@ -136,8 +159,11 @@ export default function GlobalMapDashboard() {
               filteredFleet.map((v) => (
                 <div 
                   key={v.id} 
-                  onClick={() => setActiveVehicle(activeVehicle?.id === v.id ? null : v)}
-                  className={`p-4 rounded-xl border cursor-pointer transition-all ${
+                  onClick={() => {
+                    setActiveVehicle(activeVehicle?.id === v.id ? null : v);
+                    setMobileView('map');
+                  }}
+                  className={`p-3 sm:p-4 rounded-xl border cursor-pointer transition-all ${
                     activeVehicle?.id === v.id 
                       ? 'border-blue-500 bg-blue-50 shadow-md ring-1 ring-blue-500' 
                       : 'border-slate-200 bg-white hover:border-blue-300 hover:shadow-sm'
@@ -145,7 +171,7 @@ export default function GlobalMapDashboard() {
                 >
                   <div className="flex justify-between items-start mb-2">
                     <div>
-                      <h3 className="font-bold text-slate-900">{v.num}</h3>
+                      <h3 className="font-bold text-slate-900 text-sm">{v.num}</h3>
                       <p className="text-xs text-slate-500 flex items-center gap-1">
                         <Navigation className="w-3 h-3" /> {v.source} to {v.dest}
                       </p>
@@ -158,11 +184,11 @@ export default function GlobalMapDashboard() {
                   <div className="grid grid-cols-2 gap-2 mt-3 pt-3 border-t border-slate-100/50">
                     <div className="flex flex-col">
                       <span className="text-[10px] text-slate-400 font-bold uppercase">Speed</span>
-                      <span className="text-sm font-semibold text-slate-700">{v.speed} km/h</span>
+                      <span className="text-xs sm:text-sm font-semibold text-slate-700">{v.speed} km/h</span>
                     </div>
                     <div className="flex flex-col">
                       <span className="text-[10px] text-slate-400 font-bold uppercase">ETA</span>
-                      <span className="text-sm font-semibold text-slate-700">{v.eta}</span>
+                      <span className="text-xs sm:text-sm font-semibold text-slate-700">{v.eta}</span>
                     </div>
                   </div>
                 </div>
@@ -172,24 +198,24 @@ export default function GlobalMapDashboard() {
         </div>
 
         {/* The Full Screen Map */}
-        <div className="flex-1 relative">
+        <div className={`flex-1 relative ${mobileView === 'map' ? 'flex flex-col h-full' : 'hidden md:block'}`}>
           
           <FleetMap activeVehicle={activeVehicle} fleet={fleet} />
 
           {/* Floating Map UI Overlays */}
-          <div className="absolute top-6 left-6 z-10 flex gap-3 pointer-events-none">
-            <div className="bg-slate-900/95 backdrop-blur-md px-5 py-3 rounded-2xl shadow-xl border border-slate-700 font-bold text-sm text-white flex items-center gap-3">
-              <Truck className="w-5 h-5 text-blue-400" /> 
+          <div className="absolute top-3 left-3 sm:top-6 sm:left-6 z-10 flex flex-wrap gap-2 pointer-events-none">
+            <div className="bg-slate-900/95 backdrop-blur-md px-3 sm:px-5 py-2 sm:py-3 rounded-xl sm:rounded-2xl shadow-xl border border-slate-700 font-bold text-xs sm:text-sm text-white flex items-center gap-2 sm:gap-3">
+              <Truck className="w-4 h-4 sm:w-5 sm:h-5 text-blue-400" /> 
               <span>2 Active</span>
             </div>
-            <div className="bg-slate-900/95 backdrop-blur-md px-5 py-3 rounded-2xl shadow-xl border border-slate-700 font-bold text-sm text-white flex items-center gap-3">
-              <AlertTriangle className="w-5 h-5 text-blue-500" /> 
+            <div className="bg-slate-900/95 backdrop-blur-md px-3 sm:px-5 py-2 sm:py-3 rounded-xl sm:rounded-2xl shadow-xl border border-slate-700 font-bold text-xs sm:text-sm text-white flex items-center gap-2 sm:gap-3">
+              <AlertTriangle className="w-4 h-4 sm:w-5 sm:h-5 text-blue-500" /> 
               <span>2 Issues</span>
             </div>
-            <div className="bg-slate-900/95 backdrop-blur-md px-5 py-3 rounded-2xl shadow-xl border border-slate-700 font-bold text-sm text-white flex items-center gap-3">
-              <span className="relative flex h-3 w-3">
+            <div className="bg-slate-900/95 backdrop-blur-md px-3 sm:px-5 py-2 sm:py-3 rounded-xl sm:rounded-2xl shadow-xl border border-slate-700 font-bold text-xs sm:text-sm text-white flex items-center gap-2 sm:gap-3">
+              <span className="relative flex h-2.5 w-2.5 sm:h-3 sm:w-3">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
+                <span className="relative inline-flex rounded-full h-2.5 w-2.5 sm:h-3 sm:w-3 bg-green-500"></span>
               </span>
               GPS Online
             </div>

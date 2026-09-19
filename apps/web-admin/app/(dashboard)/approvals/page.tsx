@@ -58,20 +58,20 @@ export default function ApprovalsPage() {
 
   return (
     <div>
-      <div className="flex justify-between items-center mb-[20px]">
-        <h1 className="font-disp font-semibold text-[22px] text-ink">Manager Approvals</h1>
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-[20px]">
+        <h1 className="font-disp font-semibold text-xl sm:text-[22px] text-ink">Manager Approvals</h1>
       </div>
 
       {/* Search Toolbar */}
-      <div className="bg-white rounded-2xl shadow-sm ring-1 ring-slate-200/50 p-2 mb-6 flex items-center justify-between">
-        <div className="flex items-center px-4 gap-3 flex-1">
-          <Search className="w-5 h-5 text-slate-400" />
+      <div className="bg-white rounded-2xl shadow-sm ring-1 ring-slate-200/50 p-1.5 sm:p-2 mb-6 flex items-center justify-between">
+        <div className="flex items-center px-2.5 sm:px-4 gap-2 sm:gap-3 flex-1">
+          <Search className="w-4 h-4 sm:w-5 sm:h-5 text-slate-400 shrink-0" />
           <input 
             type="text" 
-            placeholder="Search approvals by Trip ID (e.g. TRP-1), charge type, amount..." 
+            placeholder="Search approvals by Trip ID, charge type, amount..." 
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full bg-transparent border-none focus:outline-none text-sm text-slate-700 font-medium placeholder:text-slate-400 py-2.5"
+            className="w-full bg-transparent border-none focus:outline-none text-xs sm:text-sm text-slate-700 font-medium placeholder:text-slate-400 py-2 sm:py-2.5"
           />
           {searchQuery && (
             <button 

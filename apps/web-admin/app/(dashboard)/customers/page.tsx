@@ -152,30 +152,30 @@ export default function CustomersPage() {
   return (
     <div className="max-w-[1600px] mx-auto pb-10">
       {/* Header */}
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 sm:mb-8">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Customer Management</h1>
-          <p className="text-sm font-medium text-slate-500 mt-1">Manage customer profiles and track service history.</p>
+          <h1 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">Customer Management</h1>
+          <p className="text-xs sm:text-sm font-medium text-slate-500 mt-1">Manage customer profiles and track service history.</p>
         </div>
         <button 
           onClick={() => { setFormData(DEFAULT_FORM); setIsFormOpen(true); }}
-          className="bg-blue-600 hover:bg-blue-700 text-white font-medium px-5 py-2.5 rounded-xl shadow-[0_4px_14px_rgba(37,99,235,0.25)] transition-all flex items-center gap-2"
+          className="bg-blue-600 hover:bg-blue-700 text-white font-medium px-4 sm:px-5 py-2 sm:py-2.5 rounded-xl shadow-[0_4px_14px_rgba(37,99,235,0.25)] transition-all flex items-center justify-center gap-2 w-full sm:w-auto shrink-0 text-xs sm:text-sm"
         >
-          <Plus className="w-5 h-5" />
+          <Plus className="w-4 h-4 sm:w-5 sm:h-5" />
           Add Customer
         </button>
       </div>
 
       {/* Search & Toolbar */}
-      <div className="bg-white rounded-2xl shadow-sm ring-1 ring-slate-200/50 p-2 mb-6 flex items-center justify-between">
-        <div className="flex items-center px-4 gap-3 flex-1">
-          <Search className="w-5 h-5 text-slate-400" />
+      <div className="bg-white rounded-2xl shadow-sm ring-1 ring-slate-200/50 p-2 mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+        <div className="flex items-center px-3 sm:px-4 gap-2.5 sm:gap-3 flex-1 min-w-0">
+          <Search className="w-4 h-4 sm:w-5 sm:h-5 text-slate-400 shrink-0" />
           <input 
             type="text" 
             placeholder="Search customers by name, phone, code, city, GSTIN..." 
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full bg-transparent border-none focus:outline-none text-sm text-slate-700 font-medium placeholder:text-slate-400 py-2.5"
+            className="w-full bg-transparent border-none focus:outline-none text-xs sm:text-sm text-slate-700 font-medium placeholder:text-slate-400 py-2 sm:py-2.5"
           />
           {searchQuery && (
             <button 
@@ -187,12 +187,12 @@ export default function CustomersPage() {
             </button>
           )}
         </div>
-        <div className="flex items-center gap-2 pr-2">
-          <button onClick={() => setViewMode('grid')} className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold border transition-colors ${viewMode === 'grid' ? 'bg-blue-50 text-blue-700 border-blue-100' : 'text-slate-500 border-transparent hover:bg-slate-50'}`}>
-            <Grid className="w-4 h-4" /> Grid
+        <div className="flex items-center gap-1.5 sm:gap-2 pr-1 sm:pr-2 justify-end shrink-0">
+          <button onClick={() => setViewMode('grid')} className={`flex items-center gap-1.5 px-3 sm:px-4 py-1.5 sm:py-2 rounded-xl text-xs sm:text-sm font-bold border transition-colors ${viewMode === 'grid' ? 'bg-blue-50 text-blue-700 border-blue-100' : 'text-slate-500 border-transparent hover:bg-slate-50'}`}>
+            <Grid className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> Grid
           </button>
-          <button onClick={() => setViewMode('list')} className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold border transition-colors ${viewMode === 'list' ? 'bg-blue-50 text-blue-700 border-blue-100' : 'text-slate-500 border-transparent hover:bg-slate-50'}`}>
-            <List className="w-4 h-4" /> Table
+          <button onClick={() => setViewMode('list')} className={`flex items-center gap-1.5 px-3 sm:px-4 py-1.5 sm:py-2 rounded-xl text-xs sm:text-sm font-bold border transition-colors ${viewMode === 'list' ? 'bg-blue-50 text-blue-700 border-blue-100' : 'text-slate-500 border-transparent hover:bg-slate-50'}`}>
+            <List className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> Table
           </button>
         </div>
       </div>

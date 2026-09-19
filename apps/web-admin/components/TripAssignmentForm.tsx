@@ -110,7 +110,7 @@ export function TripAssignmentForm({ indent, onSuccess }: { indent: any, onSucce
         )}
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {/* Vendor */}
         <div className="space-y-2">
           <label className="text-xs font-bold text-slate-700 uppercase tracking-wider">Fleet Vendor</label>
@@ -143,7 +143,7 @@ export function TripAssignmentForm({ indent, onSuccess }: { indent: any, onSucce
         </div>
 
         {/* Driver Selection & Live WhatsApp Card */}
-        <div className="col-span-2 space-y-2">
+        <div className="col-span-1 sm:col-span-2 space-y-2">
           <label className="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center justify-between">
             <span>Assign Driver</span>
             {selectedDriver?.phone && (
@@ -221,9 +221,9 @@ export function TripAssignmentForm({ indent, onSuccess }: { indent: any, onSucce
         </div>
 
         {/* Operational Details */}
-        <div className="border-t border-slate-200 pt-4 mt-2 col-span-2">
+        <div className="border-t border-slate-200 pt-4 mt-2 col-span-1 sm:col-span-2">
           <h3 className="text-xs font-bold text-slate-700 uppercase tracking-wider mb-3">Operational & Advance Details</h3>
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div className="space-y-1.5">
               <label className="text-xs font-medium text-slate-600">Advance Amount (₹)</label>
               <input 
@@ -259,9 +259,9 @@ export function TripAssignmentForm({ indent, onSuccess }: { indent: any, onSucce
         </div>
 
         {/* Commercials */}
-        <div className="border-t border-slate-200 pt-3 col-span-2">
+        <div className="border-t border-slate-200 pt-3 col-span-1 sm:col-span-2">
           <h3 className="text-xs font-bold text-slate-700 uppercase tracking-wider mb-3">Commercials</h3>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <label className="text-xs font-medium text-slate-600">Booking Type</label>
               <select 

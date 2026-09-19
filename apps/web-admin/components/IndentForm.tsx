@@ -272,9 +272,9 @@ export function IndentForm({ onSuccess }: { onSuccess: () => void }) {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4 py-4">
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {/* Customer Selection */}
-        <div className="space-y-2 col-span-2">
+        <div className="space-y-2 col-span-1 sm:col-span-2">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5">
             <label className="text-sm font-medium">Customer *</label>
 

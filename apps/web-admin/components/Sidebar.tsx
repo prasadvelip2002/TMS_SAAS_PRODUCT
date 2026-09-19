@@ -115,9 +115,9 @@ export function Sidebar({ isOpen = false, onClose }: SidebarProps) {
           ${isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
         `}
       >
-        <div className="h-[80px] sm:h-[90px] shrink-0 flex items-center px-4 justify-between border-b border-slate-800/80">
-          <div className="h-14 sm:h-16 flex-1 flex items-center justify-center bg-white rounded-xl px-2 py-1 shadow-sm">
-            <img src="/logo.png" alt="TransitFlow LOGISTICS" className="w-full h-[46px] sm:h-[52px] object-contain mix-blend-multiply" />
+        <div className="h-[62px] sm:h-[75px] lg:h-[86px] shrink-0 flex items-center px-3 sm:px-4 justify-between border-b border-slate-800/80">
+          <div className="h-11 sm:h-14 flex-1 flex items-center justify-center bg-white rounded-xl px-2 py-1 shadow-sm">
+            <img src="/logo.png" alt="TransitFlow LOGISTICS" className="w-full h-[38px] sm:h-[46px] object-contain mix-blend-multiply" />
           </div>
           {onClose && (
             <button
@@ -130,7 +130,7 @@ export function Sidebar({ isOpen = false, onClose }: SidebarProps) {
           )}
         </div>
 
-        <div className="flex-1 overflow-y-auto pb-4 scrollbar-hide">
+        <div className="flex-1 overflow-y-auto pb-4 scrollbar-hide touch-scroll">
           {navGroups.map((g, i) => {
             const visibleItems = g.items.filter(item => item.roles.includes(userRole));
             

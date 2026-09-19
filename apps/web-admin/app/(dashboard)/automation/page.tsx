@@ -48,11 +48,11 @@ export default function AutomationPage() {
   return (
     <div className="relative h-full flex flex-col">
       {/* HEADER SECTION */}
-      <div className="flex justify-between items-end mb-[20px] shrink-0">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-[20px] shrink-0">
         <div>
-          <h1 className="font-disp font-bold text-[28px] text-slate-900 tracking-tight leading-tight">Daily Scheduler & Automation Logs</h1>
-          <p className="text-[14px] text-slate-500 mt-1 font-medium flex items-center gap-2">
-            <span className="relative flex h-2 w-2">
+          <h1 className="font-disp font-bold text-xl sm:text-2xl md:text-[28px] text-slate-900 tracking-tight leading-tight">Daily Scheduler & Automation Logs</h1>
+          <p className="text-xs sm:text-[14px] text-slate-500 mt-1 font-medium flex items-center gap-2">
+            <span className="relative flex h-2 w-2 shrink-0">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
               <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
             </span>
@@ -60,26 +60,24 @@ export default function AutomationPage() {
           </p>
         </div>
         
-        <div className="flex items-center gap-[16px]">
+        <div className="flex flex-wrap items-center gap-2.5 sm:gap-[16px] w-full sm:w-auto">
           <button 
             onClick={() => loadData(true)}
             disabled={isRefreshing}
-            className="bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 hover:text-slate-900 px-4 py-2.5 rounded-xl text-[13px] font-bold transition-all shadow-sm flex items-center gap-2 disabled:opacity-50"
+            className="bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 hover:text-slate-900 px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl text-xs sm:text-[13px] font-bold transition-all shadow-sm flex items-center gap-2 disabled:opacity-50"
           >
             <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
-            Refresh Logs
+            <span className="truncate">Refresh Logs</span>
           </button>
-          
-          <div className="h-[24px] w-[1px] bg-slate-200"></div>
 
-          <div className="relative flex items-center">
+          <div className="relative flex-1 sm:flex-initial flex items-center min-w-[160px]">
             <Search className="w-[16px] h-[16px] text-slate-400 absolute left-[14px] top-1/2 -translate-y-1/2" />
             <input 
               type="text" 
               placeholder="Search logs..." 
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-[240px] h-[42px] bg-white border border-slate-200 rounded-[12px] pl-[40px] pr-[32px] text-[14px] outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all shadow-sm"
+              className="w-full sm:w-[220px] h-[38px] sm:h-[42px] bg-white border border-slate-200 rounded-[12px] pl-[40px] pr-[32px] text-xs sm:text-[14px] outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all shadow-sm"
             />
             {searchQuery && (
               <button 
@@ -92,7 +90,7 @@ export default function AutomationPage() {
             )}
           </div>
           
-          <div className="flex bg-white border border-slate-200 rounded-[12px] p-1 shadow-sm">
+          <div className="hidden sm:flex bg-white border border-slate-200 rounded-[12px] p-1 shadow-sm">
             <button className="p-1.5 bg-slate-100 text-slate-800 rounded-[8px] shadow-sm"><List className="w-4 h-4" /></button>
             <button className="p-1.5 text-slate-400 hover:text-slate-800 rounded-[8px]"><Grid className="w-4 h-4" /></button>
           </div>
@@ -107,7 +105,7 @@ export default function AutomationPage() {
           </div>
         )}
         
-        <div className="overflow-auto flex-1">
+        <div className="overflow-auto flex-1 custom-table-scroll touch-scroll">
           <ProtoTable headers={["TIMESTAMP", "CATEGORY", "TITLE", "MESSAGE", "ENTITY ID", "STATUS"]}>
             {loading && logs.length === 0 ? (
               <tr>

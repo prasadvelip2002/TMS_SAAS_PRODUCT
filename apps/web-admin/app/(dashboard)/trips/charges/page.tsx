@@ -710,14 +710,14 @@ export default function AdditionalChargesPage() {
 
       {/* SLIDE-OVER PANEL: LOG CHARGE */}
       <div 
-        className={`fixed top-0 right-0 h-full w-[490px] max-w-full bg-white shadow-2xl z-50 transform transition-transform duration-300 ease-in-out flex flex-col border-l border-slate-200 ${isPanelOpen ? 'translate-x-0' : 'translate-x-full'}`}
+        className={`fixed top-0 right-0 h-full w-full sm:w-[490px] max-w-full bg-white shadow-2xl z-50 transform transition-transform duration-300 ease-in-out flex flex-col border-l border-slate-200 ${isPanelOpen ? 'translate-x-0' : 'translate-x-full'}`}
       >
-        <div className="px-7 py-5 border-b border-slate-100 flex items-center justify-between bg-slate-50/50 shrink-0">
+        <div className="px-4 sm:px-7 py-4 sm:py-5 border-b border-slate-100 flex items-center justify-between bg-slate-50/50 shrink-0">
           <div>
-            <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
+            <h2 className="text-base sm:text-lg font-bold text-slate-800 flex items-center gap-2">
               <HandCoins className="w-5 h-5 text-blue-600" /> Log Additional Charge
             </h2>
-            <p className="text-xs text-slate-500 mt-0.5 font-medium">Record extra expenses with clear billing allocation.</p>
+            <p className="text-[11px] sm:text-xs text-slate-500 mt-0.5 font-medium">Record extra expenses with clear billing allocation.</p>
           </div>
           <button 
             onClick={() => setIsPanelOpen(false)}
@@ -727,7 +727,7 @@ export default function AdditionalChargesPage() {
           </button>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-7">
+        <div className="flex-1 overflow-y-auto p-4 sm:p-7 touch-scroll">
           <form id="charge-form" onSubmit={handleLogCharge} className="space-y-4">
             
             {/* Trip Selector Dropdown */}

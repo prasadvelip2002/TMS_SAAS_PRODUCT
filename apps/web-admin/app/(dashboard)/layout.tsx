@@ -82,7 +82,7 @@ export default function DashboardLayout({
       <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
       <main className="flex-1 h-full flex flex-col min-w-0 overflow-hidden relative w-full max-w-full">
         <Header onToggleSidebar={() => setSidebarOpen(prev => !prev)} />
-        <div className="flex-1 overflow-y-auto overflow-x-hidden p-3 sm:p-4 md:p-6 relative z-0 w-full max-w-full">
+        <div className="flex-1 overflow-y-auto overflow-x-hidden p-2.5 sm:p-4 md:p-6 relative z-0 w-full max-w-full touch-scroll">
           {authorized ? children : (
             <div className="flex flex-col items-center justify-center h-full text-center">
               <div className="w-20 h-20 bg-red-100 text-red-500 rounded-full flex items-center justify-center mb-6">

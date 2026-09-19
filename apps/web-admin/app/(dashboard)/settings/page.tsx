@@ -75,73 +75,73 @@ export default function SettingsPage() {
       </div>
 
       <div className="bg-white rounded-2xl shadow-sm ring-1 ring-slate-200/50 overflow-hidden">
-        <div className="flex border-b border-slate-200/80 bg-slate-50/50">
+        <div className="flex border-b border-slate-200/80 bg-slate-50/50 overflow-x-auto whitespace-nowrap scrollbar-hide">
           <button 
             onClick={() => setActiveTab("profile")}
-            className={`px-6 py-4 text-sm font-medium transition-colors border-b-[3px] ${activeTab === "profile" ? "border-blue-600 text-blue-700 bg-white" : "border-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-100/50"}`}
+            className={`px-4 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm font-medium transition-colors border-b-[3px] shrink-0 ${activeTab === "profile" ? "border-blue-600 text-blue-700 bg-white" : "border-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-100/50"}`}
           >
             <div className="flex items-center gap-2">
-              <Building2 className="w-4.5 h-4.5" />
+              <Building2 className="w-4 h-4 sm:w-4.5 sm:h-4.5" />
               Company Profile
             </div>
           </button>
           <button 
             onClick={() => setActiveTab("branches")}
-            className={`px-6 py-4 text-sm font-medium transition-colors border-b-[3px] ${activeTab === "branches" ? "border-blue-600 text-blue-700 bg-white" : "border-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-100/50"}`}
+            className={`px-4 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm font-medium transition-colors border-b-[3px] shrink-0 ${activeTab === "branches" ? "border-blue-600 text-blue-700 bg-white" : "border-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-100/50"}`}
           >
             <div className="flex items-center gap-2">
-              <MapPin className="w-4.5 h-4.5" />
+              <MapPin className="w-4 h-4 sm:w-4.5 sm:h-4.5" />
               Branches & Cost Centers
             </div>
           </button>
           <button 
             onClick={() => setActiveTab("team")}
-            className={`px-6 py-4 text-sm font-medium transition-colors border-b-[3px] ${activeTab === "team" ? "border-blue-600 text-blue-700 bg-white" : "border-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-100/50"}`}
+            className={`px-4 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm font-medium transition-colors border-b-[3px] shrink-0 ${activeTab === "team" ? "border-blue-600 text-blue-700 bg-white" : "border-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-100/50"}`}
           >
             <div className="flex items-center gap-2">
-              <Users className="w-4.5 h-4.5" />
+              <Users className="w-4 h-4 sm:w-4.5 sm:h-4.5" />
               Team Management
             </div>
           </button>
           <button 
             onClick={() => setActiveTab("billing")}
-            className={`px-6 py-4 text-sm font-medium transition-colors border-b-[3px] ${activeTab === "billing" ? "border-blue-600 text-blue-700 bg-white" : "border-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-100/50"}`}
+            className={`px-4 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm font-medium transition-colors border-b-[3px] shrink-0 ${activeTab === "billing" ? "border-blue-600 text-blue-700 bg-white" : "border-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-100/50"}`}
           >
             <div className="flex items-center gap-2">
-              <CreditCard className="w-4.5 h-4.5" />
+              <CreditCard className="w-4 h-4 sm:w-4.5 sm:h-4.5" />
               Subscription & Billing
             </div>
           </button>
         </div>
 
-        <div className="p-8">
+        <div className="p-4 sm:p-8">
           {activeTab === "profile" && (
             <div className="max-w-2xl">
-              <h2 className="text-lg font-bold text-slate-900 mb-6 tracking-tight">Company Information</h2>
-              <form onSubmit={handleSave} className="space-y-6">
-                <div className="flex items-center gap-6">
-                  <div className="w-24 h-24 rounded-2xl border-2 border-dashed border-slate-300 flex flex-col items-center justify-center text-slate-400 bg-slate-50 hover:bg-slate-100 hover:border-slate-400 transition-colors cursor-pointer">
-                    <Upload className="w-6 h-6 mb-1" />
+              <h2 className="text-base sm:text-lg font-bold text-slate-900 mb-4 sm:mb-6 tracking-tight">Company Information</h2>
+              <form onSubmit={handleSave} className="space-y-4 sm:space-y-6">
+                <div className="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-6">
+                  <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl border-2 border-dashed border-slate-300 flex flex-col items-center justify-center text-slate-400 bg-slate-50 hover:bg-slate-100 hover:border-slate-400 transition-colors cursor-pointer shrink-0">
+                    <Upload className="w-5 h-5 sm:w-6 sm:h-6 mb-1" />
                     <span className="text-[10px] font-bold uppercase tracking-wider">Logo</span>
                   </div>
                   <div>
-                    <h3 className="font-medium text-slate-900">Upload Company Logo</h3>
-                    <p className="text-sm font-medium text-slate-500 mt-0.5">Square image, recommended 512x512px. Max 2MB.</p>
+                    <h3 className="font-medium text-slate-900 text-sm sm:text-base">Upload Company Logo</h3>
+                    <p className="text-xs sm:text-sm font-medium text-slate-500 mt-0.5">Square image, recommended 512x512px. Max 2MB.</p>
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-6">
-                  <div className="col-span-2">
-                    <label className="block text-[11.5px] font-bold text-slate-500 mb-1.5 uppercase tracking-wider">Company/Tenant Name</label>
-                    <input type="text" className="w-full border border-slate-200 rounded-xl px-4 py-3 text-[14px] bg-slate-50 hover:bg-slate-100 focus:bg-white text-slate-900 font-medium outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all shadow-sm" value={company.name} onChange={e => setCompany({...company, name: e.target.value})} />
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+                  <div className="sm:col-span-2">
+                    <label className="block text-[11px] sm:text-[11.5px] font-bold text-slate-500 mb-1.5 uppercase tracking-wider">Company/Tenant Name</label>
+                    <input type="text" className="w-full border border-slate-200 rounded-xl px-3 sm:px-4 py-2.5 sm:py-3 text-xs sm:text-[14px] bg-slate-50 hover:bg-slate-100 focus:bg-white text-slate-900 font-medium outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all shadow-sm" value={company.name} onChange={e => setCompany({...company, name: e.target.value})} />
                   </div>
-                  <div>
-                    <label className="block text-[11.5px] font-bold text-slate-500 mb-1.5 uppercase tracking-wider">GSTIN</label>
-                    <input type="text" className="w-full border border-slate-200 rounded-xl px-4 py-3 text-[14px] bg-slate-50 hover:bg-slate-100 focus:bg-white text-slate-900 font-medium outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all shadow-sm" value={company.gstin} onChange={e => setCompany({...company, gstin: e.target.value})} />
+                  <div className="sm:col-span-1">
+                    <label className="block text-[11px] sm:text-[11.5px] font-bold text-slate-500 mb-1.5 uppercase tracking-wider">GSTIN</label>
+                    <input type="text" className="w-full border border-slate-200 rounded-xl px-3 sm:px-4 py-2.5 sm:py-3 text-xs sm:text-[14px] bg-slate-50 hover:bg-slate-100 focus:bg-white text-slate-900 font-medium outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all shadow-sm" value={company.gstin} onChange={e => setCompany({...company, gstin: e.target.value})} />
                   </div>
-                  <div className="col-span-2">
-                    <label className="block text-[11.5px] font-bold text-slate-500 mb-1.5 uppercase tracking-wider">Registered Address</label>
-                    <textarea rows={3} className="w-full border border-slate-200 rounded-xl px-4 py-3 text-[14px] bg-slate-50 hover:bg-slate-100 focus:bg-white text-slate-900 font-medium outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all shadow-sm" value={company.address} onChange={e => setCompany({...company, address: e.target.value})} />
+                  <div className="sm:col-span-2">
+                    <label className="block text-[11px] sm:text-[11.5px] font-bold text-slate-500 mb-1.5 uppercase tracking-wider">Registered Address</label>
+                    <textarea rows={3} className="w-full border border-slate-200 rounded-xl px-3 sm:px-4 py-2.5 sm:py-3 text-xs sm:text-[14px] bg-slate-50 hover:bg-slate-100 focus:bg-white text-slate-900 font-medium outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all shadow-sm" value={company.address} onChange={e => setCompany({...company, address: e.target.value})} />
                   </div>
                 </div>
 
@@ -163,39 +163,39 @@ export default function SettingsPage() {
               {loading ? (
                 <div className="flex justify-center p-8"><Activity className="animate-spin text-blue-600" /></div>
               ) : subscription ? (
-                <div className="bg-gradient-to-br from-[#0F172A] to-blue-900 rounded-3xl p-8 text-white relative overflow-hidden shadow-xl shadow-blue-900/10">
+                <div className="bg-gradient-to-br from-[#0F172A] to-blue-900 rounded-2xl sm:rounded-3xl p-5 sm:p-8 text-white relative overflow-hidden shadow-xl shadow-blue-900/10">
                   <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full blur-3xl -mr-20 -mt-20"></div>
                   
-                  <div className="flex justify-between items-start relative z-10">
+                  <div className="flex flex-col sm:flex-row justify-between items-start gap-4 relative z-10">
                     <div>
-                      <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/10 border border-white/20 text-[11px] font-bold tracking-wider text-white mb-4 uppercase">
+                      <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/10 border border-white/20 text-[11px] font-bold tracking-wider text-white mb-3 sm:mb-4 uppercase">
                         {subscription.subscriptionStatus === "Trialing" ? "14-Day Free Trial" : "Active Subscription"}
                       </div>
-                      <h3 className="text-3xl font-black tracking-tight">{subscription.plan?.name || "Free Trial"} Plan</h3>
-                      <p className="text-slate-300 font-medium mt-2">Your subscription is active until {new Date(subscription.endDate).toLocaleDateString()}.</p>
+                      <h3 className="text-2xl sm:text-3xl font-black tracking-tight">{subscription.plan?.name || "Free Trial"} Plan</h3>
+                      <p className="text-slate-300 font-medium text-xs sm:text-sm mt-1 sm:mt-2">Your subscription is active until {new Date(subscription.endDate).toLocaleDateString()}.</p>
                     </div>
-                    <div className="text-right">
-                      <div className="text-5xl font-black">${subscription.plan?.price || 0}<span className="text-lg text-slate-400 font-medium">/mo</span></div>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-3 gap-6 mt-10 relative z-10 border-t border-white/10 pt-8">
-                    <div>
-                      <div className="text-slate-400 font-medium text-sm mb-1 uppercase tracking-wider">Max Users</div>
-                      <div className="text-2xl font-bold">{subscription.plan?.maxUsers || 5} <span className="text-sm font-medium text-slate-400 ml-1">Included</span></div>
-                    </div>
-                    <div>
-                      <div className="text-slate-400 font-medium text-sm mb-1 uppercase tracking-wider">Monthly Trips</div>
-                      <div className="text-2xl font-bold">{subscription.plan?.maxTripsPerMonth || 100} <span className="text-sm font-medium text-slate-400 ml-1">Included</span></div>
-                    </div>
-                    <div>
-                      <div className="text-slate-400 font-medium text-sm mb-1 uppercase tracking-wider">Branches</div>
-                      <div className="text-2xl font-bold">{subscription.plan?.maxBranches || 1} <span className="text-sm font-medium text-slate-400 ml-1">Included</span></div>
+                    <div className="text-left sm:text-right">
+                      <div className="text-3xl sm:text-5xl font-black">${subscription.plan?.price || 0}<span className="text-base sm:text-lg text-slate-400 font-medium">/mo</span></div>
                     </div>
                   </div>
 
-                  <div className="mt-8 relative z-10">
-                    <button className="bg-white text-blue-900 px-6 py-3 rounded-xl font-bold hover:bg-blue-50 transition-colors shadow-lg">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6 mt-6 sm:mt-10 relative z-10 border-t border-white/10 pt-6 sm:pt-8">
+                    <div>
+                      <div className="text-slate-400 font-medium text-xs sm:text-sm mb-1 uppercase tracking-wider">Max Users</div>
+                      <div className="text-xl sm:text-2xl font-bold">{subscription.plan?.maxUsers || 5} <span className="text-xs sm:text-sm font-medium text-slate-400 ml-1">Included</span></div>
+                    </div>
+                    <div>
+                      <div className="text-slate-400 font-medium text-xs sm:text-sm mb-1 uppercase tracking-wider">Monthly Trips</div>
+                      <div className="text-xl sm:text-2xl font-bold">{subscription.plan?.maxTripsPerMonth || 100} <span className="text-xs sm:text-sm font-medium text-slate-400 ml-1">Included</span></div>
+                    </div>
+                    <div>
+                      <div className="text-slate-400 font-medium text-xs sm:text-sm mb-1 uppercase tracking-wider">Branches</div>
+                      <div className="text-xl sm:text-2xl font-bold">{subscription.plan?.maxBranches || 1} <span className="text-xs sm:text-sm font-medium text-slate-400 ml-1">Included</span></div>
+                    </div>
+                  </div>
+
+                  <div className="mt-6 sm:mt-8 relative z-10">
+                    <button className="w-full sm:w-auto bg-white text-blue-900 px-6 py-3 rounded-xl font-bold hover:bg-blue-50 transition-colors shadow-lg text-sm">
                       Upgrade Plan
                     </button>
                   </div>

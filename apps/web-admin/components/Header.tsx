@@ -90,7 +90,7 @@ export function Header({ onToggleSidebar }: HeaderProps) {
   };
 
   return (
-    <div className="h-[70px] sm:h-[80px] lg:h-[90px] shrink-0 bg-white/80 backdrop-blur-xl border-b border-slate-200/60 shadow-[0_4px_30px_rgb(0,0,0,0.03)] flex items-center justify-between px-3 sm:px-6 lg:px-8 relative z-30">
+    <div className="h-[62px] sm:h-[75px] lg:h-[86px] shrink-0 bg-white/85 backdrop-blur-xl border-b border-slate-200/60 shadow-[0_4px_30px_rgb(0,0,0,0.03)] flex items-center justify-between px-3 sm:px-6 lg:px-8 relative z-30">
       <div className="flex items-center gap-2.5 sm:gap-4 min-w-0">
         {onToggleSidebar && (
           <button
@@ -112,7 +112,7 @@ export function Header({ onToggleSidebar }: HeaderProps) {
         </div>
       </div>
 
-      {/* Global Quick Search Bar */}
+      {/* Global Quick Search Bar (Desktop Trigger) */}
       <div className="relative hidden md:block">
         <div 
           onClick={() => { setSearchOpen(true); setTimeout(() => searchInputRef.current?.focus(), 50); }}
@@ -122,57 +122,57 @@ export function Header({ onToggleSidebar }: HeaderProps) {
           <span className="text-xs font-medium truncate flex-1">Quick search screens, trips, customers...</span>
           <kbd className="hidden sm:inline-block px-1.5 py-0.5 text-[10px] font-mono font-bold text-slate-400 bg-white border border-slate-200 rounded shadow-2xs">Ctrl K</kbd>
         </div>
+      </div>
 
-        {/* Global Search Dropdown */}
-        {searchOpen && (
-          <div className="fixed inset-0 z-50 flex items-start justify-center pt-20 px-4">
-            <div className="fixed inset-0 bg-slate-900/30 backdrop-blur-xs" onClick={() => setSearchOpen(false)} />
-            <div className="relative w-full max-w-xl bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[500px] z-10 animate-in fade-in zoom-in-95 duration-150">
-              <div className="p-4 border-b border-slate-100 flex items-center gap-3">
-                <Search size={18} className="text-blue-600 shrink-0" />
-                <input
-                  ref={searchInputRef}
-                  type="text"
-                  placeholder="Jump to any module or screen..."
-                  value={globalSearch}
-                  onChange={(e) => setGlobalSearch(e.target.value)}
-                  className="flex-1 bg-transparent border-none outline-none text-sm text-slate-800 font-medium placeholder:text-slate-400"
-                />
-                {globalSearch && (
-                  <button onClick={() => setGlobalSearch("")} className="text-slate-400 hover:text-slate-600 p-1">
-                    <X size={16} />
-                  </button>
-                )}
-                <button onClick={() => setSearchOpen(false)} className="text-xs font-semibold text-slate-400 hover:text-slate-600 px-2 py-1 rounded bg-slate-100">
-                  ESC
+      {/* Global Search Dropdown (Mobile & Desktop) */}
+      {searchOpen && (
+        <div className="fixed inset-0 z-50 flex items-start justify-center pt-8 sm:pt-20 px-3 sm:px-4">
+          <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs" onClick={() => setSearchOpen(false)} />
+          <div className="relative w-full max-w-xl bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[80vh] sm:max-h-[500px] z-10 animate-in fade-in zoom-in-95 duration-150">
+            <div className="p-3 sm:p-4 border-b border-slate-100 flex items-center gap-2.5 sm:gap-3">
+              <Search size={18} className="text-blue-600 shrink-0" />
+              <input
+                ref={searchInputRef}
+                type="text"
+                placeholder="Jump to any module or screen..."
+                value={globalSearch}
+                onChange={(e) => setGlobalSearch(e.target.value)}
+                className="flex-1 bg-transparent border-none outline-none text-xs sm:text-sm text-slate-800 font-medium placeholder:text-slate-400"
+              />
+              {globalSearch && (
+                <button onClick={() => setGlobalSearch("")} className="text-slate-400 hover:text-slate-600 p-1">
+                  <X size={16} />
                 </button>
-              </div>
+              )}
+              <button onClick={() => setSearchOpen(false)} className="text-[11px] sm:text-xs font-semibold text-slate-400 hover:text-slate-600 px-2 py-1 rounded bg-slate-100">
+                ESC
+              </button>
+            </div>
 
-              <div className="overflow-y-auto p-2 divide-y divide-slate-50">
-                {filteredModules.length === 0 ? (
-                  <div className="p-8 text-center text-slate-400 text-sm">
-                    No screens matching "{globalSearch}"
-                  </div>
-                ) : (
-                  filteredModules.map((m) => (
-                    <button
-                      key={m.path}
-                      onClick={() => handleSelectModule(m.path)}
-                      className="w-full flex items-center justify-between p-3 rounded-xl hover:bg-blue-50 text-left transition-colors group"
-                    >
-                      <div>
-                        <div className="text-sm font-semibold text-slate-800 group-hover:text-blue-600">{m.name}</div>
-                        <div className="text-[11px] font-medium text-slate-400">{m.category} • <span className="font-mono">{m.path}</span></div>
-                      </div>
-                      <ArrowRight size={15} className="text-slate-300 group-hover:text-blue-600 transition-colors" />
-                    </button>
-                  ))
-                )}
-              </div>
+            <div className="overflow-y-auto p-2 divide-y divide-slate-50 touch-scroll">
+              {filteredModules.length === 0 ? (
+                <div className="p-8 text-center text-slate-400 text-sm">
+                  No screens matching "{globalSearch}"
+                </div>
+              ) : (
+                filteredModules.map((m) => (
+                  <button
+                    key={m.path}
+                    onClick={() => handleSelectModule(m.path)}
+                    className="w-full flex items-center justify-between p-2.5 sm:p-3 rounded-xl hover:bg-blue-50 text-left transition-colors group"
+                  >
+                    <div>
+                      <div className="text-xs sm:text-sm font-semibold text-slate-800 group-hover:text-blue-600">{m.name}</div>
+                      <div className="text-[10px] sm:text-[11px] font-medium text-slate-400">{m.category} • <span className="font-mono">{m.path}</span></div>
+                    </div>
+                    <ArrowRight size={15} className="text-slate-300 group-hover:text-blue-600 transition-colors shrink-0" />
+                  </button>
+                ))
+              )}
             </div>
           </div>
-        )}
-      </div>
+        </div>
+      )}
 
       <div className="flex items-center gap-2 sm:gap-3 shrink-0">
         {/* Mobile Quick Search Icon */}
