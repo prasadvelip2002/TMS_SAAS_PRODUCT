@@ -110,22 +110,24 @@ export function RouteTrack({ stages, currentIdx }: { stages: string[], currentId
   );
 }
 
-export function ProtoTable({ headers, children }: { headers: React.ReactNode[], children: React.ReactNode }) {
+export function ProtoTable({ headers, children, minWidth = "850px" }: { headers: React.ReactNode[], children: React.ReactNode, minWidth?: string }) {
   return (
-    <table className="w-full border-collapse text-[12.8px]">
-      <thead className="sticky top-0 z-10">
-        <tr>
-          {headers.map((h, i) => (
-            <th key={i} className="text-left font-body font-semibold text-[11px] tracking-[0.3px] uppercase text-muted-text px-[18px] py-[10px] border-b border-line bg-[#FAFBFD] shadow-sm">
-              {h}
-            </th>
-          ))}
-        </tr>
-      </thead>
-      <tbody className="divide-y divide-line">
-        {children}
-      </tbody>
-    </table>
+    <div className="w-full max-w-full overflow-x-auto overflow-y-visible rounded-xl border border-line bg-white shadow-2xs">
+      <table className="w-full border-collapse text-[12.8px]" style={{ minWidth }}>
+        <thead className="sticky top-0 z-10">
+          <tr>
+            {headers.map((h, i) => (
+              <th key={i} className="text-left font-body font-semibold text-[11px] tracking-[0.3px] uppercase text-muted-text px-[18px] py-[10px] border-b border-line bg-[#FAFBFD] shadow-2xs whitespace-nowrap">
+                {h}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-line">
+          {children}
+        </tbody>
+      </table>
+    </div>
   );
 }
 

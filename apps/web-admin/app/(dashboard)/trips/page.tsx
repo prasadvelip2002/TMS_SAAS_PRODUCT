@@ -197,20 +197,20 @@ export default function TripsPage() {
     <div className="max-w-[1600px] mx-auto pb-6 h-full flex flex-col w-full">
       
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Trip & Indent Dashboard</h1>
-          <p className="text-sm font-medium text-slate-500 mt-1">Monitor pending indents and track active trips in real-time.</p>
+          <h1 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">Trip & Indent Dashboard</h1>
+          <p className="text-xs sm:text-sm font-medium text-slate-500 mt-0.5">Monitor pending indents and track active trips in real-time.</p>
         </div>
-        <div className="flex items-center gap-3">
-          <div className="relative">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full md:w-auto">
+          <div className="relative flex-1 sm:w-[280px]">
             <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
             <input 
               type="text" 
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder={activeTab === 'indents' ? "Search indents, customer, route..." : "Search trips, vehicle, driver, route..."}
-              className="w-[280px] h-[40px] bg-white border border-slate-200 rounded-xl pl-9 pr-8 text-xs font-medium outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all shadow-xs"
+              className="w-full h-[40px] bg-white border border-slate-200 rounded-xl pl-9 pr-8 text-xs font-medium outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all shadow-xs"
             />
             {searchQuery && (
               <button 
@@ -221,11 +221,11 @@ export default function TripsPage() {
               </button>
             )}
           </div>
-          <div className="flex items-center gap-1 bg-white rounded-xl shadow-sm ring-1 ring-slate-200/50 p-1.5">
-            <button onClick={() => setViewMode('grid')} className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition-colors ${viewMode === 'grid' ? 'bg-blue-50 text-blue-700' : 'text-slate-500 hover:bg-slate-50'}`}>
+          <div className="flex items-center justify-center gap-1 bg-white rounded-xl shadow-sm ring-1 ring-slate-200/50 p-1 shrink-0">
+            <button onClick={() => setViewMode('grid')} className={`flex-1 sm:flex-none flex items-center justify-center gap-2 px-3.5 py-2 rounded-lg text-xs sm:text-sm font-bold transition-colors ${viewMode === 'grid' ? 'bg-blue-50 text-blue-700' : 'text-slate-500 hover:bg-slate-50'}`}>
               <Grid className="w-4 h-4" /> Grid
             </button>
-            <button onClick={() => setViewMode('list')} className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition-colors ${viewMode === 'list' ? 'bg-blue-50 text-blue-700' : 'text-slate-500 hover:bg-slate-50'}`}>
+            <button onClick={() => setViewMode('list')} className={`flex-1 sm:flex-none flex items-center justify-center gap-2 px-3.5 py-2 rounded-lg text-xs sm:text-sm font-bold transition-colors ${viewMode === 'list' ? 'bg-blue-50 text-blue-700' : 'text-slate-500 hover:bg-slate-50'}`}>
               <List className="w-4 h-4" /> Table
             </button>
           </div>
@@ -233,17 +233,17 @@ export default function TripsPage() {
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-6 mb-6 border-b border-slate-200">
+      <div className="flex gap-4 sm:gap-6 mb-6 border-b border-slate-200 overflow-x-auto scrollbar-hide">
         <button 
           onClick={() => setActiveTab('indents')}
-          className={`font-semibold text-[14px] pb-3 border-b-2 transition-colors ${activeTab === 'indents' ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-500 hover:text-slate-800'}`}
+          className={`font-semibold text-[13px] sm:text-[14px] pb-3 border-b-2 transition-colors shrink-0 ${activeTab === 'indents' ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-500 hover:text-slate-800'}`}
         >
           Pending Indents
           <span className={`ml-2 px-2 py-0.5 rounded-full text-[11px] ${activeTab === 'indents' ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-500'}`}>{pendingIndents.length}</span>
         </button>
         <button 
           onClick={() => setActiveTab('trips')}
-          className={`font-semibold text-[14px] pb-3 border-b-2 transition-colors ${activeTab === 'trips' ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-500 hover:text-slate-800'}`}
+          className={`font-semibold text-[13px] sm:text-[14px] pb-3 border-b-2 transition-colors shrink-0 ${activeTab === 'trips' ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-500 hover:text-slate-800'}`}
         >
           Active Trips
           <span className={`ml-2 px-2 py-0.5 rounded-full text-[11px] ${activeTab === 'trips' ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-500'}`}>{trips.length}</span>
