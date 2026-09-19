@@ -211,7 +211,7 @@ export default function AssignmentPage() {
     const existingVendorId = selectedIndent.trip?.vendorId || (formData.vendorId ? parseInt(formData.vendorId) : null);
     
     try {
-      await assignTrip({
+      const res: any = await assignTrip({
         tripId: selectedIndent.tripId,
         indentId: selectedIndent.indentId,
         vendorId: existingVendorId,
@@ -225,6 +225,9 @@ export default function AssignmentPage() {
         startingKM: formData.startingKM ? parseFloat(formData.startingKM) : null,
         tripStartDate: new Date(formData.tripStartDate).toISOString(),
       });
+
+      // Background WhatsApp notification sent directly to driver's phone
+
       setIsSidePanelOpen(false);
       setSelectedIndent(null);
       loadData();
@@ -664,13 +667,45 @@ export default function AssignmentPage() {
                 </div>
 
                 <div>
-                  <label className="block text-[13px] font-bold text-slate-700 mb-1.5">Driver</label>
+                  <label className="block text-[13px] font-bold text-slate-700 mb-1.5 flex items-center justify-between">
+                    <span>Driver</span>
+                    {formData.driverId && (
+                      <span className="text-[11px] text-emerald-700 font-semibold">
+                        WhatsApp Enabled
+                      </span>
+                    )}
+                  </label>
                   <select required value={formData.driverId} onChange={e => setFormData({...formData, driverId: e.target.value})} className="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-[14px] bg-slate-50/50 text-slate-900 font-medium outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all">
                     <option value="">Select Driver</option>
-                    {filteredDrivers.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
+                    {filteredDrivers.map(d => (
+                      <option key={d.id} value={d.id}>
+                        {d.name} {d.phone ? `(+91 ${d.phone})` : "(No Phone)"}
+                      </option>
+                    ))}
                   </select>
                 </div>
               </div>
+
+              {formData.driverId && (
+                (() => {
+                  const currDriver = drivers.find(d => d.id.toString() === formData.driverId);
+                  return (
+                    <div className={`p-3 rounded-xl border text-xs ${currDriver?.phone ? 'bg-emerald-50 border-emerald-200 text-emerald-900' : 'bg-amber-50 border-amber-200 text-amber-900'}`}>
+                      {currDriver?.phone ? (
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0"></span>
+                            <span>Direct WhatsApp notification will go to <strong>{currDriver.name} (+91 {currDriver.phone})</strong></span>
+                          </div>
+                          <span className="text-[10px] font-bold bg-emerald-200 text-emerald-800 px-2 py-0.5 rounded-full shrink-0">Direct</span>
+                        </div>
+                      ) : (
+                        <div>⚠️ Selected driver has no phone number. Add phone in Drivers master for automatic WhatsApp dispatch.</div>
+                      )}
+                    </div>
+                  );
+                })()
+              )}
             </div>
 
             {formData.vendorId && (

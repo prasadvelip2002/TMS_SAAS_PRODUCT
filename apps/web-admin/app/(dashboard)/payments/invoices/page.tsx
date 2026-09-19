@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { fetchApi } from "@/lib/api";
 import { ProtoTable, Td, Badge } from "@/components/PrototypeUI";
-import { Loader2, FileText, CheckSquare, Square, FilePlus, Search, Grid, List, Plus, X, User } from "lucide-react";
+import { Loader2, FileText, CheckSquare, Square, FilePlus, Search, Grid, List, Plus, X, User, MessageCircle } from "lucide-react";
 
 export default function CustomerInvoicingDashboard() {
   const [customers, setCustomers] = useState<any[]>([]);
@@ -110,13 +110,28 @@ export default function CustomerInvoicingDashboard() {
       });
       setIsPanelOpen(false);
       setSelectedCustomer("");
-      alert("Invoice generated successfully!");
+      alert("Invoice generated and dispatched to Customer via WhatsApp!");
       loadBaseData();
     } catch (e) {
       console.error(e);
       alert("Failed to generate invoice");
     } finally {
       setGenerating(false);
+    }
+  };
+
+  const handleSendInvoiceWhatsApp = async (invoiceId: number, customerName?: string) => {
+    try {
+      const res = await fetchApi(`/Finance/invoices/${invoiceId}/send-whatsapp`, {
+        method: "POST"
+      });
+      if (res?.success || res?.status === "Delivered" || res?.status === "Sent") {
+        alert(`Tax Invoice dispatched directly to ${customerName || 'Customer'} via WhatsApp!`);
+      } else {
+        alert(res?.errorMessage || "Failed to send WhatsApp message.");
+      }
+    } catch (e: any) {
+      alert(e.message || "Failed to dispatch WhatsApp invoice.");
     }
   };
 
@@ -239,16 +254,23 @@ export default function CustomerInvoicingDashboard() {
                       <a 
                         href={`/invoices/${inv.id}/pdf`}
                         target="_blank"
-                        className="bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 px-4 py-2 rounded-xl text-[12px] font-bold transition-all flex items-center gap-1.5 w-max shadow-sm"
+                        className="bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 px-3.5 py-2 rounded-xl text-[12px] font-bold transition-all flex items-center gap-1.5 w-max shadow-sm"
                       >
-                        <FileText className="w-4 h-4 text-slate-500" /> View PDF
+                        <FileText className="w-4 h-4 text-slate-500" /> PDF
                       </a>
+                      <button 
+                        onClick={() => handleSendInvoiceWhatsApp(inv.id, inv.customer?.name)}
+                        className="bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 px-3 py-2 rounded-xl text-[12px] font-bold transition-all shadow-sm flex items-center gap-1.5 w-max"
+                        title={`Send invoice details directly to ${inv.customer?.name} via WhatsApp`}
+                      >
+                        <MessageCircle className="w-4 h-4 text-emerald-600" /> WhatsApp
+                      </button>
                       {inv.status === "Unpaid" && (
                         <button 
                           onClick={() => handleMarkPaid(inv.id)}
-                          className="bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 px-4 py-2 rounded-xl text-[12px] font-bold transition-all shadow-sm flex items-center gap-1.5 w-max"
+                          className="bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 px-3 py-2 rounded-xl text-[12px] font-bold transition-all shadow-sm flex items-center gap-1.5 w-max"
                         >
-                          <CheckSquare className="w-4 h-4" /> Mark Paid
+                          Mark Paid
                         </button>
                       )}
                     </div>

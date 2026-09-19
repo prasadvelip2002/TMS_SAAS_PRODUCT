@@ -6,6 +6,9 @@ using api_backend.Models;
 using System.Linq;
 using System.Threading.Tasks;
 
+using System;
+using api_backend.Services.Interfaces;
+
 namespace api_backend.Controllers
 {
     [Route("api/[controller]")]
@@ -13,10 +16,33 @@ namespace api_backend.Controllers
     public class SalesController : ControllerBase
     {
         private readonly ApplicationDbContext _context;
+        private readonly IWhatsAppService _whatsAppService;
 
-        public SalesController(ApplicationDbContext context)
+        public SalesController(ApplicationDbContext context, IWhatsAppService whatsAppService)
         {
             _context = context;
+            _whatsAppService = whatsAppService;
+        }
+
+        // POST: api/Sales/Quotations/{id}/send-whatsapp
+        [HttpPost("Quotations/{id}/send-whatsapp")]
+        [Authorize]
+        public async Task<IActionResult> SendQuotationWhatsApp(int id)
+        {
+            var sq = await _context.SalesQuotations
+                .Include(s => s.Indent)
+                    .ThenInclude(i => i.Customer)
+                .FirstOrDefaultAsync(s => s.Id == id);
+
+            if (sq == null) return NotFound("Sales Quotation not found");
+            var customer = sq.Indent?.Customer;
+            if (customer == null || string.IsNullOrEmpty(customer.Phone))
+            {
+                return BadRequest(new { message = "Customer has no registered phone number." });
+            }
+
+            var result = await _whatsAppService.SendSalesQuotationAsync(sq, sq.Indent, customer);
+            return Ok(result);
         }
 
         // GET: api/Sales/Quotations
@@ -276,6 +302,77 @@ namespace api_backend.Controllers
 
             return Ok(new { message = "SQ Approved, Customer PO Accepted, Trip Ready for Assignment." });
         }
+
+        // GET: api/Sales/QuotationByToken/{token} (Public Magic Link for Customer)
+        [HttpGet("QuotationByToken/{token}")]
+        [AllowAnonymous]
+        public async Task<IActionResult> GetQuotationByToken(string token)
+        {
+            var sq = await _context.SalesQuotations
+                .IgnoreQueryFilters()
+                .Include(s => s.Indent)
+                    .ThenInclude(i => i.Customer)
+                .Include(s => s.WinningVendorQuotation)
+                .FirstOrDefaultAsync(s => s.MagicLinkToken == token);
+
+            if (sq == null) return NotFound("Invalid or expired quotation link.");
+
+            return Ok(new
+            {
+                sq.Id,
+                sq.SellingPrice,
+                sq.BaseRate,
+                sq.Margin,
+                sq.Status,
+                sq.LegType,
+                sq.CostBreakdownJson,
+                CustomerName = sq.Indent?.Customer?.Name ?? "Valued Customer",
+                CustomerPhone = sq.Indent?.Customer?.Phone,
+                Indent = new
+                {
+                    sq.Indent?.Id,
+                    sq.Indent?.Source,
+                    sq.Indent?.Destination,
+                    sq.Indent?.WarehouseLocation,
+                    sq.Indent?.Material,
+                    sq.Indent?.Weight,
+                    sq.Indent?.VehicleType,
+                    sq.Indent?.LoadingDate,
+                    sq.Indent?.LoadingTime
+                }
+            });
+        }
+
+        // POST: api/Sales/ApproveByToken/{token} (Public Magic Link for Customer)
+        [HttpPost("ApproveByToken/{token}")]
+        [AllowAnonymous]
+        public async Task<IActionResult> ApproveByToken(string token, [FromBody] ApproveByTokenRequest request)
+        {
+            var sq = await _context.SalesQuotations
+                .IgnoreQueryFilters()
+                .Include(s => s.Indent)
+                .Include(s => s.WinningVendorQuotation)
+                .FirstOrDefaultAsync(s => s.MagicLinkToken == token);
+
+            if (sq == null) return NotFound("Invalid or expired quotation link.");
+
+            if (sq.Status == "Approved" || sq.Status == "PO_Received")
+            {
+                return Ok(new { message = "This quotation has already been approved." });
+            }
+
+            var poNumber = string.IsNullOrWhiteSpace(request.PONumber) 
+                ? $"PO-APP-{DateTime.UtcNow:MMddHHmm}" 
+                : request.PONumber;
+
+            return await ApproveSQ(sq.Id, new ApproveSQRequest { PONumber = poNumber });
+        }
+    }
+
+    public class ApproveByTokenRequest
+    {
+        public string PONumber { get; set; } = string.Empty;
+        public string? Remarks { get; set; }
     }
 
     public class GenerateSQRequest

@@ -18,3 +18,9 @@ node_modules
 apps/TempFix/
 apps/api-backend/wwwroot/uploads/*
 !apps/api-backend/wwwroot/uploads/.gitkeep
+
+# .NET build outputs
+bin/
+obj/
+*.user
+*.suo

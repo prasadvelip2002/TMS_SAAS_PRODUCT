@@ -16,9 +16,40 @@ builder.Services.AddHttpContextAccessor();
 builder.Logging.ClearProviders();
 builder.Logging.AddConsole();
 
+// -------------------------------------------------------------
+// Load .env variables so .env acts as boss for local/prod
+// -------------------------------------------------------------
+var envPaths = new[]
+{
+    Path.Combine(Directory.GetCurrentDirectory(), ".env"),
+    Path.Combine(Directory.GetCurrentDirectory(), "..", "..", ".env")
+};
+foreach (var path in envPaths)
+{
+    if (File.Exists(path))
+    {
+        foreach (var line in File.ReadAllLines(path))
+        {
+            var trimmed = line.Trim();
+            if (string.IsNullOrEmpty(trimmed) || trimmed.StartsWith("#")) continue;
+            var parts = trimmed.Split('=', 2);
+            if (parts.Length == 2)
+            {
+                Environment.SetEnvironmentVariable(parts[0].Trim(), parts[1].Trim());
+            }
+        }
+    }
+}
+
 // Add services to the container.
+// Priority: DATABASE_URL / DB_CONNECTION -> DefaultConnection (Neon) -> LocalConnection (Localhost)
+var connectionString = Environment.GetEnvironmentVariable("DATABASE_URL")
+    ?? Environment.GetEnvironmentVariable("DB_CONNECTION")
+    ?? builder.Configuration.GetConnectionString("DefaultConnection")
+    ?? builder.Configuration.GetConnectionString("LocalConnection");
+
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+    options.UseNpgsql(connectionString));
 
 // Configure JWT Authentication
 var jwtKey = builder.Configuration["Jwt:Key"] ?? "SuperSecretKeyForTransportManagementSystem!123";
@@ -46,6 +77,7 @@ builder.Services.AddHostedService<DailySchedulerService>();
 builder.Services.AddScoped<ITripService, TripService>();
 builder.Services.AddScoped<IDocumentService, LocalDocumentService>();
 builder.Services.AddScoped<INotificationService, NotificationService>();
+builder.Services.AddScoped<IWhatsAppService, WhatsAppService>();
 
 builder.Services.AddCors(options =>
 {
@@ -78,6 +110,11 @@ using (var scope = app.Services.CreateScope())
         db.Database.ExecuteSqlRaw("ALTER TABLE \"SalesQuotations\" ADD COLUMN IF NOT EXISTS \"LegType\" text;");
         db.Database.ExecuteSqlRaw("ALTER TABLE \"SalesQuotations\" ADD COLUMN IF NOT EXISTS \"TripId\" integer;");
         db.Database.ExecuteSqlRaw("ALTER TABLE \"SalesQuotations\" ADD COLUMN IF NOT EXISTS \"CostBreakdownJson\" text;");
+        db.Database.ExecuteSqlRaw("ALTER TABLE \"SalesQuotations\" ADD COLUMN IF NOT EXISTS \"MagicLinkToken\" text;");
+        db.Database.ExecuteSqlRaw("UPDATE \"SalesQuotations\" SET \"MagicLinkToken\" = gen_random_uuid()::text WHERE \"MagicLinkToken\" IS NULL;");
+        db.Database.ExecuteSqlRaw("ALTER TABLE \"WhatsAppLogs\" ADD COLUMN IF NOT EXISTS \"Message\" text;");
+        db.Database.ExecuteSqlRaw("ALTER TABLE \"WhatsAppLogs\" ADD COLUMN IF NOT EXISTS \"RecipientName\" text;");
+        db.Database.ExecuteSqlRaw("ALTER TABLE \"WhatsAppLogs\" ADD COLUMN IF NOT EXISTS \"ExternalMessageId\" text;");
         db.Database.ExecuteSqlRaw(@"
             UPDATE ""Trips"" t
             SET ""ServiceScope"" = COALESCE(vq.""ServiceScope"", 'EntireRoute')

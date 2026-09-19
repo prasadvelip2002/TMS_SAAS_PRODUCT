@@ -59,7 +59,7 @@ export default function ProcurementDashboard() {
   const handleSendRfq = async () => {
     if (selectedVendors.length === 0) return alert("Select at least one vendor");
     try {
-      await fetchApi(`/Procurement/BroadcastRFQ/${selectedIndent.id}`, {
+      const res = await fetchApi(`/Procurement/BroadcastRFQ/${selectedIndent.id}`, {
         method: "POST",
         body: JSON.stringify({
           vendorIds: selectedVendors,
@@ -67,11 +67,32 @@ export default function ProcurementDashboard() {
           loadingTime: rfqLoadingTime
         }),
       });
+      if (res?.whatsappSentCount > 0) {
+        alert(`RFQ broadcasted successfully! Direct WhatsApp messages dispatched to ${res.whatsappSentCount} vendor(s).`);
+      } else {
+        alert("RFQs broadcasted to selected vendors successfully!");
+      }
       setIsRfqPanelOpen(false);
       loadData();
     } catch (e) {
       console.error(e);
       alert("Failed to send RFQ");
+    }
+  };
+
+  const handleSendSingleVendorWhatsApp = async (vendorId: number, vendorName: string) => {
+    if (!selectedIndent) return;
+    try {
+      const res = await fetchApi(`/Procurement/SendVendorRfqWhatsApp/${selectedIndent.id}/${vendorId}`, {
+        method: "POST"
+      });
+      if (res?.success || res?.status === "Delivered" || res?.status === "Sent") {
+        alert(`Direct WhatsApp message dispatched to ${vendorName}!`);
+      } else {
+        alert(res?.errorMessage || "Failed to send WhatsApp message.");
+      }
+    } catch (e: any) {
+      alert(e.message || "Failed to send WhatsApp message");
     }
   };
 
@@ -523,21 +544,42 @@ export default function ProcurementDashboard() {
             <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-3 block">Vendor Directory</label>
             <div className="border border-slate-200 rounded-xl overflow-hidden divide-y divide-slate-100 bg-white shadow-sm">
               {vendors.map(v => (
-                <label key={v.id} className="flex items-center gap-4 p-4 hover:bg-slate-50 cursor-pointer transition-colors group">
-                  <input 
-                    type="checkbox" 
-                    className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 transition-colors"
-                    checked={selectedVendors.includes(v.id)}
-                    onChange={(e) => {
-                      if (e.target.checked) setSelectedVendors([...selectedVendors, v.id]);
-                      else setSelectedVendors(selectedVendors.filter(id => id !== v.id));
-                    }}
-                  />
-                  <div>
-                    <div className="font-bold text-slate-700 text-sm group-hover:text-blue-700 transition-colors">{v.name}</div>
-                    <div className="text-[12px] font-medium text-slate-500 mt-0.5">{v.city}, {v.state}</div>
-                  </div>
-                </label>
+                <div key={v.id} className="flex items-center justify-between p-3.5 hover:bg-slate-50 transition-colors group">
+                  <label className="flex items-center gap-3.5 cursor-pointer flex-1 min-w-0 mr-2">
+                    <input 
+                      type="checkbox" 
+                      className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 transition-colors shrink-0"
+                      checked={selectedVendors.includes(v.id)}
+                      onChange={(e) => {
+                        if (e.target.checked) setSelectedVendors([...selectedVendors, v.id]);
+                        else setSelectedVendors(selectedVendors.filter(id => id !== v.id));
+                      }}
+                    />
+                    <div className="min-w-0">
+                      <div className="font-bold text-slate-700 text-sm group-hover:text-blue-700 transition-colors truncate">{v.name}</div>
+                      <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                        <span className="text-[12px] font-medium text-slate-500">{v.city}, {v.state}</span>
+                        {v.phone ? (
+                          <span className="text-[11px] font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200/80 px-1.5 py-0.2 rounded flex items-center gap-1">
+                            📱 +91 {v.phone} · WhatsApp
+                          </span>
+                        ) : (
+                          <span className="text-[11px] text-slate-400">No phone</span>
+                        )}
+                      </div>
+                    </div>
+                  </label>
+                  {v.phone && (
+                    <button
+                      type="button"
+                      onClick={() => handleSendSingleVendorWhatsApp(v.id, v.name)}
+                      className="text-emerald-700 hover:text-emerald-800 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 px-2.5 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1 shrink-0 transition-colors shadow-xs"
+                      title={`Dispatch RFQ directly to ${v.name} via WhatsApp`}
+                    >
+                      <MessageCircle className="w-3.5 h-3.5 text-emerald-600" /> Send WA
+                    </button>
+                  )}
+                </div>
               ))}
             </div>
           </div>
@@ -549,7 +591,7 @@ export default function ProcurementDashboard() {
             disabled={selectedVendors.length === 0}
             className="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-3.5 px-6 rounded-xl transition-all shadow-lg flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            <Send className="w-4 h-4" /> Send RFQ to {selectedVendors.length} Vendors
+            <Send className="w-4 h-4" /> Broadcast RFQ & WhatsApp to {selectedVendors.length} Vendors
           </button>
         </div>
       </div>

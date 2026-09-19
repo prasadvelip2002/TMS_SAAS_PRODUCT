@@ -11,10 +11,12 @@ namespace api_backend.Services
     public class TripService : ITripService
     {
         private readonly ApplicationDbContext _context;
+        private readonly IWhatsAppService _whatsAppService;
 
-        public TripService(ApplicationDbContext context)
+        public TripService(ApplicationDbContext context, IWhatsAppService whatsAppService)
         {
             _context = context;
+            _whatsAppService = whatsAppService;
         }
 
         public async Task<Trip> AssignTripAsync(AssignTripRequest request)
@@ -130,6 +132,25 @@ namespace api_backend.Services
 
             await _context.SaveChangesAsync();
 
+            // Automated WhatsApp Notification on Trip Assignment
+            if (trip.DriverId.HasValue)
+            {
+                try
+                {
+                    var driver = await _context.Drivers.FindAsync(trip.DriverId.Value);
+                    var vehicle = trip.VehicleId.HasValue ? await _context.Vehicles.FindAsync(trip.VehicleId.Value) : null;
+                    if (driver != null && !string.IsNullOrEmpty(driver.Phone))
+                    {
+                        var waResult = await _whatsAppService.SendTripAssignedAsync(trip, driver, vehicle, indent);
+                        trip.WhatsAppNotification = waResult;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"[WhatsApp Trip Notification Error]: {ex.Message}");
+                }
+            }
+
             return trip;
         }
 
@@ -179,6 +200,35 @@ namespace api_backend.Services
             }
 
             await _context.SaveChangesAsync();
+
+            // Automated WhatsApp Notification on Delivery
+            if (newStatus == "Delivered" || newStatus == "Completed")
+            {
+                try
+                {
+                    if (trip.DriverId.HasValue)
+                    {
+                        var driver = await _context.Drivers.FindAsync(trip.DriverId.Value);
+                        if (driver != null && !string.IsNullOrEmpty(driver.Phone))
+                        {
+                            await _whatsAppService.SendPodReminderAsync(trip, driver);
+                        }
+                    }
+
+                    if (trip.Indent != null && trip.Indent.CustomerId > 0)
+                    {
+                        var customer = await _context.Customers.FindAsync(trip.Indent.CustomerId);
+                        if (customer != null && !string.IsNullOrEmpty(customer.Phone))
+                        {
+                            await _whatsAppService.SendDeliveryConfirmationAsync(trip, trip.Indent, customer.Phone, customer.Name);
+                        }
+                    }
+                }
+                catch
+                {
+                    // Non-blocking notification
+                }
+            }
 
             return trip;
         }

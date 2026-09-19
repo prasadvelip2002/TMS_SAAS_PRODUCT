@@ -8,6 +8,8 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Collections.Generic;
 
+using api_backend.Services.Interfaces;
+
 namespace api_backend.Controllers
 {
     [Route("api/[controller]")]
@@ -15,10 +17,12 @@ namespace api_backend.Controllers
     public class ProcurementController : ControllerBase
     {
         private readonly ApplicationDbContext _context;
+        private readonly IWhatsAppService _whatsAppService;
 
-        public ProcurementController(ApplicationDbContext context)
+        public ProcurementController(ApplicationDbContext context, IWhatsAppService whatsAppService)
         {
             _context = context;
+            _whatsAppService = whatsAppService;
         }
 
         // POST: api/Procurement/BroadcastRFQ
@@ -38,6 +42,7 @@ namespace api_backend.Controllers
                 indent.LoadingDate = request.LoadingDate.Value;
             }
 
+            int whatsappSentCount = 0;
             foreach (var vendorId in request.VendorIds)
             {
                 var quotation = new VendorQuotation
@@ -47,13 +52,63 @@ namespace api_backend.Controllers
                     Status = "Pending"
                 };
                 _context.VendorQuotations.Add(quotation);
+
+                // Automated dynamic UltraMsg WhatsApp dispatch
+                try
+                {
+                    var vendor = await _context.Vendors.FindAsync(vendorId);
+                    if (vendor != null && !string.IsNullOrEmpty(vendor.Phone))
+                    {
+                        var res = await _whatsAppService.SendRfqBroadcastAsync(indent, vendor, quotation.MagicLinkToken);
+                        if (res.Success) whatsappSentCount++;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"[WhatsApp RFQ Broadcast Error]: {ex.Message}");
+                }
             }
 
             indent.RFQStatus = "Sent";
             _context.Entry(indent).State = EntityState.Modified;
             
             await _context.SaveChangesAsync();
-            return Ok(new { message = "RFQs sent successfully" });
+            return Ok(new { message = "RFQs sent successfully", whatsappSentCount });
+        }
+
+        // POST: api/Procurement/SendVendorRfqWhatsApp/{indentId}/{vendorId}
+        [HttpPost("SendVendorRfqWhatsApp/{indentId}/{vendorId}")]
+        [Authorize]
+        public async Task<IActionResult> SendVendorRfqWhatsApp(int indentId, int vendorId)
+        {
+            var indent = await _context.Indents.FindAsync(indentId);
+            if (indent == null) return NotFound("Indent not found");
+
+            var vendor = await _context.Vendors.FindAsync(vendorId);
+            if (vendor == null) return NotFound("Vendor not found");
+
+            if (string.IsNullOrEmpty(vendor.Phone))
+            {
+                return BadRequest(new { message = "Vendor has no registered phone number." });
+            }
+
+            var quotation = await _context.VendorQuotations
+                .FirstOrDefaultAsync(q => q.IndentId == indentId && q.VendorId == vendorId);
+
+            var token = quotation?.MagicLinkToken;
+            if (string.IsNullOrEmpty(token))
+            {
+                token = Guid.NewGuid().ToString();
+                if (quotation != null)
+                {
+                    quotation.MagicLinkToken = token;
+                    _context.Entry(quotation).State = EntityState.Modified;
+                    await _context.SaveChangesAsync();
+                }
+            }
+
+            var result = await _whatsAppService.SendRfqBroadcastAsync(indent, vendor, token);
+            return Ok(result);
         }
 
         // GET: api/Procurement/Quotations/{indentId}

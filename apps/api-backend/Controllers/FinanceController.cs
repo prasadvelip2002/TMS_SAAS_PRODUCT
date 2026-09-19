@@ -8,6 +8,8 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Collections.Generic;
 
+using api_backend.Services.Interfaces;
+
 namespace api_backend.Controllers
 {
     [Route("api/[controller]")]
@@ -16,10 +18,12 @@ namespace api_backend.Controllers
     public class FinanceController : ControllerBase
     {
         private readonly ApplicationDbContext _context;
+        private readonly IWhatsAppService _whatsAppService;
 
-        public FinanceController(ApplicationDbContext context)
+        public FinanceController(ApplicationDbContext context, IWhatsAppService whatsAppService)
         {
             _context = context;
+            _whatsAppService = whatsAppService;
         }
 
         // GET: api/Finance/vendor-settlements
@@ -227,7 +231,40 @@ namespace api_backend.Controllers
             }
 
             await _context.SaveChangesAsync();
+
+            // Automated dynamic UltraMsg WhatsApp dispatch to Customer
+            try
+            {
+                var customer = await _context.Customers.FindAsync(customerId);
+                if (customer != null && !string.IsNullOrEmpty(customer.Phone))
+                {
+                    await _whatsAppService.SendInvoiceCreatedAsync(invoice, customer);
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[WhatsApp Invoice Dispatch Error]: {ex.Message}");
+            }
+
             return Ok(invoice);
+        }
+
+        // POST: api/Finance/invoices/{id}/send-whatsapp
+        [HttpPost("invoices/{id}/send-whatsapp")]
+        public async Task<IActionResult> SendInvoiceWhatsApp(int id)
+        {
+            var invoice = await _context.Invoices
+                .Include(i => i.Customer)
+                .FirstOrDefaultAsync(i => i.Id == id);
+
+            if (invoice == null) return NotFound("Invoice not found");
+            if (invoice.Customer == null || string.IsNullOrEmpty(invoice.Customer.Phone))
+            {
+                return BadRequest(new { message = "Customer has no registered phone number." });
+            }
+
+            var result = await _whatsAppService.SendInvoiceCreatedAsync(invoice, invoice.Customer);
+            return Ok(result);
         }
 
         // GET: api/Finance/invoices

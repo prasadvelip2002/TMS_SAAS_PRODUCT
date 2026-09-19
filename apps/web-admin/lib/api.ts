@@ -1,4 +1,8 @@
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5063/api';
+export const API_BASE_URL = 
+  process.env.NEXT_PUBLIC_API_URL || 
+  (typeof window !== 'undefined' && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1'
+    ? 'https://tms-saas-product.onrender.com/api'
+    : 'http://localhost:5063/api');
 
 export async function fetchApi(endpoint: string, options: RequestInit = {}) {
   const url = `${API_BASE_URL}${endpoint}`;
@@ -108,3 +112,22 @@ export const bulkImportRates = (items: any[]) => fetchApi('/CustomerRateContract
 export const deleteCustomerRate = (id: number) => fetchApi(`/CustomerRateContracts/${id}`, {
   method: 'DELETE',
 });
+
+// -- WHATSAPP INTEGRATION --
+export const getWhatsAppStatus = () => fetchApi('/WhatsApp/status');
+export const getWhatsAppLogs = (limit = 50) => fetchApi(`/WhatsApp/logs?limit=${limit}`);
+export const sendWhatsAppMessage = (data: {
+  phoneNumber: string;
+  recipientName?: string;
+  templateName?: string;
+  message: string;
+  relatedTripId?: number;
+}) => fetchApi('/WhatsApp/send', {
+  method: 'POST',
+  body: JSON.stringify(data),
+});
+export const notifyTripDriverWhatsApp = (tripId: number) => fetchApi(`/WhatsApp/trip/${tripId}/notify-driver`, {
+  method: 'POST',
+});
+export const getWhatsAppShareLink = (phone: string, message: string) => fetchApi(`/WhatsApp/share-link?phone=${encodeURIComponent(phone)}&message=${encodeURIComponent(message)}`);
+

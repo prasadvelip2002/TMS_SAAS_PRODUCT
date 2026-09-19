@@ -25,6 +25,8 @@ namespace api_backend.Models
 
         public string? CostBreakdownJson { get; set; }
 
+        public string MagicLinkToken { get; set; } = Guid.NewGuid().ToString();
+
         public int TenantId { get; set; }
         public Tenant? Tenant { get; set; }
 

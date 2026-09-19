@@ -107,7 +107,10 @@ export default function AdminPODDashboard() {
       formData.append("documentType", "DeliveryReceipt");
 
       const token = localStorage.getItem('token');
-      const uploadRes = await fetch("http://localhost:5063/api/Documents/Upload", {
+      // Localhost commented out for production deployment:
+      // const uploadRes = await fetch("http://localhost:5063/api/Documents/Upload", {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5063/api";
+      const uploadRes = await fetch(`${apiUrl}/Documents/Upload`, {
         method: "POST",
         headers: {
            ...(token ? { 'Authorization': `Bearer ${token}` } : {})
@@ -617,16 +620,22 @@ export default function AdminPODDashboard() {
               )}
 
               <div className="grid grid-cols-1 gap-6">
-                {tripDocuments.length > 0 ? tripDocuments.map((doc: any) => (
+                {tripDocuments.length > 0 ? tripDocuments.map((doc: any) => {
+                  const backendHost = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:5063/api").replace(/\/api$/, "");
+                  const filePreviewUrl = doc.fileUrl?.startsWith("http") ? doc.fileUrl : `${backendHost}${doc.fileUrl}`;
+                  return (
                   <div key={doc.id} className="border border-slate-200 rounded-2xl overflow-hidden group bg-white shadow-sm hover:shadow-md transition-shadow">
                     <div className="bg-slate-100 flex items-center justify-center relative h-[400px]">
+                      {/* Hardcoded localhost commented out for production:
+                      src={`http://localhost:5063${doc.fileUrl}`} 
+                      href={`http://localhost:5063${doc.fileUrl}`} */}
                       <img 
-                        src={`http://localhost:5063${doc.fileUrl}`} 
+                        src={filePreviewUrl} 
                         alt="POD Document" 
                         className="max-h-full max-w-full object-contain"
                       />
                       <a 
-                        href={`http://localhost:5063${doc.fileUrl}`} 
+                        href={filePreviewUrl} 
                         target="_blank"
                         className="absolute top-4 right-4 bg-white/95 backdrop-blur p-2.5 rounded-xl shadow-sm text-slate-600 hover:text-blue-600 opacity-0 group-hover:opacity-100 transition-all hover:scale-105"
                       >
@@ -640,7 +649,7 @@ export default function AdminPODDashboard() {
                       </div>
                     </div>
                   </div>
-                )) : (
+                );}) : (
                   <div className="text-center p-12 border-2 border-dashed border-slate-200 rounded-2xl bg-white">
                     <XCircle className="w-10 h-10 text-slate-300 mx-auto mb-3" />
                     <p className="text-slate-600 font-medium">No documents found for this trip.</p>

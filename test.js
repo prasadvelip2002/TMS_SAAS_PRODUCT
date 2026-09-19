@@ -1,4 +1,5 @@
-const API_BASE_URL = 'http://localhost:5063/api';
+// const API_BASE_URL = 'http://localhost:5063/api';
+const API_BASE_URL = process.env.API_URL || 'http://localhost:5063/api';
 
 async function testFetch() {
     try {

@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
@@ -16,11 +16,13 @@ namespace api_backend.Controllers
     {
         private readonly ApplicationDbContext _context;
         private readonly ITripService _tripService;
+        private readonly IWhatsAppService _whatsAppService;
 
-        public PaymentsController(ApplicationDbContext context, ITripService tripService)
+        public PaymentsController(ApplicationDbContext context, ITripService tripService, IWhatsAppService whatsAppService)
         {
             _context = context;
             _tripService = tripService;
+            _whatsAppService = whatsAppService;
         }
 
         // GET: api/Payments
@@ -52,6 +54,26 @@ namespace api_backend.Controllers
             await _context.SaveChangesAsync();
 
             await _tripService.RecalculateBalanceAsync(payment.TripId);
+
+            // Automated dynamic UltraMsg WhatsApp dispatch for Advance or Driver Payment
+            try
+            {
+                if (payment.Type == "Advance" || payment.BeneficiaryType == "Driver")
+                {
+                    var trip = await _context.Trips
+                        .Include(t => t.Driver)
+                        .FirstOrDefaultAsync(t => t.Id == payment.TripId);
+
+                    if (trip?.Driver != null && !string.IsNullOrEmpty(trip.Driver.Phone))
+                    {
+                        await _whatsAppService.SendAdvanceDisbursedAsync(trip, trip.Driver, payment.Amount);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[WhatsApp Payment Dispatch Error]: {ex.Message}");
+            }
 
             return CreatedAtAction(nameof(GetPayment), new { id = payment.Id }, payment);
         }

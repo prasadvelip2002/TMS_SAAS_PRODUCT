@@ -224,12 +224,12 @@ export default function AdditionalChargesPage() {
   }, [charges, searchQuery, statusFilter, typeFilter]);
 
   return (
-    <div className="relative h-full flex flex-col pb-8">
+    <div className="max-w-[1600px] mx-auto space-y-5 pb-16">
       {/* HEADER SECTION */}
-      <div className="flex flex-wrap justify-between items-end gap-4 mb-6 shrink-0">
+      <div className="flex flex-wrap justify-between items-end gap-4 shrink-0">
         <div>
-          <h1 className="font-disp font-bold text-[28px] text-slate-900 tracking-tight leading-tight">Additional Charges & Claims</h1>
-          <p className="text-[14px] text-slate-500 mt-1 font-medium">
+          <h1 className="font-disp font-bold text-[26px] text-slate-900 tracking-tight leading-tight">Additional Charges & Claims</h1>
+          <p className="text-[13px] text-slate-500 mt-1 font-medium">
             Centrally manage, verify, and route trip extra expenses to Vendor Settlements or Customer Tax Invoices.
           </p>
         </div>
@@ -246,8 +246,8 @@ export default function AdditionalChargesPage() {
       </div>
 
       {/* KPI METRICS BAR */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3.5 mb-6">
-        <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3.5">
+        <div className="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-sm">
           <div className="flex justify-between items-start">
             <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Total Extra Logged</span>
             <span className="p-1.5 rounded-lg bg-slate-100 text-slate-700"><Receipt className="w-3.5 h-3.5" /></span>
@@ -256,7 +256,7 @@ export default function AdditionalChargesPage() {
           <span className="text-[11px] text-slate-400 mt-0.5 block">{charges.length} claims across {tripsWithChargesCount} trips</span>
         </div>
 
-        <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+        <div className="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-sm">
           <div className="flex justify-between items-start">
             <span className="text-[11px] font-bold text-purple-600 uppercase tracking-wider">Vendor Payable</span>
             <span className="p-1.5 rounded-lg bg-purple-50 text-purple-700"><Truck className="w-3.5 h-3.5" /></span>
@@ -265,7 +265,7 @@ export default function AdditionalChargesPage() {
           <span className="text-[11px] text-slate-400 mt-0.5 block">Added to Vendor Settlements</span>
         </div>
 
-        <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+        <div className="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-sm">
           <div className="flex justify-between items-start">
             <span className="text-[11px] font-bold text-blue-600 uppercase tracking-wider">Customer Billable</span>
             <span className="p-1.5 rounded-lg bg-blue-50 text-blue-700"><Building2 className="w-3.5 h-3.5" /></span>
@@ -274,7 +274,7 @@ export default function AdditionalChargesPage() {
           <span className="text-[11px] text-slate-400 mt-0.5 block">Added to Customer Invoices</span>
         </div>
 
-        <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+        <div className="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-sm">
           <div className="flex justify-between items-start">
             <span className="text-[11px] font-bold text-amber-600 uppercase tracking-wider">Pending Approvals</span>
             <span className="p-1.5 rounded-lg bg-amber-50 text-amber-700"><Clock className="w-3.5 h-3.5" /></span>
@@ -283,7 +283,7 @@ export default function AdditionalChargesPage() {
           <span className="text-[11px] text-slate-400 mt-0.5 block">Awaiting ops verification</span>
         </div>
 
-        <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+        <div className="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-sm">
           <div className="flex justify-between items-start">
             <span className="text-[11px] font-bold text-emerald-600 uppercase tracking-wider">System Trips</span>
             <span className="p-1.5 rounded-lg bg-emerald-50 text-emerald-700"><ShieldCheck className="w-3.5 h-3.5" /></span>
@@ -294,7 +294,7 @@ export default function AdditionalChargesPage() {
       </div>
 
       {/* VIEW SELECTION TABS & CONTROLS */}
-      <div className="flex flex-wrap items-center justify-between gap-4 mb-4 bg-white p-3.5 rounded-2xl border border-slate-200 shadow-sm">
+      <div className="flex flex-wrap items-center justify-between gap-4 bg-white p-3.5 rounded-2xl border border-slate-200 shadow-sm">
         {/* Main View Switcher */}
         <div className="flex items-center gap-2">
           <div className="flex bg-slate-100 p-1 rounded-xl text-xs font-bold">
@@ -389,8 +389,8 @@ export default function AdditionalChargesPage() {
       </div>
 
       {/* TABLE SECTION */}
-      <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm flex-1 flex flex-col">
-        <div className="overflow-auto flex-1">
+      <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
+        <div className="overflow-x-auto">
           {activeTab === "trips" ? (
             /* ================= VIEW 1: ALL TRIPS & CHARGES ================= */
             <ProtoTable headers={["TRIP ID & DATE", "ROUTE JOURNEY", "CUSTOMER & CARRIER", "TRIP STATUS", "EXTRA CHARGES LOGGED", "BILLING ALLOCATION", "ACTIONS"]}>

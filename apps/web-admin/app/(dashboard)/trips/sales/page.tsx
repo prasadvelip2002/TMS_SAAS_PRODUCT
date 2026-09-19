@@ -315,6 +315,23 @@ export default function SalesDashboard() {
     }
   };
 
+  const sendQuotationWhatsApp = async () => {
+    if (!salesQuotes[0]) return;
+    const sq = salesQuotes[0];
+    try {
+      const res = await fetchApi(`/Sales/Quotations/${sq.id}/send-whatsapp`, {
+        method: "POST"
+      });
+      if (res?.success || res?.status === "Delivered" || res?.status === "Sent") {
+        alert(`Sales quotation dispatched directly to ${selectedIndent?.customer?.name || 'Customer'} via WhatsApp!`);
+      } else {
+        alert(res?.errorMessage || "Failed to dispatch WhatsApp message.");
+      }
+    } catch (e: any) {
+      alert(e.message || "Failed to dispatch WhatsApp quotation.");
+    }
+  };
+
   const copyToWhatsApp = () => {
     if (!salesQuotes[0]) return;
     const sq = salesQuotes[0];
@@ -1104,18 +1121,36 @@ export default function SalesDashboard() {
                   </div>
                   <Badge color="blue">Waiting for PO</Badge>
                 </div>
-                <button 
-                  onClick={copyToWhatsApp}
-                  className="mt-4 w-full bg-green-500 hover:bg-green-600 text-white py-2.5 rounded-lg text-xs font-bold flex items-center justify-center gap-2 transition-colors shadow-sm"
-                >
-                  <MessageCircle className="w-4 h-4" /> 
-                  {isContractCustomer(selectedIndent) ? "Copy Contract Order Confirmation for WhatsApp" : "Copy Quotation for WhatsApp"}
-                </button>
-                <span className="text-[11px] text-blue-600/70 mt-1.5 block text-center">
-                  {isContractCustomer(selectedIndent) 
-                    ? "Sends formal order details with fixed contract rate only (margins and expenses are private)." 
-                    : "Sends quotation details with selling price to customer."}
-                </span>
+
+                {/* Direct WhatsApp Action with Customer Phone Preview */}
+                <div className="mt-4 space-y-2">
+                  <button 
+                    onClick={sendQuotationWhatsApp}
+                    className="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-colors shadow-sm"
+                  >
+                    <MessageCircle className="w-4 h-4" /> 
+                    {isContractCustomer(selectedIndent) ? "Send Order Confirmation via WhatsApp" : "Send Quotation via WhatsApp"}
+                  </button>
+
+                  <button 
+                    onClick={copyToWhatsApp}
+                    className="w-full bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 py-2 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors shadow-2xs"
+                  >
+                    📋 Copy Text to Clipboard
+                  </button>
+                </div>
+
+                <div className="mt-2 text-center">
+                  {selectedIndent?.customer?.phone ? (
+                    <span className="text-[11px] font-medium text-emerald-700 bg-emerald-50 border border-emerald-200/80 px-2 py-0.5 rounded-md inline-flex items-center gap-1">
+                      📱 Customer WhatsApp: +91 {selectedIndent.customer.phone}
+                    </span>
+                  ) : (
+                    <span className="text-[11px] text-amber-700 bg-amber-50 px-2 py-0.5 rounded-md inline-block">
+                      ⚠️ Customer has no phone in master. Direct WhatsApp requires phone number.
+                    </span>
+                  )}
+                </div>
               </div>
 
               {/* FLEET EXECUTION / FULFILLMENT MODE CARD */}
@@ -1235,13 +1270,21 @@ export default function SalesDashboard() {
                   </div>
                 )}
 
-                <button 
-                  onClick={copyToWhatsApp}
-                  className="mt-4 w-full bg-emerald-600 hover:bg-emerald-700 text-white py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-colors shadow-sm"
-                >
-                  <MessageCircle className="w-4 h-4" /> 
-                  Copy Order Confirmation for WhatsApp
-                </button>
+                <div className="mt-4 space-y-2">
+                  <button 
+                    onClick={sendQuotationWhatsApp}
+                    className="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-colors shadow-sm"
+                  >
+                    <MessageCircle className="w-4 h-4" /> 
+                    Send Order Confirmation via WhatsApp
+                  </button>
+                  <button 
+                    onClick={copyToWhatsApp}
+                    className="w-full bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 py-2 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors shadow-2xs"
+                  >
+                    📋 Copy Text to Clipboard
+                  </button>
+                </div>
               </div>
 
               {/* Financial & Fulfillment Breakdown */}

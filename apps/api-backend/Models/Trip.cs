@@ -71,5 +71,8 @@ namespace api_backend.Models
         public bool IsVendorSettled { get; set; } = false;
 
         public string? CostBreakdownJson { get; set; }
+
+        [System.ComponentModel.DataAnnotations.Schema.NotMapped]
+        public object? WhatsAppNotification { get; set; }
     }
 }
