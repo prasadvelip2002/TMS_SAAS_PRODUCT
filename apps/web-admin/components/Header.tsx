@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { Bell, LogOut, Settings, User, Search, X, ArrowRight } from "lucide-react";
+import { Bell, LogOut, Settings, User, Search, X, ArrowRight, Menu } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 const ALL_MODULES = [
@@ -35,7 +35,11 @@ const ALL_MODULES = [
   { name: "SaaS Administration", path: "/saas-admin", category: "System" },
 ];
 
-export function Header() {
+interface HeaderProps {
+  onToggleSidebar?: () => void;
+}
+
+export function Header({ onToggleSidebar }: HeaderProps) {
   const [user, setUser] = useState<{name: string, email: string, role: string} | null>(null);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [globalSearch, setGlobalSearch] = useState("");
@@ -86,10 +90,26 @@ export function Header() {
   };
 
   return (
-    <div className="h-[90px] shrink-0 bg-white/70 backdrop-blur-xl border-b border-slate-200/50 shadow-[0_4px_30px_rgb(0,0,0,0.03)] flex items-center justify-between px-10 relative z-50">
-      <div className="flex flex-col">
-        <div className="font-bold text-[18px] text-slate-800 leading-tight">Welcome back, {user?.name || "Admin"} 👋</div>
-        <div className="font-medium text-[12.5px] text-slate-500 mt-0.5 tracking-wide">Overview across all active trips</div>
+    <div className="h-[70px] sm:h-[80px] lg:h-[90px] shrink-0 bg-white/80 backdrop-blur-xl border-b border-slate-200/60 shadow-[0_4px_30px_rgb(0,0,0,0.03)] flex items-center justify-between px-3 sm:px-6 lg:px-8 relative z-30">
+      <div className="flex items-center gap-2.5 sm:gap-4 min-w-0">
+        {onToggleSidebar && (
+          <button
+            onClick={onToggleSidebar}
+            className="lg:hidden p-2 text-slate-700 hover:text-blue-600 hover:bg-slate-100 rounded-xl transition-all active:scale-95 shrink-0 border border-slate-200/80 shadow-2xs"
+            aria-label="Open navigation menu"
+            title="Menu"
+          >
+            <Menu size={22} strokeWidth={2.2} />
+          </button>
+        )}
+        <div className="flex flex-col min-w-0">
+          <div className="font-bold text-[15px] sm:text-[18px] text-slate-800 leading-tight truncate">
+            Welcome back, {user?.name || "Admin"} 👋
+          </div>
+          <div className="font-medium text-[11px] sm:text-[12.5px] text-slate-500 mt-0.5 tracking-wide hidden sm:block">
+            Overview across all active trips
+          </div>
+        </div>
       </div>
 
       {/* Global Quick Search Bar */}
@@ -154,16 +174,26 @@ export function Header() {
         )}
       </div>
 
-      <div className="flex items-center gap-6">
-        <button className="flex items-center justify-center w-10 h-10 rounded-full hover:bg-slate-50 text-slate-400 hover:text-slate-700 transition-colors relative border border-transparent hover:border-slate-200/60">
+      <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+        {/* Mobile Quick Search Icon */}
+        <button
+          onClick={() => { setSearchOpen(true); setTimeout(() => searchInputRef.current?.focus(), 50); }}
+          className="md:hidden flex items-center justify-center w-9 h-9 rounded-full hover:bg-slate-100 text-slate-500 hover:text-slate-800 transition-colors border border-slate-200/80 shadow-2xs"
+          aria-label="Search modules"
+          title="Search"
+        >
+          <Search size={17} />
+        </button>
+
+        <button className="flex items-center justify-center w-9 h-9 sm:w-10 sm:h-10 rounded-full hover:bg-slate-50 text-slate-400 hover:text-slate-700 transition-colors relative border border-transparent hover:border-slate-200/60">
           <Bell size={18} strokeWidth={2.5} />
-          <span className="absolute top-[10px] right-[10px] w-2 h-2 bg-red-500 rounded-full border-2 border-white"></span>
+          <span className="absolute top-[8px] sm:top-[10px] right-[8px] sm:right-[10px] w-2 h-2 bg-red-500 rounded-full border-2 border-white"></span>
         </button>
 
         <div className="relative">
           <button 
             onClick={() => setDropdownOpen(!dropdownOpen)}
-            className="flex items-center gap-3 hover:bg-slate-50 p-1.5 pr-4 rounded-full transition-all duration-200 border border-transparent hover:border-slate-200/80 hover:shadow-sm"
+            className="flex items-center gap-2 sm:gap-3 hover:bg-slate-50 p-1 sm:p-1.5 sm:pr-4 rounded-full transition-all duration-200 border border-transparent hover:border-slate-200/80 hover:shadow-sm"
           >
             <div className="w-[34px] h-[34px] bg-[#1E3A8A] text-white rounded-full flex items-center justify-center font-bold text-[14px] shadow-inner">
               {user?.name ? user.name.charAt(0).toUpperCase() : 'PV'}

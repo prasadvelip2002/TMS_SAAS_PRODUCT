@@ -66,16 +66,23 @@ export default function DashboardLayout({
     }
   }, [pathname, router]);
 
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  // Auto-close mobile sidebar whenever pathname changes
+  useEffect(() => {
+    setSidebarOpen(false);
+  }, [pathname]);
+
   if (authorized === null) {
     return <div className="h-screen flex items-center justify-center bg-slate-50" />;
   }
 
   return (
     <div className="flex h-screen overflow-hidden bg-canvas text-ink">
-      <Sidebar />
+      <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
       <main className="flex-1 h-full flex flex-col min-w-0 overflow-hidden relative">
-        <Header />
-        <div className="flex-1 overflow-y-auto p-6 relative z-0">
+        <Header onToggleSidebar={() => setSidebarOpen(prev => !prev)} />
+        <div className="flex-1 overflow-y-auto p-3 sm:p-4 md:p-6 relative z-0">
           {authorized ? children : (
             <div className="flex flex-col items-center justify-center h-full text-center">
               <div className="w-20 h-20 bg-red-100 text-red-500 rounded-full flex items-center justify-center mb-6">
