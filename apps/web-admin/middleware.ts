@@ -5,19 +5,30 @@ export function middleware(request: NextRequest) {
   // Check for our custom isLoggedIn cookie
   const isLoggedIn = request.cookies.get('isLoggedIn');
 
-  const isPublicRoute = 
+  // Public external portal routes accessible by Customers, Vendors, and Drivers without login
+  const isExternalPortalRoute = 
+    request.nextUrl.pathname.startsWith('/quotation') ||
+    request.nextUrl.pathname.startsWith('/bidding') ||
+    request.nextUrl.pathname.startsWith('/pod') ||
+    request.nextUrl.pathname.startsWith('/invoices');
+
+  if (isExternalPortalRoute) {
+    return NextResponse.next();
+  }
+
+  const isAuthRoute = 
     request.nextUrl.pathname === '/' ||
     request.nextUrl.pathname.startsWith('/login') ||
     request.nextUrl.pathname.startsWith('/register');
 
   // If we are navigating to any protected route and not logged in
-  if (!isPublicRoute && !isLoggedIn) {
+  if (!isAuthRoute && !isLoggedIn) {
     // Redirect instantly to the login page on the server side
     return NextResponse.redirect(new URL('/login', request.url));
   }
 
-  // If they are logged in and trying to access public routes (like login/register/home), redirect to dashboard
-  if (isPublicRoute && isLoggedIn) {
+  // If they are logged in and trying to access auth routes (like login/register/home), redirect to dashboard
+  if (isAuthRoute && isLoggedIn) {
     return NextResponse.redirect(new URL('/dashboard', request.url));
   }
 
