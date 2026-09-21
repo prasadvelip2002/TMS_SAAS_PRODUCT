@@ -279,7 +279,7 @@ export default function SalesDashboard() {
 
       const costJson = operatingExpenses > 0 ? JSON.stringify(costBreakdown) : null;
 
-      await fetchApi(`/Sales/GenerateSQ/${selectedIndent.id}`, {
+      const res = await fetchApi(`/Sales/GenerateSQ/${selectedIndent.id}`, {
         method: "POST",
         body: JSON.stringify({
           vendorQuotationId: vendorQuote?.id || null,
@@ -290,11 +290,23 @@ export default function SalesDashboard() {
           costBreakdownJson: costJson
         })
       });
-      alert(isContract ? "Contract Booking confirmed and SQ generated!" : (legType === "InboundLeg1" ? "Leg 1 Sales Quotation generated successfully!" : "Sales Quotation (SQ) generated successfully!"));
+
+      if (res?.whatsAppSent) {
+        alert(
+          `✅ ${isContract ? "Contract Booking confirmed" : "Sales Quotation generated"} and dispatched directly to ${selectedIndent?.customer?.name || "Customer"}'s WhatsApp!\n\nThe customer has received the booking details and link to review and reply with their PO Number.`
+        );
+      } else if (res?.whatsAppMessage) {
+        alert(
+          `Sales Quotation generated!\n\nℹ️ WhatsApp Status: ${res.whatsAppMessage}`
+        );
+      } else {
+        alert(isContract ? "Contract Booking confirmed and SQ generated!" : (legType === "InboundLeg1" ? "Leg 1 Sales Quotation generated successfully!" : "Sales Quotation (SQ) generated successfully!"));
+      }
+
       setIsPanelOpen(false);
       loadData();
-    } catch (e) {
-      alert("Failed to generate SQ");
+    } catch (e: any) {
+      alert(e?.message || "Failed to generate SQ");
     }
   };
 
@@ -1376,7 +1388,7 @@ export default function SalesDashboard() {
               disabled={sellingPrice <= 0}
               className="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-3.5 px-6 rounded-xl transition-all shadow-lg shadow-purple-600/20 flex items-center justify-center gap-2 disabled:opacity-50"
             >
-              Generate & Send SQ (Own Fleet)
+              <MessageCircle className="w-4 h-4" /> Generate SQ & Send to Customer via WhatsApp
             </button>
           ) : selectedIndent?.status === "Supplier_Shortlisted" ? (
              <button 
@@ -1384,7 +1396,7 @@ export default function SalesDashboard() {
                disabled={!isContractCustomer(selectedIndent) && margin <= 0}
                className="w-full text-white font-bold py-3.5 px-6 rounded-xl transition-all shadow-lg flex items-center justify-center gap-2 disabled:opacity-50 bg-blue-600 hover:bg-blue-700 shadow-blue-600/20"
              >
-               {isContractCustomer(selectedIndent) ? "Confirm Contract Booking & Generate SQ" : "Generate & Send SQ"}
+               <MessageCircle className="w-4 h-4" /> {isContractCustomer(selectedIndent) ? "Confirm Booking & Send to Customer via WhatsApp" : "Generate SQ & Send to Customer via WhatsApp"}
              </button>
           ) : selectedIndent?.status === "SQ_Generated" ? (
             <button 

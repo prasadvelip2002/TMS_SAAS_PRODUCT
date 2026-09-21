@@ -41,6 +41,12 @@ namespace api_backend.Controllers
                 return BadRequest(new { message = "Customer has no registered phone number." });
             }
 
+            if (string.IsNullOrEmpty(sq.MagicLinkToken))
+            {
+                sq.MagicLinkToken = Guid.NewGuid().ToString("N");
+                await _context.SaveChangesAsync();
+            }
+
             var result = await _whatsAppService.SendSalesQuotationAsync(sq, sq.Indent, customer);
             return Ok(result);
         }
@@ -121,7 +127,9 @@ namespace api_backend.Controllers
         [Authorize]
         public async Task<IActionResult> GenerateSQ(int indentId, [FromBody] GenerateSQRequest request)
         {
-            var indent = await _context.Indents.FindAsync(indentId);
+            var indent = await _context.Indents
+                .Include(i => i.Customer)
+                .FirstOrDefaultAsync(i => i.Id == indentId);
             if (indent == null) return NotFound("Indent not found");
 
             decimal baseRate = 0;
@@ -166,6 +174,8 @@ namespace api_backend.Controllers
                 }
             }
 
+            var magicLinkToken = Guid.NewGuid().ToString("N");
+
             var sq = new SalesQuotation
             {
                 IndentId = indentId,
@@ -177,6 +187,7 @@ namespace api_backend.Controllers
                 Status = "Generated",
                 LegType = legType,
                 TripId = request.TripId,
+                MagicLinkToken = magicLinkToken,
                 CostBreakdownJson = request.CostBreakdownJson,
                 TenantId = indent.TenantId,
                 CompanyId = indent.CompanyId
@@ -188,7 +199,47 @@ namespace api_backend.Controllers
             _context.Entry(indent).State = EntityState.Modified;
 
             await _context.SaveChangesAsync();
-            return Ok(sq);
+
+            // Automatic WhatsApp Dispatch to Customer upon SQ Generation
+            bool whatsAppSent = false;
+            string? whatsAppMessage = null;
+
+            if (indent.Customer != null && !string.IsNullOrEmpty(indent.Customer.Phone))
+            {
+                try
+                {
+                    var waResult = await _whatsAppService.SendSalesQuotationAsync(sq, indent, indent.Customer);
+                    whatsAppSent = waResult.Success;
+                    whatsAppMessage = waResult.Success 
+                        ? $"Quotation dispatched to customer WhatsApp (+{indent.Customer.Phone})" 
+                        : (waResult.ErrorMessage ?? "WhatsApp dispatch failed");
+                }
+                catch (Exception ex)
+                {
+                    whatsAppMessage = ex.Message;
+                }
+            }
+            else
+            {
+                whatsAppMessage = "Customer has no registered phone number in Master Data.";
+            }
+
+            return Ok(new
+            {
+                sq.Id,
+                sq.IndentId,
+                sq.CustomerId,
+                sq.BaseRate,
+                sq.Margin,
+                sq.SellingPrice,
+                sq.Status,
+                sq.LegType,
+                sq.TripId,
+                sq.MagicLinkToken,
+                sq.CreatedAt,
+                WhatsAppSent = whatsAppSent,
+                WhatsAppMessage = whatsAppMessage
+            });
         }
 
         // POST: api/Sales/ApproveSQ/{sqId}
