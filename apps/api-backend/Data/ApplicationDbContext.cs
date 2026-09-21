@@ -45,6 +45,7 @@ namespace api_backend.Data
         public DbSet<Subscription> Subscriptions { get; set; }
         public DbSet<SalesQuotation> SalesQuotations { get; set; }
         public DbSet<CustomerPurchaseOrder> CustomerPurchaseOrders { get; set; }
+        public DbSet<TripLocation> TripLocations { get; set; }
 
         public int CurrentTenantId 
         { 

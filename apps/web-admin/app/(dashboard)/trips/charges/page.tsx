@@ -469,7 +469,7 @@ export default function AdditionalChargesPage() {
                         <Badge color={
                           trip.status === "Closed" || trip.status === "Completed" ? "green" :
                           trip.status === "In Transit" || trip.status === "Active" ? "blue" :
-                          trip.status === "Assigned" ? "indigo" : "slate"
+                          trip.status === "Assigned" ? "purple" : "grey"
                         }>
                           {trip.status || "Planned"}
                         </Badge>

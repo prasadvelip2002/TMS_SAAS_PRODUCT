@@ -13,6 +13,10 @@ namespace api_backend.Models
         public int? ExperienceYears { get; set; }
         public string? CurrentStatus { get; set; }
 
+        public string TrackingType { get; set; } = "MOBILE_GPS"; // "MOBILE_GPS" or "SIM_TRACKING"
+        public string ConsentStatus { get; set; } = "Pending";   // "Pending", "Active", "Revoked"
+        public string? SimConsentRef { get; set; }
+
         public int? VendorId { get; set; }
         public Vendor? Vendor { get; set; }
 

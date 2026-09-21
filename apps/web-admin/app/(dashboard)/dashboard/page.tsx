@@ -189,7 +189,7 @@ export default function DashboardPage() {
     const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
     const currentMonthIdx = new Date().getMonth();
     // Build last 6 months window
-    const windowMonths = [];
+    const windowMonths: { name: string; monthIdx: number; revenue: number; profit: number }[] = [];
     for (let i = 5; i >= 0; i--) {
       const idx = (currentMonthIdx - i + 12) % 12;
       windowMonths.push({

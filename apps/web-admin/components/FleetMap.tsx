@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { MapContainer, TileLayer, Marker, Popup, Tooltip, Polyline } from "react-leaflet";
+import { MapContainer, TileLayer, Marker, Popup, Tooltip, Polyline, Circle } from "react-leaflet";
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
@@ -11,22 +11,27 @@ L.Icon.Default.mergeOptions({
   shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
 });
 
-// Top-Down Truck SVG with dynamic rotation
-const getTruckIcon = (bearing: number) => {
+// Top-Down Truck SVG with dynamic rotation & source color coding (Green for SIM, Blue for Mobile GPS)
+const getTruckIcon = (bearing: number, source?: string) => {
+  const isSim = source === "SIM_TRACKING";
+  const trailerColor = isSim ? "#15803d" : "#1e40af";
+  const cabColor = isSim ? "#22c55e" : "#3b82f6";
+  const glassColor = isSim ? "#bbf7d0" : "#93c5fd";
+
   return L.divIcon({
     className: 'custom-truck-icon',
     html: `
       <div style="transform: rotate(${bearing}deg); width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.3));">
         <svg viewBox="0 0 100 200" width="24" height="48" xmlns="http://www.w3.org/2000/svg">
           <!-- Trailer -->
-          <rect x="10" y="45" width="80" height="150" rx="5" fill="#1e40af" stroke="#ffffff" stroke-width="2" />
+          <rect x="10" y="45" width="80" height="150" rx="5" fill="${trailerColor}" stroke="#ffffff" stroke-width="2" />
           <!-- Cab -->
-          <rect x="15" y="5" width="70" height="35" rx="8" fill="#3b82f6" stroke="#ffffff" stroke-width="2" />
+          <rect x="15" y="5" width="70" height="35" rx="8" fill="${cabColor}" stroke="#ffffff" stroke-width="2" />
           <!-- Windshield -->
-          <rect x="20" y="10" width="60" height="15" rx="3" fill="#93c5fd" />
+          <rect x="20" y="10" width="60" height="15" rx="3" fill="${glassColor}" />
           <!-- Mirrors -->
-          <rect x="8" y="15" width="5" height="10" rx="2" fill="#3b82f6" />
-          <rect x="87" y="15" width="5" height="10" rx="2" fill="#3b82f6" />
+          <rect x="8" y="15" width="5" height="10" rx="2" fill="${cabColor}" />
+          <rect x="87" y="15" width="5" height="10" rx="2" fill="${cabColor}" />
         </svg>
       </div>
     `,
@@ -127,35 +132,61 @@ export default function FleetMap({ activeVehicle, fleet }: any) {
             </>
           )}
 
+          {/* Accuracy Circle for SIM Tower Triangulation */}
+          {v.source === "SIM_TRACKING" && (
+            <Circle 
+              center={[v.currentLat, v.currentLng]} 
+              radius={v.accuracy || 160} 
+              pathOptions={{ color: '#16a34a', fillColor: '#22c55e', fillOpacity: 0.12, weight: 1.5, dashArray: '4, 4' }} 
+            />
+          )}
+
           {/* The Moving Truck Marker */}
           <Marker 
             position={[v.currentLat, v.currentLng]} 
-            icon={getTruckIcon(calculateBearing(v.currentLat, v.currentLng, v.destLat, v.destLng))}
+            icon={getTruckIcon(calculateBearing(v.currentLat, v.currentLng, v.destLat, v.destLng), v.source)}
           >
             <Popup className="rounded-2xl overflow-hidden shadow-2xl border-0 p-0 m-0">
-              <div className="w-[240px]">
+              <div className="w-[260px]">
                 <div className="bg-slate-900 px-4 py-3 text-white flex justify-between items-center">
-                  <span className="font-black text-lg">{v.num}</span>
-                  <span className="flex items-center gap-1.5 text-xs font-bold bg-white/20 px-2 py-1 rounded-md">
+                  <div>
+                    <span className="font-black text-lg block">{v.num}</span>
+                    <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded inline-block mt-0.5 ${
+                      v.source === 'SIM_TRACKING' ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' : 'bg-blue-500/20 text-blue-300 border border-blue-500/30'
+                    }`}>
+                      {v.source === 'SIM_TRACKING' ? '🟢 SIM LBS (Keypad)' : '🔵 Mobile GPS'}
+                    </span>
+                  </div>
+                  <span className="flex items-center gap-1.5 text-xs font-bold bg-white/15 px-2 py-1 rounded-md">
                     <span className="w-1.5 h-1.5 bg-red-400 rounded-full animate-ping"></span> Live
                   </span>
                 </div>
-                <div className="p-4 bg-white space-y-3">
+                <div className="p-3.5 bg-white space-y-2.5 text-xs">
                   <div className="flex justify-between items-center border-b border-slate-100 pb-2">
-                    <span className="text-slate-500 text-xs font-semibold">Route</span>
-                    <span className="font-bold text-sm text-slate-800">{v.source} ➔ {v.dest}</span>
+                    <span className="text-slate-500 font-semibold">Route</span>
+                    <span className="font-bold text-slate-800">{v.source} ➔ {v.dest}</span>
                   </div>
                   <div className="flex justify-between items-center border-b border-slate-100 pb-2">
-                    <span className="text-slate-500 text-xs font-semibold">Driver</span>
-                    <span className="font-bold text-sm text-slate-800">{v.driver}</span>
+                    <span className="text-slate-500 font-semibold">Driver</span>
+                    <span className="font-bold text-slate-800">{v.driver}</span>
                   </div>
                   <div className="flex justify-between items-center border-b border-slate-100 pb-2">
-                    <span className="text-slate-500 text-xs font-semibold">Current Speed</span>
+                    <span className="text-slate-500 font-semibold">Current Speed</span>
                     <span className="font-black text-sm text-blue-600">{v.speed} km/h</span>
                   </div>
-                  <div className="flex justify-between items-center pt-1">
-                    <span className="text-slate-500 text-xs font-semibold">Status</span>
-                    <span className={`font-black text-sm px-2 py-1 rounded-md ${
+                  <div className="flex justify-between items-center border-b border-slate-100 pb-2">
+                    <span className="text-slate-500 font-semibold">Precision</span>
+                    <span className="font-medium text-slate-700">
+                      {v.source === 'SIM_TRACKING' ? `Cell Tower (±${v.accuracy || 160}m)` : `Satellite GPS (±${v.accuracy || 6}m)`}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center border-b border-slate-100 pb-2">
+                    <span className="text-slate-500 font-semibold">Last Ping</span>
+                    <span className="font-bold text-slate-700">{v.lastPingAgo || "Just now"}</span>
+                  </div>
+                  <div className="flex justify-between items-center pt-0.5">
+                    <span className="text-slate-500 font-semibold">Status</span>
+                    <span className={`font-black px-2 py-0.5 rounded-md ${
                       v.status === 'Moving' ? 'text-green-600 bg-green-50' : 
                       v.status === 'Delayed' ? 'text-blue-700 bg-blue-50' : 
                       'text-red-600 bg-red-50'
@@ -165,9 +196,9 @@ export default function FleetMap({ activeVehicle, fleet }: any) {
               </div>
             </Popup>
             
-            {/* Tooltip on hover/active showing speed */}
-            <Tooltip direction="top" offset={[0, -20]} opacity={1} permanent={activeVehicle?.id !== v.id} className="border-0 shadow-lg rounded-lg font-bold bg-slate-900 text-white">
-              {v.num} <span className="text-blue-300 ml-1 font-black">{v.speed} km/h</span>
+            {/* Tooltip on hover/active showing speed & source */}
+            <Tooltip direction="top" offset={[0, -20]} opacity={1} permanent={activeVehicle?.id !== v.id} className="border-0 shadow-lg rounded-lg font-bold bg-slate-900 text-white text-xs">
+              {v.num} <span className={v.source === 'SIM_TRACKING' ? 'text-emerald-400 font-black' : 'text-blue-300 font-black'}>{v.speed} km/h</span>
             </Tooltip>
           </Marker>
 

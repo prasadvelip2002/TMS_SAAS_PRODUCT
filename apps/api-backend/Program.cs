@@ -78,6 +78,7 @@ builder.Services.AddScoped<ITripService, TripService>();
 builder.Services.AddScoped<IDocumentService, LocalDocumentService>();
 builder.Services.AddScoped<INotificationService, NotificationService>();
 builder.Services.AddScoped<IWhatsAppService, WhatsAppService>();
+builder.Services.AddScoped<ILocationService, LocationService>();
 
 builder.Services.AddCors(options =>
 {
@@ -115,6 +116,36 @@ using (var scope = app.Services.CreateScope())
         db.Database.ExecuteSqlRaw("ALTER TABLE \"WhatsAppLogs\" ADD COLUMN IF NOT EXISTS \"Message\" text;");
         db.Database.ExecuteSqlRaw("ALTER TABLE \"WhatsAppLogs\" ADD COLUMN IF NOT EXISTS \"RecipientName\" text;");
         db.Database.ExecuteSqlRaw("ALTER TABLE \"WhatsAppLogs\" ADD COLUMN IF NOT EXISTS \"ExternalMessageId\" text;");
+
+        // Tracking & Telecom LBS / Mobile GPS schema
+        db.Database.ExecuteSqlRaw("ALTER TABLE \"Drivers\" ADD COLUMN IF NOT EXISTS \"TrackingType\" text DEFAULT 'MOBILE_GPS';");
+        db.Database.ExecuteSqlRaw("ALTER TABLE \"Drivers\" ADD COLUMN IF NOT EXISTS \"ConsentStatus\" text DEFAULT 'Pending';");
+        db.Database.ExecuteSqlRaw("ALTER TABLE \"Drivers\" ADD COLUMN IF NOT EXISTS \"SimConsentRef\" text;");
+        db.Database.ExecuteSqlRaw(@"
+            CREATE TABLE IF NOT EXISTS ""TripLocations"" (
+                ""Id"" SERIAL PRIMARY KEY,
+                ""TripId"" integer NOT NULL,
+                ""VehicleId"" integer,
+                ""DriverId"" integer,
+                ""Latitude"" double precision NOT NULL,
+                ""Longitude"" double precision NOT NULL,
+                ""Accuracy"" double precision,
+                ""Speed"" double precision,
+                ""Heading"" double precision,
+                ""Source"" text NOT NULL DEFAULT 'MOBILE_GPS',
+                ""Status"" text DEFAULT 'Active',
+                ""Address"" text,
+                ""RawPayloadJson"" text,
+                ""RecordedAt"" timestamp with time zone NOT NULL DEFAULT NOW(),
+                ""TenantId"" integer NOT NULL DEFAULT 1,
+                ""CompanyId"" integer NOT NULL DEFAULT 1,
+                ""CreatedAt"" timestamp with time zone NOT NULL DEFAULT NOW(),
+                ""UpdatedAt"" timestamp with time zone,
+                ""CreatedBy"" integer,
+                ""UpdatedBy"" integer
+            );
+            ALTER TABLE ""TripLocations"" ADD COLUMN IF NOT EXISTS ""Status"" text DEFAULT 'Active';
+        ");
         db.Database.ExecuteSqlRaw(@"
             UPDATE ""Trips"" t
             SET ""ServiceScope"" = COALESCE(vq.""ServiceScope"", 'EntireRoute')
