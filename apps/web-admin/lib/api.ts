@@ -8,13 +8,16 @@ export const getApiBaseUrl = () => {
       return process.env.NEXT_PUBLIC_API_URL || 'https://tms-saas-product.onrender.com/api';
     }
   }
+  if (process.env.VERCEL || process.env.NODE_ENV === 'production') {
+    return process.env.NEXT_PUBLIC_API_URL || 'https://tms-saas-product.onrender.com/api';
+  }
   return process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5063/api';
 };
 
 export const API_BASE_URL = getApiBaseUrl();
 
 export async function fetchApi(endpoint: string, options: RequestInit = {}) {
-  const url = `${API_BASE_URL}${endpoint}`;
+  const url = `${getApiBaseUrl()}${endpoint}`;
   
   const defaultHeaders: Record<string, string> = {
     'Content-Type': 'application/json',

@@ -1,6 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 
-const BACKEND_INTERNAL_URL = "http://127.0.0.1:5063/api";
+function getBackendUrl(): string {
+  // If running on Vercel or cloud production, route to live Render backend
+  if (process.env.VERCEL || process.env.NODE_ENV === "production") {
+    return process.env.INTERNAL_API_URL 
+      || process.env.NEXT_PUBLIC_API_URL 
+      || "https://tms-saas-product.onrender.com/api";
+  }
+  // Local development fallback
+  return process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:5063/api";
+}
 
 export async function GET(request: NextRequest, context: { params: any }) {
   const path = await resolvePath(context.params);
@@ -30,7 +39,8 @@ async function resolvePath(paramsOrPromise: any): Promise<string> {
 
 async function handleProxy(request: NextRequest, path: string) {
   const search = request.nextUrl.search;
-  const targetUrl = `${BACKEND_INTERNAL_URL}/${path}${search}`;
+  const backendBase = getBackendUrl().replace(/\/$/, "");
+  const targetUrl = `${backendBase}/${path}${search}`;
 
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
