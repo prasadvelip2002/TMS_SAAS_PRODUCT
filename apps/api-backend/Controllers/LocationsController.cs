@@ -51,7 +51,9 @@ namespace api_backend.Controllers
                     location.Speed,
                     location.Accuracy,
                     location.Source,
-                    location.RecordedAt
+                    location.Provider,
+                    location.RecordedAt,
+                    location.ReceivedAt
                 });
             }
             catch (Exception ex)
@@ -103,6 +105,39 @@ namespace api_backend.Controllers
         {
             var history = await _locationService.GetTripTrailHistoryAsync(tripId);
             return Ok(history);
+        }
+
+        // GET: api/Locations/driver/trip/{tripId}
+        // Public mobile driver portal endpoint to view assigned trip details
+        [HttpGet("driver/trip/{tripId}")]
+        [AllowAnonymous]
+        public async Task<IActionResult> GetDriverTrip(int tripId)
+        {
+            var details = await _locationService.GetDriverTripDetailsAsync(tripId);
+            if (details == null) return NotFound(new { message = $"Trip #{tripId} not found." });
+            return Ok(details);
+        }
+
+        // POST: api/Locations/driver/start/{tripId}
+        // Driver taps 'Start Trip' on their smartphone
+        [HttpPost("driver/start/{tripId}")]
+        [AllowAnonymous]
+        public async Task<IActionResult> StartTripByDriver(int tripId)
+        {
+            var success = await _locationService.StartTripByDriverAsync(tripId);
+            if (!success) return BadRequest(new { message = $"Could not start Trip #{tripId}." });
+            return Ok(new { message = "Trip started successfully. Mobile GPS tracking is now ACTIVE.", status = "In_Transit" });
+        }
+
+        // POST: api/Locations/driver/complete/{tripId}
+        // Driver arrives at destination and completes trip
+        [HttpPost("driver/complete/{tripId}")]
+        [AllowAnonymous]
+        public async Task<IActionResult> CompleteTripByDriver(int tripId)
+        {
+            var success = await _locationService.CompleteTripByDriverAsync(tripId);
+            if (!success) return BadRequest(new { message = $"Could not complete Trip #{tripId}." });
+            return Ok(new { message = "Trip marked as completed. GPS tracking ended.", status = "Completed" });
         }
     }
 }

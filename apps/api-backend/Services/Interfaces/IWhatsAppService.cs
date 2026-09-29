@@ -39,6 +39,7 @@ namespace api_backend.Services.Interfaces
     {
         Task<WhatsAppSendResult> SendMessageAsync(WhatsAppSendRequest request);
         Task<WhatsAppSendResult> SendTripAssignedAsync(Trip trip, Driver? driver, Vehicle? vehicle, Indent? indent);
+        Task<WhatsAppSendResult> SendTripStartedToDriverAsync(Trip trip, Driver? driver, Vehicle? vehicle, Indent? indent);
         Task<WhatsAppSendResult> SendDeliveryConfirmationAsync(Trip trip, Indent? indent, string recipientPhone, string? recipientName = null);
         Task<WhatsAppSendResult> SendAdvanceDisbursedAsync(Trip trip, Driver? driver, decimal amount);
         Task<WhatsAppSendResult> SendPodReminderAsync(Trip trip, Driver? driver);

@@ -86,6 +86,8 @@ namespace api_backend.Controllers
             existingDriver.ExperienceYears = driver.ExperienceYears;
             existingDriver.CurrentStatus = driver.CurrentStatus;
             existingDriver.VendorId = driver.VendorId;
+            if (!string.IsNullOrEmpty(driver.TrackingType)) existingDriver.TrackingType = driver.TrackingType;
+            if (!string.IsNullOrEmpty(driver.TrackingProvider)) existingDriver.TrackingProvider = driver.TrackingProvider;
 
             try
             {

@@ -10,7 +10,8 @@ export function middleware(request: NextRequest) {
     request.nextUrl.pathname.startsWith('/quotation') ||
     request.nextUrl.pathname.startsWith('/bidding') ||
     request.nextUrl.pathname.startsWith('/pod') ||
-    request.nextUrl.pathname.startsWith('/invoices');
+    request.nextUrl.pathname.startsWith('/invoices') ||
+    request.nextUrl.pathname.startsWith('/driver');
 
   if (isExternalPortalRoute) {
     return NextResponse.next();

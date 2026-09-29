@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { fetchApi } from "@/lib/api";
 import { ProtoTable, Td } from "@/components/PrototypeUI";
-import { Search, Grid, List, Plus, Users, User, X, Activity } from "lucide-react";
+import { Search, Grid, List, Plus, Users, User, X, Activity, Smartphone, Radio } from "lucide-react";
 
 interface Driver {
   id: number;
@@ -16,6 +16,8 @@ interface Driver {
   vendorId: number | null;
   vendor?: { name: string };
   currentStatus: string;
+  trackingType?: string;
+  trackingProvider?: string;
 }
 
 interface Vendor {
@@ -32,7 +34,9 @@ const DEFAULT_FORM = {
   aadhaar: "",
   experienceYears: "",
   vendorId: "",
-  currentStatus: "Available"
+  currentStatus: "Available",
+  trackingType: "MOBILE_GPS",
+  trackingProvider: "MOBILE"
 };
 
 export default function VendorFleetDriversPage() {
@@ -121,7 +125,9 @@ export default function VendorFleetDriversPage() {
       aadhaar: d.aadhaar || "",
       experienceYears: d.experienceYears?.toString() || "",
       vendorId: d.vendorId?.toString() || "",
-      currentStatus: d.currentStatus || "Available"
+      currentStatus: d.currentStatus || "Available",
+      trackingType: d.trackingType || "MOBILE_GPS",
+      trackingProvider: d.trackingProvider || "MOBILE"
     });
     setIsFormOpen(true);
   };
@@ -140,33 +146,37 @@ export default function VendorFleetDriversPage() {
     if (status === "Available") return <span className="px-[8px] py-[3px] bg-[#dcfce7] text-[#166534] rounded-[6px] text-[11px] font-medium border border-[#bbf7d0]">Available</span>;
     if (status === "On Trip") return <span className="px-[8px] py-[3px] bg-[#e0e7ff] text-[#3730a3] rounded-[6px] text-[11px] font-medium border border-[#c7d2fe]">On Trip</span>;
     if (status === "On Leave") return <span className="px-[8px] py-[3px] bg-[#fee2e2] text-[#991b1b] rounded-[6px] text-[11px] font-medium border border-[#fecaca]">On Leave</span>;
-    return <span className="px-[8px] py-[3px] bg-gray-100 text-gray-700 rounded-[6px] text-[11px] font-medium border border-gray-200">{status || 'Draft'}</span>;
+    return <span className="px-[8px] py-[3px] bg-slate-100 text-slate-700 rounded-[6px] text-[11px] font-medium border border-slate-200">{status}</span>;
   };
 
   return (
-    <div className="max-w-[1600px] mx-auto pb-10">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+    <div className="space-y-6">
+      {/* Top Banner & Action */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-6 rounded-2xl border border-slate-200/60 shadow-sm">
         <div>
-          <h1 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">Vendor Fleet Drivers</h1>
-          <p className="text-xs sm:text-sm font-medium text-slate-500 mt-1">Manage external 3PL and broker driver profiles and licenses.</p>
+          <div className="flex items-center gap-2 mb-1">
+            <span className="w-2 h-2 rounded-full bg-blue-600"></span>
+            <span className="text-[12px] font-bold tracking-wider text-slate-500 uppercase">Vendor Logistics</span>
+          </div>
+          <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Market & Vendor Drivers</h1>
+          <p className="text-slate-500 text-sm mt-0.5">Manage third-party vendor drivers, mobile numbers & GPS / SIM tracking mode</p>
         </div>
         <button 
           onClick={() => { setFormData(DEFAULT_FORM); setIsFormOpen(true); }}
-          className="bg-blue-600 hover:bg-blue-700 text-white font-medium px-4 sm:px-5 py-2 sm:py-2.5 rounded-xl shadow-[0_4px_14px_rgba(37,99,235,0.25)] transition-all flex items-center justify-center gap-2 text-sm sm:text-base self-start sm:self-auto"
+          className="bg-blue-600 hover:bg-blue-700 text-white font-medium px-5 py-2.5 rounded-xl shadow-[0_4px_14px_rgba(37,99,235,0.25)] transition-all flex items-center gap-2 text-sm shrink-0"
         >
-          <Plus className="w-5 h-5" />
-          Add Driver
+          <Plus className="w-4 h-4" />
+          Add Vendor Driver
         </button>
       </div>
 
-      {/* Search & Toolbar */}
-      <div className="bg-white rounded-2xl shadow-sm ring-1 ring-slate-200/50 p-2 mb-6 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
-        <div className="flex items-center px-3 sm:px-4 gap-3 flex-1 min-w-0">
-          <Search className="w-5 h-5 text-slate-400 shrink-0" />
+      {/* Filter & View Mode Controls */}
+      <div className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-4 bg-white p-2.5 rounded-2xl border border-slate-200/60 shadow-sm">
+        <div className="flex items-center gap-2.5 px-3 flex-1 bg-slate-50/60 rounded-xl border border-slate-200/40">
+          <Search className="w-4 h-4 text-slate-400 shrink-0" />
           <input 
-            type="text" 
-            placeholder="Search vendor drivers by name, phone, license, vendor..." 
+            type="text"
+            placeholder="Search driver by name, phone, license, vendor..." 
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full bg-transparent border-none focus:outline-none text-sm text-slate-700 font-medium placeholder:text-slate-400 py-2 sm:py-2.5 min-w-0"
@@ -228,11 +238,26 @@ export default function VendorFleetDriversPage() {
         </div>
       ) : viewMode === 'list' ? (
         <div className="bg-white rounded-2xl shadow-sm ring-1 ring-slate-200/50 overflow-hidden">
-          <ProtoTable headers={["DRIVER NAME", "PHONE", "LICENSE", "EXPIRY", "STATUS", "ACTIONS"]}>
+          <ProtoTable headers={["DRIVER NAME", "PHONE", "TRACKING MODE", "LICENSE", "EXPIRY", "STATUS", "ACTIONS"]}>
             {filteredDrivers.map((d) => (
               <tr key={d.id} className="hover:bg-slate-50 transition-colors cursor-pointer group" onClick={() => handleEdit(d)}>
-                <Td className="font-medium text-ink">{d.name}</Td>
+                <Td className="font-medium text-ink">
+                  <div>
+                    <span className="font-bold block">{d.name}</span>
+                    {d.vendor && <span className="text-[11px] text-slate-400 block">{d.vendor.name}</span>}
+                  </div>
+                </Td>
                 <Td className="font-mono text-[12px]">{d.phone}</Td>
+                <Td>
+                  <span className={`text-[11px] font-bold px-2.5 py-1 rounded-full inline-flex items-center gap-1.5 ${
+                    d.trackingType === 'SIM_TRACKING' 
+                      ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' 
+                      : 'bg-blue-50 text-blue-700 border border-blue-200'
+                  }`}>
+                    {d.trackingType === 'SIM_TRACKING' ? <Radio className="w-3 h-3 text-emerald-600" /> : <Smartphone className="w-3 h-3 text-blue-600" />}
+                    {d.trackingType === 'SIM_TRACKING' ? 'Keypad SIM' : 'Smartphone GPS'}
+                  </span>
+                </Td>
                 <Td className="font-mono text-[12px]">{d.licenseNumber}</Td>
                 <Td className="text-[12px]">
                   {d.licenseExpiry ? new Date(d.licenseExpiry).toLocaleDateString() : "—"}
@@ -255,48 +280,45 @@ export default function VendorFleetDriversPage() {
           {filteredDrivers.map((d) => {
             const isExpiring = d.licenseExpiry && new Date(d.licenseExpiry).getTime() < Date.now() + 30 * 24 * 60 * 60 * 1000;
             return (
-              <div key={d.id} onClick={() => handleEdit(d)} className="bg-white border border-slate-200 rounded-2xl p-6 hover:shadow-lg transition-all cursor-pointer group relative flex flex-col h-full overflow-hidden">
-                <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500 to-blue-400 opacity-0 group-hover:opacity-100 transition-opacity" />
-                
-                <div className="flex justify-between items-start mb-4">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-slate-50 flex items-center justify-center border border-slate-100">
-                      <span className="text-[16px]">👤</span>
+              <div 
+                key={d.id} 
+                onClick={() => handleEdit(d)}
+                className="bg-white rounded-2xl border border-slate-200/80 p-5 hover:border-blue-500/50 hover:shadow-md transition-all cursor-pointer group flex flex-col justify-between"
+              >
+                <div>
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center font-bold text-sm">
+                      {d.name ? d.name.slice(0, 2).toUpperCase() : "DR"}
                     </div>
-                    <div>
-                      <h3 className="font-bold text-slate-900 text-lg">{d.name}</h3>
-                      <p className="text-xs font-mono text-slate-500">{d.phone}</p>
-                    </div>
-                  </div>
-                </div>
-                
-                <div className="flex-1 space-y-3 mb-6 mt-2">
-                  <div className="flex items-center text-sm text-slate-600">
-                    <span className="w-[80px] text-xs font-bold text-slate-400 uppercase tracking-wider">License</span>
-                    <span className="font-mono font-medium">{d.licenseNumber}</span>
-                  </div>
-                  <div className="flex items-center text-sm text-slate-600">
-                    <span className="w-[80px] text-xs font-bold text-slate-400 uppercase tracking-wider">Expiry</span>
-                    <span className={`font-medium ${isExpiring ? 'text-red-600 font-bold' : ''}`}>
-                      {d.licenseExpiry ? new Date(d.licenseExpiry).toLocaleDateString() : "—"}
-                    </span>
-                  </div>
-                  <div className="flex items-center text-sm text-slate-600">
-                    <span className="w-[80px] text-xs font-bold text-slate-400 uppercase tracking-wider">Vendor</span>
-                    <span className="truncate">{d.vendor?.name || `Vendor #${d.vendorId}`}</span>
-                  </div>
-                </div>
-                
-                <div className="pt-4 border-t border-slate-100 flex items-center justify-between mt-auto">
-                  <div>
                     {getStatusBadge(d.currentStatus)}
                   </div>
-                  <button 
-                    onClick={(e) => { e.stopPropagation(); handleDelete(d.id); }}
-                    className="text-slate-400 hover:text-red-500 p-2 rounded-lg hover:bg-red-50 transition-colors opacity-80 sm:opacity-0 sm:group-hover:opacity-100"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
+                  <h4 className="font-bold text-slate-900 group-hover:text-blue-600 transition-colors">{d.name}</h4>
+                  <p className="text-xs text-slate-500 mt-0.5">{d.vendor?.name || "Independent Driver"}</p>
+                  
+                  <div className="mt-4 space-y-2 border-t border-slate-100 pt-3 text-xs">
+                    <div className="flex justify-between">
+                      <span className="text-slate-400">Phone:</span>
+                      <span className="font-mono text-slate-700 font-semibold">{d.phone}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-slate-400">Tracking:</span>
+                      <span className="font-bold text-blue-600 flex items-center gap-1">
+                        {d.trackingType === 'SIM_TRACKING' ? <Radio className="w-3 h-3 text-emerald-600" /> : <Smartphone className="w-3 h-3 text-blue-600" />}
+                        {d.trackingType === 'SIM_TRACKING' ? 'Dotmove SIM' : 'Mobile GPS'}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-slate-400">License:</span>
+                      <span className="font-mono text-slate-700">{d.licenseNumber}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="border-t border-slate-100 pt-3 mt-4 flex items-center justify-between">
+                  <span className="text-[11px] text-slate-400">{d.experienceYears ? `${d.experienceYears} yrs exp` : "Exp: N/A"}</span>
+                  <span className="text-blue-600 text-xs font-semibold group-hover:translate-x-0.5 transition-transform flex items-center gap-1">
+                    Edit &rarr;
+                  </span>
                 </div>
               </div>
             );
@@ -319,7 +341,7 @@ export default function VendorFleetDriversPage() {
              <div className="px-5 sm:px-6 py-4 sm:py-5 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
                <div>
                  <h3 className="font-bold text-base sm:text-lg text-slate-900 tracking-tight">{formData.id > 0 ? "Edit Driver" : "New Driver"}</h3>
-                 <p className="text-[12px] sm:text-[13px] font-medium text-slate-500 mt-0.5">{formData.id > 0 ? "Update details" : "Register a new driver"}</p>
+                 <p className="text-[12px] sm:text-[13px] font-medium text-slate-500 mt-0.5">{formData.id > 0 ? "Update details & tracking setup" : "Register a new driver & configure tracking"}</p>
                </div>
                <button 
                  onClick={() => setIsFormOpen(false)} 
@@ -336,10 +358,53 @@ export default function VendorFleetDriversPage() {
                     <label className="block text-[11.5px] font-bold text-slate-500 mb-1.5 uppercase tracking-wider">Driver Name</label>
                     <input required value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className="w-full border border-slate-200 rounded-xl px-4 py-3 text-[14px] bg-slate-50 hover:bg-slate-100 focus:bg-white text-slate-800 font-medium outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all shadow-sm" placeholder="e.g. Ramesh Kumar" />
                   </div>
+
+                  {/* Tracking Mode Selector Cards */}
+                  <div>
+                    <label className="block text-[11.5px] font-bold text-slate-500 mb-1.5 uppercase tracking-wider">
+                      Trip Tracking Method
+                    </label>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                      <div
+                        onClick={() => setFormData({ ...formData, trackingType: "MOBILE_GPS", trackingProvider: "MOBILE" })}
+                        className={`p-3 rounded-xl border cursor-pointer transition-all ${
+                          formData.trackingType === "MOBILE_GPS"
+                            ? "border-blue-500 bg-blue-50/70 ring-2 ring-blue-500/20"
+                            : "border-slate-200 bg-slate-50 hover:bg-slate-100"
+                        }`}
+                      >
+                        <div className="flex items-center gap-1.5 font-bold text-xs text-blue-900">
+                          <Smartphone className="w-4 h-4 text-blue-600" />
+                          <span>Smartphone GPS</span>
+                        </div>
+                        <p className="text-[11px] text-slate-500 mt-1 leading-snug">
+                          Driver opens WhatsApp link. Satellite GPS, free & high accuracy.
+                        </p>
+                      </div>
+
+                      <div
+                        onClick={() => setFormData({ ...formData, trackingType: "SIM_TRACKING", trackingProvider: "DOTMOVE" })}
+                        className={`p-3 rounded-xl border cursor-pointer transition-all ${
+                          formData.trackingType === "SIM_TRACKING"
+                            ? "border-emerald-500 bg-emerald-50/70 ring-2 ring-emerald-500/20"
+                            : "border-slate-200 bg-slate-50 hover:bg-slate-100"
+                        }`}
+                      >
+                        <div className="flex items-center gap-1.5 font-bold text-xs text-emerald-900">
+                          <Radio className="w-4 h-4 text-emerald-600" />
+                          <span>Keypad SIM</span>
+                        </div>
+                        <p className="text-[11px] text-slate-500 mt-1 leading-snug">
+                          For basic Nokia phones. Dotmove cell tower LBS, no internet needed.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-[11.5px] font-bold text-slate-500 mb-1.5 uppercase tracking-wider">Phone Number</label>
-                      <input required value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} className="w-full border border-slate-200 rounded-xl px-4 py-3 text-[14px] bg-slate-50 hover:bg-slate-100 focus:bg-white text-slate-800 font-medium outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all shadow-sm" placeholder="Mobile number" />
+                      <label className="block text-[11.5px] font-bold text-slate-500 mb-1.5 uppercase tracking-wider">Mobile Number</label>
+                      <input required value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} className="w-full border border-slate-200 rounded-xl px-4 py-3 text-[14px] bg-slate-50 hover:bg-slate-100 focus:bg-white text-slate-800 font-medium outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all shadow-sm" placeholder="10-digit mobile" />
                     </div>
                     <div>
                       <label className="block text-[11.5px] font-bold text-slate-500 mb-1.5 uppercase tracking-wider">Vendor</label>

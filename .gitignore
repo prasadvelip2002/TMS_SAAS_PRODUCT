@@ -20,7 +20,9 @@ apps/api-backend/wwwroot/uploads/*
 !apps/api-backend/wwwroot/uploads/.gitkeep
 
 # .NET build outputs
-bin/
-obj/
+**/bin/
+**/obj/
 *.user
 *.suo
+apps/api-backend/bin/
+apps/api-backend/obj/

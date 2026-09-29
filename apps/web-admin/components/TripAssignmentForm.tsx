@@ -12,7 +12,16 @@ export function TripAssignmentForm({ indent, onSuccess }: { indent: any, onSucce
   const [drivers, setDrivers] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [autoSendWhatsApp, setAutoSendWhatsApp] = useState(true);
-  const [dispatchNotice, setDispatchNotice] = useState<{ driverName: string, phone: string, shareUrl?: string } | null>(null);
+  const [assignedTripSuccess, setAssignedTripSuccess] = useState<{
+    tripId: number;
+    driverName: string;
+    driverPhone: string;
+    vehicleNumber: string;
+    trackingUrl: string;
+    shareUrl?: string;
+  } | null>(null);
+  const [copiedLink, setCopiedLink] = useState(false);
+  const [showQr, setShowQr] = useState(false);
   
   const [formData, setFormData] = useState({
     vendorId: "",
@@ -52,20 +61,21 @@ export function TripAssignmentForm({ indent, onSuccess }: { indent: any, onSucce
         tripStartDate: new Date(formData.tripStartDate).toISOString(),
       });
 
+      const assignedTripId = res?.id || res?.tripId || res?.trip?.id || indent?.id;
       const waInfo = res?.whatsAppNotification;
       const driverPhone = selectedDriver?.phone || selectedDriver?.phoneNumber || "";
+      const trackingUrl = typeof window !== "undefined" 
+        ? `${window.location.origin}/driver/trip/${assignedTripId}` 
+        : `/driver/trip/${assignedTripId}`;
 
-      // Backend dispatches the WhatsApp notification directly to the driver's number in background
-
-      setDispatchNotice({
+      setAssignedTripSuccess({
+        tripId: assignedTripId,
         driverName: selectedDriver?.name || "Driver",
-        phone: driverPhone,
+        driverPhone: driverPhone,
+        vehicleNumber: selectedVehicle?.vehicleNumber || selectedVehicle?.registrationNumber || "Vehicle",
+        trackingUrl: trackingUrl,
         shareUrl: waInfo?.shareUrl
       });
-
-      setTimeout(() => {
-        onSuccess();
-      }, 1500);
     } catch (error: any) {
       console.error(error);
       alert(error?.message || "Failed to assign trip");
@@ -74,31 +84,124 @@ export function TripAssignmentForm({ indent, onSuccess }: { indent: any, onSucce
     }
   };
 
-  return (
-    <form onSubmit={handleSubmit} className="space-y-4 py-2">
-      
-      {dispatchNotice && (
-        <div className="bg-emerald-50 border border-emerald-200 text-emerald-900 p-4 rounded-xl flex items-start gap-3 shadow-sm animate-in fade-in">
-          <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
-          <div className="flex-1 text-xs">
-            <p className="font-bold text-emerald-950 text-sm">Trip Assigned & WhatsApp Dispatched!</p>
-            <p className="mt-1 text-emerald-800">
-              Trip details were sent directly to <strong>{dispatchNotice.driverName}</strong> (+{dispatchNotice.phone}).
+  const handleCopyLink = () => {
+    if (!assignedTripSuccess?.trackingUrl) return;
+    navigator.clipboard.writeText(assignedTripSuccess.trackingUrl);
+    setCopiedLink(true);
+    setTimeout(() => setCopiedLink(false), 2500);
+  };
+
+  if (assignedTripSuccess) {
+    const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(assignedTripSuccess.trackingUrl)}`;
+
+    return (
+      <div className="space-y-4 py-2 animate-in fade-in zoom-in-95 duration-300">
+        <div className="bg-emerald-50 border border-emerald-200 text-emerald-950 p-5 rounded-2xl space-y-3 shadow-sm">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-emerald-600 text-white flex items-center justify-center shrink-0 shadow">
+              <CheckCircle2 className="w-6 h-6" />
+            </div>
+            <div>
+              <h3 className="font-black text-base text-emerald-950">Trip #{assignedTripSuccess.tripId} Successfully Assigned!</h3>
+              <p className="text-xs text-emerald-800">
+                Vehicle: <strong>{assignedTripSuccess.vehicleNumber}</strong> • Driver: <strong>{assignedTripSuccess.driverName}</strong> (+91 {assignedTripSuccess.driverPhone})
+              </p>
+            </div>
+          </div>
+
+          <div className="bg-white/90 border border-emerald-200 p-3 rounded-xl text-xs space-y-2">
+            <span className="font-bold text-slate-700 block uppercase tracking-wider text-[10px]">
+              Driver Smartphone GPS Activation Link:
+            </span>
+            <div className="flex items-center gap-2">
+              <input
+                type="text"
+                readOnly
+                value={assignedTripSuccess.trackingUrl}
+                className="flex-1 bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-2 font-mono text-[11px] text-slate-800 select-all focus:outline-none"
+              />
+              <button
+                type="button"
+                onClick={handleCopyLink}
+                className="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-white font-bold rounded-lg text-xs transition flex items-center gap-1.5 shrink-0"
+              >
+                {copiedLink ? "Copied!" : "Copy Link"}
+              </button>
+            </div>
+            <p className="text-[11px] text-emerald-800">
+              👉 When the driver taps this link on their mobile and taps <strong>START TRIP</strong>, their GPS location immediately streams to your Admin Live Map.
             </p>
-            {dispatchNotice.shareUrl && (
+          </div>
+
+          {/* Quick Action Buttons */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
+            <a
+              href={assignedTripSuccess.trackingUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="py-2.5 px-3 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl text-xs flex items-center justify-center gap-2 shadow transition"
+            >
+              <ExternalLink className="w-4 h-4" />
+              <span>Open Driver Phone Console</span>
+            </a>
+
+            {assignedTripSuccess.driverPhone && (
               <a
-                href={dispatchNotice.shareUrl}
+                href={assignedTripSuccess.shareUrl || `https://wa.me/${assignedTripSuccess.driverPhone.replace(/\D/g, '')}?text=${encodeURIComponent(`🚛 *TransitFlow · Trip Assignment*\n\nHello *${assignedTripSuccess.driverName}*,\nTrip #${assignedTripSuccess.tripId} has been assigned to you (${assignedTripSuccess.vehicleNumber}).\n\n📍 Tap this link to turn ON your GPS and start the trip:\n👉 ${assignedTripSuccess.trackingUrl}`)}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="mt-2 inline-flex items-center gap-1.5 font-bold text-emerald-700 bg-white border border-emerald-300 px-3 py-1 rounded-lg hover:bg-emerald-100 transition-colors"
+                className="py-2.5 px-3 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl text-xs flex items-center justify-center gap-2 shadow transition"
               >
-                <ExternalLink className="w-3.5 h-3.5" />
+                <MessageSquare className="w-4 h-4 fill-current" />
                 <span>Open WhatsApp Chat Directly</span>
               </a>
             )}
+
+            <button
+              type="button"
+              onClick={() => setShowQr(!showQr)}
+              className="py-2 px-3 bg-white border border-emerald-300 text-emerald-800 font-bold rounded-xl text-xs flex items-center justify-center gap-1.5 hover:bg-emerald-100 transition"
+            >
+              <span>{showQr ? "Hide QR Code" : "📲 Show Phone Scan QR Code"}</span>
+            </button>
+
+            <a
+              href="/map"
+              className="py-2 px-3 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-xl text-xs flex items-center justify-center gap-1.5 transition text-center"
+            >
+              <span>🗺️ Go to Live Fleet Map</span>
+            </a>
           </div>
+
+          {/* Collapsible QR Code for Mobile Scanning during Live Demo */}
+          {showQr && (
+            <div className="p-4 bg-white rounded-xl border border-emerald-200 text-center space-y-2 animate-in fade-in">
+              <p className="text-xs font-bold text-slate-800">Scan with Driver's Mobile Camera:</p>
+              <img
+                src={qrUrl}
+                alt="Driver Tracking QR Code"
+                className="w-36 h-36 mx-auto rounded-lg border border-slate-200 shadow-sm"
+              />
+              <p className="text-[10px] text-slate-500">Scan to open the GPS telemetry broadcast instantly on any mobile phone.</p>
+            </div>
+          )}
         </div>
-      )}
+
+        <div className="pt-2 flex justify-end">
+          <Button
+            type="button"
+            onClick={onSuccess}
+            className="bg-slate-800 hover:bg-slate-700 text-white font-bold px-6 py-2 rounded-xl text-xs"
+          >
+            Done & Close
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-4 py-2">
 
       {/* Indent Summary Box */}
       <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 text-sm space-y-1">

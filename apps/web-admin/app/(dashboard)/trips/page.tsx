@@ -5,7 +5,7 @@ import { getIndents, getTrips, fetchApi } from "@/lib/api";
 import { ProtoTable, Td, Badge, RouteTrack } from "@/components/PrototypeUI";
 import { IndentForm } from "@/components/IndentForm";
 import { TripAssignmentForm } from "@/components/TripAssignmentForm";
-import { MapPin, X, Activity, FileText, Truck, Grid, List, Plus, Search } from "lucide-react";
+import { MapPin, X, Activity, FileText, Truck, Grid, List, Plus, Search, Smartphone } from "lucide-react";
 import Link from "next/link";
 import { formatTime12H } from "@/lib/utils";
 
@@ -563,10 +563,23 @@ export default function TripsPage() {
                           <span className="text-[11px] text-slate-400 font-medium whitespace-nowrap">From TRP-{1000 + (trip.parentTripId || 0)}</span>
                         )}
                         <Link href={`/trips/${trip.id}/tracking`}>
-                          <button className="bg-sky-50 hover:bg-sky-100 text-sky-700 border border-sky-200 px-3 py-1.5 rounded-lg text-[11.5px] font-bold uppercase tracking-wide transition-colors">
+                          <button 
+                            title="View Live GPS Tracking Radar"
+                            className="bg-sky-50 hover:bg-sky-100 text-sky-700 border border-sky-200 px-3 py-1.5 rounded-lg text-[11.5px] font-bold uppercase tracking-wide transition-colors"
+                          >
                             <MapPin className="w-3.5 h-3.5" />
                           </button>
                         </Link>
+                        <a
+                          href={`/driver/trip/${trip.id}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          title="Open Driver Smartphone Console"
+                          className="bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 px-2.5 py-1.5 rounded-lg text-[11.5px] font-bold flex items-center gap-1 transition-colors"
+                        >
+                          <Smartphone className="w-3.5 h-3.5" />
+                          <span>Driver Link</span>
+                        </a>
                         {trip.lrNumber && (
                           <a 
                             href={`/trips/${trip.id}/lr`} 

@@ -3,7 +3,24 @@
 import { useEffect, useState } from "react";
 import { fetchApi, assignTrip } from "@/lib/api";
 import { ProtoTable, Td, ProtoButton } from "@/components/PrototypeUI";
-import { Search, Grid, List, Plus, X, Handshake, Box, Activity } from "lucide-react";
+import { 
+  Search, 
+  Grid, 
+  List, 
+  Plus, 
+  X, 
+  Handshake, 
+  Box, 
+  Activity,
+  MessageSquare,
+  Phone,
+  Copy,
+  Check,
+  ExternalLink,
+  Navigation,
+  CheckCircle2,
+  Share2
+} from "lucide-react";
 import { formatTime12H } from "@/lib/utils";
 
 export default function AssignmentPage() {
@@ -18,6 +35,10 @@ export default function AssignmentPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSidePanelOpen, setIsSidePanelOpen] = useState(false);
   const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
+
+  // Modal shown after successful assignment with Driver GPS Tracking link
+  const [assignedTripResult, setAssignedTripResult] = useState<any | null>(null);
+  const [copiedModalLink, setCopiedModalLink] = useState(false);
 
   const filteredIndents = indents.filter((item) => {
     if (!searchQuery.trim()) return true;
@@ -226,10 +247,17 @@ export default function AssignmentPage() {
         tripStartDate: new Date(formData.tripStartDate).toISOString(),
       });
 
-      // Background WhatsApp notification sent directly to driver's phone
+      const assignedVehicle = vehicles.find(v => v.id === parseInt(formData.vehicleId));
+      const assignedDriver = drivers.find(d => d.id === parseInt(formData.driverId));
+
+      setAssignedTripResult({
+        tripId: res?.id || selectedIndent.tripId,
+        vehicle: assignedVehicle,
+        driver: assignedDriver,
+        indent: selectedIndent
+      });
 
       setIsSidePanelOpen(false);
-      setSelectedIndent(null);
       loadData();
     } catch (error) {
       console.error(error);
@@ -689,19 +717,25 @@ export default function AssignmentPage() {
               {formData.driverId && (
                 (() => {
                   const currDriver = drivers.find(d => d.id.toString() === formData.driverId);
+                  const isSim = currDriver?.trackingType === "SIM_TRACKING";
                   return (
-                    <div className={`p-3 rounded-xl border text-xs ${currDriver?.phone ? 'bg-emerald-50 border-emerald-200 text-emerald-900' : 'bg-amber-50 border-amber-200 text-amber-900'}`}>
-                      {currDriver?.phone ? (
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2">
-                            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0"></span>
-                            <span>Direct WhatsApp notification will go to <strong>{currDriver.name} (+91 {currDriver.phone})</strong></span>
-                          </div>
-                          <span className="text-[10px] font-bold bg-emerald-200 text-emerald-800 px-2 py-0.5 rounded-full shrink-0">Direct</span>
+                    <div className={`p-3 rounded-xl border text-xs space-y-1.5 ${isSim ? 'bg-emerald-50 border-emerald-200 text-emerald-900' : 'bg-blue-50 border-blue-200 text-blue-900'}`}>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <span className={`w-2 h-2 rounded-full ${isSim ? 'bg-emerald-500' : 'bg-blue-500'} animate-pulse shrink-0`}></span>
+                          <span className="font-bold">
+                            {isSim ? "🟢 Keypad Phone (Dotmove SIM Tracking)" : "🔵 Smartphone GPS (WhatsApp Driver Link)"}
+                          </span>
                         </div>
-                      ) : (
-                        <div>⚠️ Selected driver has no phone number. Add phone in Drivers master for automatic WhatsApp dispatch.</div>
-                      )}
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-white border shrink-0">
+                          {currDriver?.phone ? `+91 ${currDriver.phone}` : "No phone"}
+                        </span>
+                      </div>
+                      <p className="text-[11px] opacity-85 leading-snug">
+                        {isSim 
+                          ? "Driver will be tracked automatically via cellular tower signals. No smartphone or app required."
+                          : "Driver will receive an automated WhatsApp link to broadcast high-precision satellite GPS."}
+                      </p>
                     </div>
                   );
                 })()
@@ -791,6 +825,139 @@ export default function AssignmentPage() {
           </button>
         </div>
       </div>
+
+      {/* Post-Assignment Driver GPS Tracking Access Modal */}
+      {assignedTripResult && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 animate-in fade-in">
+          <div className="bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-lg overflow-hidden shadow-2xl text-white">
+            
+            {/* Modal Header */}
+            <div className="p-5 bg-gradient-to-r from-emerald-950/60 to-slate-900 border-b border-slate-800 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-emerald-400 shadow-inner">
+                  <CheckCircle2 className="w-6 h-6" />
+                </div>
+                <div>
+                  <h3 className="text-base font-black text-white">Trip Assigned Successfully!</h3>
+                  <p className="text-xs text-slate-400">Driver Live GPS Access Link is ready to share</p>
+                </div>
+              </div>
+              <button 
+                onClick={() => setAssignedTripResult(null)}
+                className="p-1.5 text-slate-400 hover:text-white rounded-xl hover:bg-slate-800 transition"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="p-6 space-y-4">
+              
+              {/* Trip Details Card */}
+              {(() => {
+                const isSim = assignedTripResult.driver?.trackingType === 'SIM_TRACKING';
+                const origin = typeof window !== 'undefined' ? window.location.origin : '';
+                const trackingUrl = `${origin}/driver/trip/${assignedTripResult.tripId}`;
+                const driverPhone = assignedTripResult.driver?.phone || "";
+                const cleanPhone = driverPhone.replace(/\D/g, '');
+                const waMessage = `🚛 *TransitFlow · Trip Assignment*\n\nHello *${assignedTripResult.driver?.name || 'Driver'}*,\nTrip #${assignedTripResult.tripId} has been assigned to you with Vehicle *${assignedTripResult.vehicle?.vehicleNumber}*.\n\nRoute: ${assignedTripResult.indent?.source} ➔ ${assignedTripResult.indent?.destination}\n\n📍 *Start Live GPS Tracking:*\nTap this link on your phone to start the trip and share live GPS:\n👉 ${trackingUrl}`;
+
+                return (
+                  <>
+                    <div className="bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-2.5 text-xs">
+                      <div className="flex items-center justify-between border-b border-slate-800/80 pb-2">
+                        <span className="text-slate-400 font-semibold">Assigned Trip</span>
+                        <span className="font-black text-white text-sm">TRIP #{assignedTripResult.tripId}</span>
+                      </div>
+                      <div className="flex items-center justify-between border-b border-slate-800/80 pb-2">
+                        <span className="text-slate-400 font-semibold">Vehicle</span>
+                        <span className="font-bold text-white">{assignedTripResult.vehicle?.vehicleNumber || "Assigned Vehicle"}</span>
+                      </div>
+                      <div className="flex items-center justify-between border-b border-slate-800/80 pb-2">
+                        <span className="text-slate-400 font-semibold">Driver & Phone</span>
+                        <span className="font-bold text-emerald-400">{assignedTripResult.driver?.name || "Driver"} • {assignedTripResult.driver?.phone ? `+91 ${assignedTripResult.driver?.phone}` : "No phone"}</span>
+                      </div>
+                      <div className="flex items-center justify-between border-b border-slate-800/80 pb-2">
+                        <span className="text-slate-400 font-semibold">Tracking Mode</span>
+                        <span className={`font-bold px-2 py-0.5 rounded-full text-[11px] ${isSim ? 'bg-emerald-950 text-emerald-300 border border-emerald-800' : 'bg-blue-950 text-blue-300 border border-blue-800'}`}>
+                          {isSim ? "🟢 Keypad Phone SIM (Dotmove)" : "🔵 Smartphone GPS (WhatsApp Link)"}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between pt-0.5">
+                        <span className="text-slate-400 font-semibold">Route</span>
+                        <span className="font-bold text-white">{assignedTripResult.indent?.source} ➔ {assignedTripResult.indent?.destination}</span>
+                      </div>
+                    </div>
+
+                    {/* Explanatory Box */}
+                    {isSim ? (
+                      <div className="bg-emerald-950/40 border border-emerald-900/50 rounded-2xl p-3.5 text-xs text-emerald-200 leading-relaxed">
+                        <p className="font-semibold text-white mb-1 flex items-center gap-1.5">
+                          <Share2 className="w-4 h-4 text-emerald-400" /> Keypad Phone SIM Tracking:
+                        </p>
+                        Driver <strong>{assignedTripResult.driver?.name}</strong> is set to cellular SIM tracking. The truck is now plotted on your <strong>Live Fleet Map</strong> at <strong>{assignedTripResult.indent?.source}</strong> and coordinates will be gathered via Dotmove cell tower triangulation without requiring a smartphone.
+                      </div>
+                    ) : (
+                      <div className="bg-blue-950/40 border border-blue-900/50 rounded-2xl p-3.5 text-xs text-blue-200 leading-relaxed">
+                        <p className="font-semibold text-white mb-1 flex items-center gap-1.5">
+                          <Share2 className="w-4 h-4 text-blue-400" /> How Live Smartphone GPS Works:
+                        </p>
+                        Send this link to driver <strong>{assignedTripResult.driver?.name}</strong>. When the driver opens it on their phone and taps <strong>&quot;Start Trip &amp; Share GPS&quot;</strong>, their phone&apos;s real-time satellite coordinates stream straight into your <strong>Live Fleet Map</strong>.
+                      </div>
+                    )}
+
+                    {/* GPS Link Box (Always visible for smartphone GPS or manual access) */}
+                    <div className="space-y-3 pt-1">
+                      <div className="bg-slate-950 border border-slate-800 rounded-xl p-2.5 flex items-center justify-between text-xs">
+                        <span className="font-mono text-slate-300 truncate max-w-[320px]">{trackingUrl}</span>
+                        <button
+                          onClick={() => {
+                            navigator.clipboard.writeText(trackingUrl);
+                            setCopiedModalLink(true);
+                            setTimeout(() => setCopiedModalLink(false), 2500);
+                          }}
+                          className="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-blue-400 font-bold rounded-lg flex items-center gap-1 border border-slate-700 shrink-0 ml-2"
+                        >
+                          {copiedModalLink ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                          {copiedModalLink ? "Copied!" : "Copy"}
+                        </button>
+                      </div>
+
+                      {/* Action Buttons */}
+                      <div className="space-y-2 pt-1">
+                        {cleanPhone ? (
+                          <a
+                            href={`https://wa.me/${cleanPhone}?text=${encodeURIComponent(waMessage)}`}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="w-full py-3.5 px-4 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-sm rounded-xl shadow-lg shadow-emerald-950/60 transition flex items-center justify-center gap-2"
+                          >
+                            <MessageSquare className="w-4 h-4 fill-current" />
+                            Send WhatsApp Link to Driver ({driverPhone})
+                          </a>
+                        ) : (
+                          <div className="text-center p-2.5 bg-slate-950 rounded-xl border border-slate-800 text-xs text-slate-400">
+                            Driver has no phone registered. Please copy and send link manually.
+                          </div>
+                        )}
+
+                        <a
+                          href="/map"
+                          className="w-full py-3 px-4 bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs rounded-xl shadow-lg transition flex items-center justify-center gap-2"
+                        >
+                          <Navigation className="w-4 h-4 text-white" />
+                          Track Vehicle on Live Fleet Map Now
+                        </a>
+                      </div>
+                    </div>
+                  </>
+                );
+              })()}
+
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

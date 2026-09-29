@@ -1,8 +1,17 @@
-export const API_BASE_URL = 
-  process.env.NEXT_PUBLIC_API_URL || 
-  (typeof window !== 'undefined' && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1'
-    ? 'https://tms-saas-product.onrender.com/api'
-    : 'http://localhost:5063/api');
+export const getApiBaseUrl = () => {
+  if (typeof window !== 'undefined') {
+    const host = window.location.hostname;
+    if (host !== 'localhost' && host !== '127.0.0.1') {
+      if (/^(\d{1,3}\.){3}\d{1,3}$/.test(host)) {
+        return `http://${host}:5063/api`;
+      }
+      return process.env.NEXT_PUBLIC_API_URL || 'https://tms-saas-product.onrender.com/api';
+    }
+  }
+  return process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5063/api';
+};
+
+export const API_BASE_URL = getApiBaseUrl();
 
 export async function fetchApi(endpoint: string, options: RequestInit = {}) {
   const url = `${API_BASE_URL}${endpoint}`;

@@ -2,6 +2,7 @@ using api_backend.Data;
 using Microsoft.EntityFrameworkCore;
 using api_backend.Services;
 using api_backend.Services.Interfaces;
+using api_backend.Services.Tracking;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
@@ -78,6 +79,9 @@ builder.Services.AddScoped<ITripService, TripService>();
 builder.Services.AddScoped<IDocumentService, LocalDocumentService>();
 builder.Services.AddScoped<INotificationService, NotificationService>();
 builder.Services.AddScoped<IWhatsAppService, WhatsAppService>();
+builder.Services.AddHttpClient();
+builder.Services.AddScoped<DotmoveLocationProvider>();
+builder.Services.AddScoped<MobileGpsLocationProvider>();
 builder.Services.AddScoped<ILocationService, LocationService>();
 
 builder.Services.AddCors(options =>
@@ -117,8 +121,31 @@ using (var scope = app.Services.CreateScope())
         db.Database.ExecuteSqlRaw("ALTER TABLE \"WhatsAppLogs\" ADD COLUMN IF NOT EXISTS \"RecipientName\" text;");
         db.Database.ExecuteSqlRaw("ALTER TABLE \"WhatsAppLogs\" ADD COLUMN IF NOT EXISTS \"ExternalMessageId\" text;");
 
+        // Fix column types for TripLocations (CreatedBy and UpdatedBy must be integer to match BaseEntity)
+        try
+        {
+            db.Database.ExecuteSqlRaw(@"
+                DO $$
+                BEGIN
+                    BEGIN
+                        ALTER TABLE ""TripLocations"" ALTER COLUMN ""CreatedBy"" TYPE integer USING (NULLIF(""CreatedBy"", '')::integer);
+                    EXCEPTION WHEN OTHERS THEN 
+                    END;
+                    BEGIN
+                        ALTER TABLE ""TripLocations"" ALTER COLUMN ""UpdatedBy"" TYPE integer USING (NULLIF(""UpdatedBy"", '')::integer);
+                    EXCEPTION WHEN OTHERS THEN 
+                    END;
+                END $$;
+            ");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[Migration Notice] {ex.Message}");
+        }
+
         // Tracking & Telecom LBS / Mobile GPS schema
         db.Database.ExecuteSqlRaw("ALTER TABLE \"Drivers\" ADD COLUMN IF NOT EXISTS \"TrackingType\" text DEFAULT 'MOBILE_GPS';");
+        db.Database.ExecuteSqlRaw("ALTER TABLE \"Drivers\" ADD COLUMN IF NOT EXISTS \"TrackingProvider\" text DEFAULT 'MOBILE';");
         db.Database.ExecuteSqlRaw("ALTER TABLE \"Drivers\" ADD COLUMN IF NOT EXISTS \"ConsentStatus\" text DEFAULT 'Pending';");
         db.Database.ExecuteSqlRaw("ALTER TABLE \"Drivers\" ADD COLUMN IF NOT EXISTS \"SimConsentRef\" text;");
         db.Database.ExecuteSqlRaw(@"
@@ -133,10 +160,14 @@ using (var scope = app.Services.CreateScope())
                 ""Speed"" double precision,
                 ""Heading"" double precision,
                 ""Source"" text NOT NULL DEFAULT 'MOBILE_GPS',
+                ""Provider"" text NOT NULL DEFAULT 'MOBILE',
+                ""DeviceId"" text,
+                ""Msisdn"" text,
                 ""Status"" text DEFAULT 'Active',
                 ""Address"" text,
                 ""RawPayloadJson"" text,
                 ""RecordedAt"" timestamp with time zone NOT NULL DEFAULT NOW(),
+                ""ReceivedAt"" timestamp with time zone NOT NULL DEFAULT NOW(),
                 ""TenantId"" integer NOT NULL DEFAULT 1,
                 ""CompanyId"" integer NOT NULL DEFAULT 1,
                 ""CreatedAt"" timestamp with time zone NOT NULL DEFAULT NOW(),
@@ -145,6 +176,39 @@ using (var scope = app.Services.CreateScope())
                 ""UpdatedBy"" integer
             );
             ALTER TABLE ""TripLocations"" ADD COLUMN IF NOT EXISTS ""Status"" text DEFAULT 'Active';
+            ALTER TABLE ""TripLocations"" ADD COLUMN IF NOT EXISTS ""Provider"" text DEFAULT 'MOBILE';
+            ALTER TABLE ""TripLocations"" ADD COLUMN IF NOT EXISTS ""DeviceId"" text;
+            ALTER TABLE ""TripLocations"" ADD COLUMN IF NOT EXISTS ""Msisdn"" text;
+            ALTER TABLE ""TripLocations"" ADD COLUMN IF NOT EXISTS ""ReceivedAt"" timestamp with time zone DEFAULT NOW();
+
+            CREATE TABLE IF NOT EXISTS ""VehicleCurrentLocations"" (
+                ""Id"" SERIAL PRIMARY KEY,
+                ""VehicleId"" integer NOT NULL,
+                ""DriverId"" integer,
+                ""TripId"" integer,
+                ""Latitude"" double precision NOT NULL,
+                ""Longitude"" double precision NOT NULL,
+                ""Accuracy"" double precision,
+                ""Speed"" double precision,
+                ""Heading"" double precision,
+                ""TrackingType"" text NOT NULL DEFAULT 'MOBILE_GPS',
+                ""TrackingProvider"" text NOT NULL DEFAULT 'MOBILE',
+                ""TrackingStatus"" text NOT NULL DEFAULT 'LIVE',
+                ""Address"" text,
+                ""DeviceId"" text,
+                ""Msisdn"" text,
+                ""RecordedAt"" timestamp with time zone NOT NULL DEFAULT NOW(),
+                ""ReceivedAt"" timestamp with time zone NOT NULL DEFAULT NOW(),
+                ""LastLocationAt"" timestamp with time zone NOT NULL DEFAULT NOW(),
+                ""Status"" text DEFAULT 'Active',
+                ""TenantId"" integer NOT NULL DEFAULT 1,
+                ""CompanyId"" integer NOT NULL DEFAULT 1,
+                ""CreatedAt"" timestamp with time zone NOT NULL DEFAULT NOW(),
+                ""UpdatedAt"" timestamp with time zone,
+                ""CreatedBy"" integer,
+                ""UpdatedBy"" integer
+            );
+            CREATE INDEX IF NOT EXISTS ""IX_VehicleCurrentLocations_VehicleId"" ON ""VehicleCurrentLocations"" (""VehicleId"");
         ");
         db.Database.ExecuteSqlRaw(@"
             UPDATE ""Trips"" t

@@ -14,6 +14,7 @@ namespace api_backend.Models
         public string? CurrentStatus { get; set; }
 
         public string TrackingType { get; set; } = "MOBILE_GPS"; // "MOBILE_GPS" or "SIM_TRACKING"
+        public string TrackingProvider { get; set; } = "MOBILE"; // "MOBILE", "DOTMOVE", "AIRTEL_DIRECT", "JIO_DIRECT"
         public string ConsentStatus { get; set; } = "Pending";   // "Pending", "Active", "Revoked"
         public string? SimConsentRef { get; set; }
 

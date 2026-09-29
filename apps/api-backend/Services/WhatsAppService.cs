@@ -222,6 +222,9 @@ namespace api_backend.Services
             var lrNo = string.IsNullOrEmpty(trip.LRNumber) ? "Pending LR" : trip.LRNumber;
             var advance = trip.AdvanceAmount > 0 ? $"₹{trip.AdvanceAmount:N0}" : "₹0";
 
+            var trackingBase = _configuration["AppSettings:DriverTrackingUrl"] ?? _configuration["AppSettings:FrontendBaseUrl"] ?? "http://localhost:3000";
+            var trackingUrl = $"{trackingBase}/driver/trip/{trip.Id}";
+
             var message = 
                 $"🚛 *TransitFlow · Trip Assignment*\n\n" +
                 $"Hello *{driverName}*,\n" +
@@ -231,13 +234,54 @@ namespace api_backend.Services
                 $"• *Route:* {pickup} ➔ {drop}\n" +
                 $"• *LR Number:* {lrNo}\n" +
                 $"• *Advance Amount:* {advance}\n\n" +
-                $"Please arrive at the loading point on time and report in TransitFlow Driver App.";
+                $"📍 *ACTION REQUIRED - TURN ON GPS TRACKING:*\n" +
+                $"Please tap this link on your smartphone to start the trip and enable GPS location:\n" +
+                $"👉 {trackingUrl}\n\n" +
+                $"Please report on time at the loading hub.";
 
             return await SendMessageAsync(new WhatsAppSendRequest
             {
                 PhoneNumber = phone,
                 RecipientName = $"{driverName} (Driver)",
                 TemplateName = "trip_assigned",
+                Message = message,
+                RelatedTripId = trip.Id
+            });
+        }
+
+        public async Task<WhatsAppSendResult> SendTripStartedToDriverAsync(Trip trip, Driver? driver, Vehicle? vehicle, Indent? indent)
+        {
+            var phone = driver?.Phone;
+            if (string.IsNullOrEmpty(phone))
+            {
+                return new WhatsAppSendResult { Success = false, Status = "Skipped", ErrorMessage = "Driver has no registered phone number." };
+            }
+
+            var driverName = driver?.Name ?? "Driver";
+            var regNo = vehicle?.VehicleNumber ?? "Assigned Vehicle";
+            var pickup = indent?.Source ?? "Source";
+            var drop = indent?.Destination ?? "Destination";
+
+            var trackingBase = _configuration["AppSettings:DriverTrackingUrl"] ?? _configuration["AppSettings:FrontendBaseUrl"] ?? "http://localhost:3000";
+            var trackingUrl = $"{trackingBase}/driver/trip/{trip.Id}";
+
+            var message = 
+                $"🟢 *TransitFlow · Trip Dispatched & Started*\n\n" +
+                $"Hello *{driverName}*,\n" +
+                $"Your trip has been started by Fleet Operations:\n\n" +
+                $"• *Trip ID:* TRIP-{trip.Id}\n" +
+                $"• *Vehicle:* {regNo}\n" +
+                $"• *Route:* {pickup} ➔ {drop}\n\n" +
+                $"📍 *PLEASE TURN ON YOUR LOCATION:*\n" +
+                $"Tap the link below on your phone and tap 'START TRIP & SHARE LIVE GPS' so dispatch can track your truck live:\n" +
+                $"👉 {trackingUrl}\n\n" +
+                $"Have a safe journey!";
+
+            return await SendMessageAsync(new WhatsAppSendRequest
+            {
+                PhoneNumber = phone,
+                RecipientName = $"{driverName} (Driver)",
+                TemplateName = "trip_started",
                 Message = message,
                 RelatedTripId = trip.Id
             });

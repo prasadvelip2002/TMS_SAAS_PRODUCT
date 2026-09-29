@@ -20,10 +20,14 @@ namespace api_backend.Models
         public double? Heading { get; set; }  // 0-360 degrees
 
         public string Source { get; set; } = "MOBILE_GPS"; // "MOBILE_GPS", "SIM_TRACKING", "HARDWARE_GPS"
+        public string Provider { get; set; } = "MOBILE";    // "MOBILE", "DOTMOVE", "AIRTEL", "JIO", "VI"
+        public string? DeviceId { get; set; }
+        public string? Msisdn { get; set; }
         public string? Address { get; set; }
         public string? RawPayloadJson { get; set; }
 
-        public DateTime RecordedAt { get; set; } = DateTime.UtcNow;
+        public DateTime RecordedAt { get; set; } = DateTime.UtcNow; // When device generated point
+        public DateTime ReceivedAt { get; set; } = DateTime.UtcNow; // When server received point
 
         public int TenantId { get; set; }
         public Tenant? Tenant { get; set; }

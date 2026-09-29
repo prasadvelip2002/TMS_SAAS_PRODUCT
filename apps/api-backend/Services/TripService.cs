@@ -201,6 +201,27 @@ namespace api_backend.Services
 
             await _context.SaveChangesAsync();
 
+            // Automated WhatsApp Notification on Trip Start (Sends GPS link to Driver)
+            if (newStatus == "Started" || newStatus == "In_Transit" || newStatus == "InTransit")
+            {
+                try
+                {
+                    if (trip.DriverId.HasValue)
+                    {
+                        var driver = await _context.Drivers.FindAsync(trip.DriverId.Value);
+                        var vehicle = trip.VehicleId.HasValue ? await _context.Vehicles.FindAsync(trip.VehicleId.Value) : null;
+                        if (driver != null && !string.IsNullOrEmpty(driver.Phone))
+                        {
+                            await _whatsAppService.SendTripStartedToDriverAsync(trip, driver, vehicle, trip.Indent);
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"[WhatsApp Trip Start Error]: {ex.Message}");
+                }
+            }
+
             // Automated WhatsApp Notification on Delivery
             if (newStatus == "Delivered" || newStatus == "Completed")
             {
