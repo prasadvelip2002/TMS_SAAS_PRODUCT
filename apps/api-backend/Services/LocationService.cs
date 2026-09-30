@@ -699,38 +699,53 @@ namespace api_backend.Services
                 return cached;
             }
 
-            try
+            // 1. Instant fuzzy/substring match against pre-seeded 120+ Indian hubs (0ms)
+            foreach (var kvp in _dynamicGeoCache)
             {
-                var url = $"https://nominatim.openstreetmap.org/search?format=json&countrycodes=in&limit=1&q={Uri.EscapeDataString(cleanKey)}";
-                using var request = new HttpRequestMessage(HttpMethod.Get, url);
-                request.Headers.Add("User-Agent", "TransitFlow-TMS/2.0 (Dynamic Logistics Geocoder)");
-
-                using var response = await _httpClient.SendAsync(request);
-                if (response.IsSuccessStatusCode)
+                if (cleanKey.Contains(kvp.Key, StringComparison.OrdinalIgnoreCase) ||
+                    kvp.Key.Contains(cleanKey, StringComparison.OrdinalIgnoreCase))
                 {
-                    var json = await response.Content.ReadAsStringAsync();
-                    using var doc = JsonDocument.Parse(json);
-                    if (doc.RootElement.ValueKind == JsonValueKind.Array && doc.RootElement.GetArrayLength() > 0)
+                    _dynamicGeoCache[cleanKey] = kvp.Value;
+                    return kvp.Value;
+                }
+            }
+
+            // 2. Cache default coordinates immediately so subsequent requests never block
+            _dynamicGeoCache[cleanKey] = (defaultLat, defaultLng);
+
+            // 3. Fire-and-forget non-blocking background geocoding to keep the API ultra fast
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    var url = $"https://nominatim.openstreetmap.org/search?format=json&countrycodes=in&limit=1&q={Uri.EscapeDataString(cleanKey)}";
+                    using var request = new HttpRequestMessage(HttpMethod.Get, url);
+                    request.Headers.Add("User-Agent", "TransitFlow-TMS/2.0 (Dynamic Logistics Geocoder)");
+
+                    using var response = await _httpClient.SendAsync(request);
+                    if (response.IsSuccessStatusCode)
                     {
-                        var first = doc.RootElement[0];
-                        if (first.TryGetProperty("lat", out var latProp) && first.TryGetProperty("lon", out var lonProp))
+                        var json = await response.Content.ReadAsStringAsync();
+                        using var doc = JsonDocument.Parse(json);
+                        if (doc.RootElement.ValueKind == JsonValueKind.Array && doc.RootElement.GetArrayLength() > 0)
                         {
-                            if (double.TryParse(latProp.GetString(), System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out var lat) &&
-                                double.TryParse(lonProp.GetString(), System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out var lon))
+                            var first = doc.RootElement[0];
+                            if (first.TryGetProperty("lat", out var latProp) && first.TryGetProperty("lon", out var lonProp))
                             {
-                                var resolved = (lat, lon);
-                                _dynamicGeoCache[cleanKey] = resolved;
-                                _logger.LogInformation("Dynamically geocoded '{Location}' -> Lat {Lat}, Lng {Lng}", cleanKey, lat, lon);
-                                return resolved;
+                                if (double.TryParse(latProp.GetString(), System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out var lat) &&
+                                    double.TryParse(lonProp.GetString(), System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out var lon))
+                                {
+                                    _dynamicGeoCache[cleanKey] = (lat, lon);
+                                }
                             }
                         }
                     }
                 }
-            }
-            catch (Exception ex)
-            {
-                _logger.LogWarning("Dynamic geocoding for '{Location}' encountered: {Message}", cleanKey, ex.Message);
-            }
+                catch
+                {
+                    // Fail silently in background
+                }
+            });
 
             return (defaultLat, defaultLng);
         }

@@ -275,6 +275,9 @@ app.UseAuthorization();
 
 app.MapControllers();
 
+app.MapGet("/api/health", () => Results.Ok(new { status = "healthy", timestamp = DateTime.UtcNow }));
+app.MapGet("/health", () => Results.Ok(new { status = "healthy", timestamp = DateTime.UtcNow }));
+
 app.MapGet("/", () => "Hitro Logistics API is running successfully on Render! Navigate to /swagger to view the API documentation.");
 
 var summaries = new[]

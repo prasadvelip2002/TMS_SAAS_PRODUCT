@@ -16,51 +16,126 @@ export const getApiBaseUrl = () => {
 
 export const API_BASE_URL = getApiBaseUrl();
 
-export async function fetchApi(endpoint: string, options: RequestInit = {}) {
-  const url = `${getApiBaseUrl()}${endpoint}`;
-  
-  const defaultHeaders: Record<string, string> = {
-    'Content-Type': 'application/json',
-  };
+// Fast in-memory response cache & in-flight request deduplication
+interface CacheEntry {
+  data: any;
+  timestamp: number;
+}
+const apiCache = new Map<string, CacheEntry>();
+const inFlightRequests = new Map<string, Promise<any>>();
+const CACHE_TTL_MS = 8000; // 8 seconds cache for instant tab navigation
 
-  if (typeof window !== 'undefined') {
-    const token = localStorage.getItem('token');
-    if (token) {
-      defaultHeaders['Authorization'] = `Bearer ${token}`;
+export function clearApiCache(prefix?: string) {
+  if (!prefix) {
+    apiCache.clear();
+    return;
+  }
+  for (const key of apiCache.keys()) {
+    if (key.includes(prefix)) {
+      apiCache.delete(key);
+    }
+  }
+}
+
+// Keep Render backend awake while any browser tab is open (prevents 60s cold start)
+if (typeof window !== 'undefined') {
+  setInterval(() => {
+    try {
+      fetch(`${getApiBaseUrl()}/api/health`, { method: 'GET', keepalive: true }).catch(() => {});
+    } catch {}
+  }, 4 * 60 * 1000);
+}
+
+export async function fetchApi(
+  endpoint: string, 
+  options: RequestInit & { forceRefresh?: boolean } = {}
+) {
+  const method = (options.method || 'GET').toUpperCase();
+  const isGet = method === 'GET';
+
+  // Invalidate cache on mutations (POST, PUT, DELETE, PATCH)
+  if (!isGet) {
+    clearApiCache();
+  }
+
+  // Check cache for GET requests
+  const cacheKey = `${getApiBaseUrl()}${endpoint}`;
+  if (isGet && !options.forceRefresh) {
+    const cached = apiCache.get(cacheKey);
+    if (cached && Date.now() - cached.timestamp < CACHE_TTL_MS) {
+      return cached.data;
+    }
+
+    // Deduplicate identical in-flight GET requests
+    const inFlight = inFlightRequests.get(cacheKey);
+    if (inFlight) {
+      return inFlight;
     }
   }
 
-  const config: RequestInit = {
-    cache: 'no-store',
-    ...options,
-    headers: {
-      ...defaultHeaders,
-      ...options.headers,
-    },
-  };
+  const fetchPromise = (async () => {
+    const url = `${getApiBaseUrl()}${endpoint}`;
+    
+    const defaultHeaders: Record<string, string> = {
+      'Content-Type': 'application/json',
+    };
 
-  const response = await fetch(url, config);
-
-  if (response.status === 401) {
     if (typeof window !== 'undefined') {
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
-      document.cookie = 'isLoggedIn=; path=/; max-age=0'; // Clear the cookie
-      window.location.href = '/login';
+      const token = localStorage.getItem('token');
+      if (token) {
+        defaultHeaders['Authorization'] = `Bearer ${token}`;
+      }
     }
-    throw new Error('Unauthorized');
+
+    const config: RequestInit = {
+      cache: 'no-store',
+      ...options,
+      headers: {
+        ...defaultHeaders,
+        ...options.headers,
+      },
+    };
+
+    const response = await fetch(url, config);
+
+    if (response.status === 401) {
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        document.cookie = 'isLoggedIn=; path=/; max-age=0';
+        window.location.href = '/login';
+      }
+      throw new Error('Unauthorized');
+    }
+
+    if (!response.ok) {
+      throw new Error(`API error: ${response.status} ${response.statusText}`);
+    }
+
+    if (response.status === 204) {
+      return null;
+    }
+
+    const json = await response.json();
+
+    // Cache successful GET results
+    if (isGet) {
+      apiCache.set(cacheKey, { data: json, timestamp: Date.now() });
+    }
+
+    return json;
+  })();
+
+  if (isGet && !options.forceRefresh) {
+    inFlightRequests.set(cacheKey, fetchPromise);
+    try {
+      return await fetchPromise;
+    } finally {
+      inFlightRequests.delete(cacheKey);
+    }
   }
 
-  if (!response.ok) {
-    throw new Error(`API error: ${response.status} ${response.statusText}`);
-  }
-
-  // Handle 204 No Content
-  if (response.status === 204) {
-    return null;
-  }
-
-  return response.json();
+  return await fetchPromise;
 }
 
 // -- INDENTS --
