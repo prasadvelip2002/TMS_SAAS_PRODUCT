@@ -423,20 +423,7 @@ namespace api_backend.Controllers
 
     public class ApproveByTokenRequest
     {
-        private string? _poNumber;
-        public string PONumber 
-        { 
-            get => _poNumber ?? string.Empty; 
-            set => _poNumber = value; 
-        }
-
-        [System.Text.Json.Serialization.JsonPropertyName("poNumber")]
-        public string? PoNumberLower 
-        { 
-            get => _poNumber; 
-            set => _poNumber = value; 
-        }
-
+        public string PONumber { get; set; } = string.Empty;
         public string? Remarks { get; set; }
     }
 
