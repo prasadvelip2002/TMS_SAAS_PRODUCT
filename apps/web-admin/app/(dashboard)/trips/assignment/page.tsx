@@ -889,6 +889,19 @@ export default function AssignmentPage() {
                       </div>
                     </div>
 
+                    {/* Automatic Dispatch Confirmation Banner */}
+                    <div className="bg-emerald-950/60 border border-emerald-500/40 rounded-xl p-3 flex items-center gap-2.5 text-xs text-emerald-200">
+                      <div className="w-6 h-6 rounded-full bg-emerald-500/20 flex items-center justify-center shrink-0 text-emerald-400">
+                        <Check className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <span className="font-bold text-white block">WhatsApp Message Sent Automatically!</span>
+                        <span className="text-[11px] text-emerald-300/90">
+                          The tracking link has already been dispatched to driver <strong>{assignedTripResult.driver?.name}</strong> (+91 {driverPhone}) in background.
+                        </span>
+                      </div>
+                    </div>
+
                     {/* Explanatory Box */}
                     {isSim ? (
                       <div className="bg-emerald-950/40 border border-emerald-900/50 rounded-2xl p-3.5 text-xs text-emerald-200 leading-relaxed">
@@ -902,7 +915,7 @@ export default function AssignmentPage() {
                         <p className="font-semibold text-white mb-1 flex items-center gap-1.5">
                           <Share2 className="w-4 h-4 text-blue-400" /> How Live Smartphone GPS Works:
                         </p>
-                        Send this link to driver <strong>{assignedTripResult.driver?.name}</strong>. When the driver opens it on their phone and taps <strong>&quot;Start Trip &amp; Share GPS&quot;</strong>, their phone&apos;s real-time satellite coordinates stream straight into your <strong>Live Fleet Map</strong>.
+                        When the driver opens the link on their phone and taps <strong>&quot;Start Trip &amp; Share GPS&quot;</strong>, their phone&apos;s real-time satellite coordinates stream straight into your <strong>Live Fleet Map</strong>.
                       </div>
                     )}
 
@@ -925,29 +938,25 @@ export default function AssignmentPage() {
 
                       {/* Action Buttons */}
                       <div className="space-y-2 pt-1">
-                        {cleanPhone ? (
-                          <a
-                            href={`https://wa.me/${cleanPhone}?text=${encodeURIComponent(waMessage)}`}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="w-full py-3.5 px-4 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-sm rounded-xl shadow-lg shadow-emerald-950/60 transition flex items-center justify-center gap-2"
-                          >
-                            <MessageSquare className="w-4 h-4 fill-current" />
-                            Send WhatsApp Link to Driver ({driverPhone})
-                          </a>
-                        ) : (
-                          <div className="text-center p-2.5 bg-slate-950 rounded-xl border border-slate-800 text-xs text-slate-400">
-                            Driver has no phone registered. Please copy and send link manually.
-                          </div>
-                        )}
-
                         <a
                           href="/map"
-                          className="w-full py-3 px-4 bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs rounded-xl shadow-lg transition flex items-center justify-center gap-2"
+                          className="w-full py-3.5 px-4 bg-blue-600 hover:bg-blue-500 text-white font-bold text-sm rounded-xl shadow-lg transition flex items-center justify-center gap-2"
                         >
                           <Navigation className="w-4 h-4 text-white" />
                           Track Vehicle on Live Fleet Map Now
                         </a>
+
+                        {cleanPhone && (
+                          <a
+                            href={`https://wa.me/${cleanPhone}?text=${encodeURIComponent(waMessage)}`}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="w-full py-2.5 px-4 bg-slate-900 hover:bg-slate-800 text-emerald-400 border border-emerald-900/60 font-semibold text-xs rounded-xl transition flex items-center justify-center gap-2"
+                          >
+                            <MessageSquare className="w-3.5 h-3.5 fill-current" />
+                            Re-send via WhatsApp Web (Optional Fallback)
+                          </a>
+                        )}
                       </div>
                     </div>
                   </>
