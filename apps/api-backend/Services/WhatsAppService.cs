@@ -436,6 +436,42 @@ namespace api_backend.Services
             });
         }
 
+        public async Task<WhatsAppSendResult> SendBookingConfirmedToCustomerAsync(SalesQuotation sq, Indent indent, Customer customer, string poNumber, Trip? trip = null)
+        {
+            var phone = customer?.Phone;
+            if (string.IsNullOrEmpty(phone)) return new WhatsAppSendResult { Success = false, Status = "Skipped", ErrorMessage = "Customer has no registered phone number." };
+
+            var customerName = customer?.Name ?? "Valued Customer";
+            var routeText = !string.IsNullOrEmpty(indent.WarehouseLocation)
+                ? $"{indent.Source} ➔ {indent.WarehouseLocation} (Hub) ➔ {indent.Destination}"
+                : $"{indent.Source} ➔ {indent.Destination}";
+            var pickupDate = indent.LoadingDate != default ? indent.LoadingDate.ToString("dd MMM yyyy") : "Scheduled";
+            var pickupTime = !string.IsNullOrEmpty(indent.LoadingTime) ? $" @ {indent.LoadingTime}" : "";
+
+            var message =
+                $"✅ *TransitFlow · Trip Confirmed & PO Accepted*\n\n" +
+                $"Hello *{customerName}*,\n" +
+                $"Your Purchase Order (*{poNumber}*) has been successfully accepted and your transport booking is confirmed!\n\n" +
+                $"• *Booking Ref:* IND-{1000 + indent.Id}\n" +
+                $"• *Customer PO:* {poNumber}\n" +
+                $"• *Route:* {routeText}\n" +
+                $"• *Cargo:* {indent.Material} ({indent.Weight} Tons)\n" +
+                $"• *Vehicle Required:* {indent.VehicleType}\n" +
+                $"• *Pickup Schedule:* {pickupDate}{pickupTime}\n" +
+                $"• *Agreed Freight:* ₹{sq.SellingPrice:N0}\n" +
+                $"• *Status:* Confirmed · Vehicle Placement in Progress\n\n" +
+                $"We are coordinating vehicle placement. You will receive live vehicle tracking details as soon as the vehicle is assigned & en route.\n\n" +
+                $"*TransitFlow Logistics Team*";
+
+            return await SendMessageAsync(new WhatsAppSendRequest
+            {
+                PhoneNumber = phone,
+                RecipientName = $"{customerName} (Customer)",
+                TemplateName = "booking_confirmed",
+                Message = message
+            });
+        }
+
         public async Task<WhatsAppSendResult> SendInvoiceCreatedAsync(Invoice invoice, Customer customer)
         {
             var phone = customer?.Phone;

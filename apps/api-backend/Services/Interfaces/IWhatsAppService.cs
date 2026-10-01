@@ -45,6 +45,7 @@ namespace api_backend.Services.Interfaces
         Task<WhatsAppSendResult> SendPodReminderAsync(Trip trip, Driver? driver);
         Task<WhatsAppSendResult> SendRfqBroadcastAsync(Indent indent, Vendor vendor, string? magicLinkToken = null);
         Task<WhatsAppSendResult> SendSalesQuotationAsync(SalesQuotation sq, Indent indent, Customer customer);
+        Task<WhatsAppSendResult> SendBookingConfirmedToCustomerAsync(SalesQuotation sq, Indent indent, Customer customer, string poNumber, Trip? trip = null);
         Task<WhatsAppSendResult> SendInvoiceCreatedAsync(Invoice invoice, Customer customer);
         string GenerateWhatsAppShareUrl(string phoneNumber, string message);
         Task<List<WhatsAppLog>> GetLogsAsync(int limit = 50);

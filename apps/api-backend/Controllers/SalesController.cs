@@ -250,6 +250,7 @@ namespace api_backend.Controllers
             var sq = await _context.SalesQuotations
                 .IgnoreQueryFilters()
                 .Include(s => s.Indent)
+                    .ThenInclude(i => i!.Customer)
                 .Include(s => s.WinningVendorQuotation)
                 .FirstOrDefaultAsync(s => s.Id == sqId);
 
@@ -352,7 +353,37 @@ namespace api_backend.Controllers
 
             await _context.SaveChangesAsync();
 
-            return Ok(new { message = "SQ Approved, Customer PO Accepted, Trip Ready for Assignment.", poNumber = request.PONumber, tripId = trip.Id });
+            // Automated WhatsApp Trip Confirmation to Customer upon PO Acceptance
+            bool whatsAppSent = false;
+            string? whatsAppMessage = null;
+            var customer = sq.Indent?.Customer;
+            if (customer != null && !string.IsNullOrEmpty(customer.Phone))
+            {
+                try
+                {
+                    var waResult = await _whatsAppService.SendBookingConfirmedToCustomerAsync(sq, sq.Indent!, customer, request.PONumber, trip);
+                    whatsAppSent = waResult.Success;
+                    whatsAppMessage = waResult.Success 
+                        ? $"Trip confirmation sent to customer WhatsApp (+{customer.Phone})" 
+                        : (waResult.ErrorMessage ?? "WhatsApp dispatch failed");
+                }
+                catch (Exception ex)
+                {
+                    whatsAppMessage = ex.Message;
+                }
+            }
+            else
+            {
+                whatsAppMessage = "Customer has no registered phone number.";
+            }
+
+            return Ok(new { 
+                message = "Customer PO Accepted! Trip is confirmed and confirmation message sent to customer.", 
+                poNumber = request.PONumber, 
+                tripId = trip.Id,
+                whatsAppSent = whatsAppSent,
+                whatsAppMessage = whatsAppMessage
+            });
         }
 
         // GET: api/Sales/QuotationByToken/{token} (Public Magic Link for Customer)

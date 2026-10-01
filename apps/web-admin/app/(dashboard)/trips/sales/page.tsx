@@ -314,11 +314,11 @@ export default function SalesDashboard() {
     if (!poNumber) return alert("Please enter the Customer PO Number.");
     
     try {
-      await fetchApi(`/Sales/ApproveSQ/${sqId}`, {
+      const res: any = await fetchApi(`/Sales/ApproveSQ/${sqId}`, {
         method: "POST",
         body: JSON.stringify({ poNumber })
       });
-      alert("Customer PO Accepted! Trip is now ready. Order moved to Completed tab.");
+      alert(`Customer PO Accepted! Trip is now ready.\n\n📱 WhatsApp: ${res?.whatsAppMessage || 'Trip confirmation dispatched to customer'}`);
       setIsPanelOpen(false);
       setSalesTab('completed');
       loadData();
