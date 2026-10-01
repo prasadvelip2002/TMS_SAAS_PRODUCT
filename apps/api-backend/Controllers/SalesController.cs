@@ -248,6 +248,7 @@ namespace api_backend.Controllers
         public async Task<IActionResult> ApproveSQ(int sqId, [FromBody] ApproveSQRequest request)
         {
             var sq = await _context.SalesQuotations
+                .IgnoreQueryFilters()
                 .Include(s => s.Indent)
                 .Include(s => s.WinningVendorQuotation)
                 .FirstOrDefaultAsync(s => s.Id == sqId);
@@ -294,15 +295,15 @@ namespace api_backend.Controllers
             Trip trip;
             if (sq.TripId.HasValue && sq.TripId.Value > 0)
             {
-                trip = await _context.Trips.FindAsync(sq.TripId.Value) ?? new Trip();
+                trip = await _context.Trips.IgnoreQueryFilters().FirstOrDefaultAsync(t => t.Id == sq.TripId.Value) ?? new Trip();
             }
             else if (legType == "OutboundLeg2")
             {
-                trip = await _context.Trips.FirstOrDefaultAsync(t => t.IndentId == sq.IndentId && t.LegType == "OutboundLeg2") ?? new Trip();
+                trip = await _context.Trips.IgnoreQueryFilters().FirstOrDefaultAsync(t => t.IndentId == sq.IndentId && t.LegType == "OutboundLeg2") ?? new Trip();
             }
             else
             {
-                trip = await _context.Trips.FirstOrDefaultAsync(t => t.IndentId == sq.IndentId && t.LegType == legType) ?? new Trip();
+                trip = await _context.Trips.IgnoreQueryFilters().FirstOrDefaultAsync(t => t.IndentId == sq.IndentId && t.LegType == legType) ?? new Trip();
             }
 
             bool isNewTrip = (trip.Id == 0);
@@ -351,7 +352,7 @@ namespace api_backend.Controllers
 
             await _context.SaveChangesAsync();
 
-            return Ok(new { message = "SQ Approved, Customer PO Accepted, Trip Ready for Assignment." });
+            return Ok(new { message = "SQ Approved, Customer PO Accepted, Trip Ready for Assignment.", poNumber = request.PONumber, tripId = trip.Id });
         }
 
         // GET: api/Sales/QuotationByToken/{token} (Public Magic Link for Customer)
@@ -422,7 +423,20 @@ namespace api_backend.Controllers
 
     public class ApproveByTokenRequest
     {
-        public string PONumber { get; set; } = string.Empty;
+        private string? _poNumber;
+        public string PONumber 
+        { 
+            get => _poNumber ?? string.Empty; 
+            set => _poNumber = value; 
+        }
+
+        [System.Text.Json.Serialization.JsonPropertyName("poNumber")]
+        public string? PoNumberLower 
+        { 
+            get => _poNumber; 
+            set => _poNumber = value; 
+        }
+
         public string? Remarks { get; set; }
     }
 

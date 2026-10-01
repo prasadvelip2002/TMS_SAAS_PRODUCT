@@ -129,15 +129,16 @@ namespace api_backend.Controllers
         public async Task<IActionResult> GetRFQDetails(string token)
         {
             var quote = await _context.VendorQuotations
+                .IgnoreQueryFilters()
                 .Include(q => q.Indent)
-                .Include(q => q.Indent.Customer)
+                    .ThenInclude(i => i!.Customer)
                 .Include(q => q.Vendor)
                 .FirstOrDefaultAsync(q => q.MagicLinkToken == token);
                 
             if (quote == null) return NotFound("Invalid or expired RFQ link.");
 
             return Ok(new {
-                VendorName = quote.Vendor.Name,
+                VendorName = quote.Vendor?.Name ?? "Registered Vendor",
                 Indent = quote.Indent
             });
         }
@@ -147,7 +148,9 @@ namespace api_backend.Controllers
         [AllowAnonymous]
         public async Task<IActionResult> SubmitBid(string token, [FromBody] BidSubmissionRequest request)
         {
-            var quote = await _context.VendorQuotations.FirstOrDefaultAsync(q => q.MagicLinkToken == token);
+            var quote = await _context.VendorQuotations
+                .IgnoreQueryFilters()
+                .FirstOrDefaultAsync(q => q.MagicLinkToken == token);
             if (quote == null) return NotFound("Invalid or expired RFQ link.");
 
             quote.QuotedRate = request.QuotedRate;
@@ -157,8 +160,11 @@ namespace api_backend.Controllers
             quote.AvailableTime = request.AvailableTime;
             quote.ServiceScope = !string.IsNullOrEmpty(request.ServiceScope) ? request.ServiceScope : "EntireRoute";
             quote.Status = "QuotationReceived";
+            _context.Entry(quote).State = EntityState.Modified;
 
-            var indent = await _context.Indents.FindAsync(quote.IndentId);
+            var indent = await _context.Indents
+                .IgnoreQueryFilters()
+                .FirstOrDefaultAsync(i => i.Id == quote.IndentId);
             if (indent != null && indent.RFQStatus != "Approved")
             {
                 indent.RFQStatus = "QuotationReceived";
