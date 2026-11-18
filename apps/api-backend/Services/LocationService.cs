@@ -445,10 +445,26 @@ namespace api_backend.Services
                 }
             }
 
+            bool isHeadOfficeFilter = false;
             if (branchId.HasValue && branchId.Value > 0)
             {
-                locQuery = locQuery.Where(c => c.Trip != null && 
-                    (c.Trip.BranchId == branchId.Value || (c.Trip.Indent != null && c.Trip.Indent.BranchId == branchId.Value)));
+                isHeadOfficeFilter = await _context.Branches
+                    .IgnoreQueryFilters()
+                    .AnyAsync(b => b.Id == branchId.Value && b.IsHeadOffice);
+
+                if (isHeadOfficeFilter)
+                {
+                    // Head Office includes HO-assigned trips AND legacy/unassigned HQ trips (BranchId IS NULL)
+                    locQuery = locQuery.Where(c => c.Trip != null &&
+                        (c.Trip.BranchId == branchId.Value
+                         || (c.Trip.Indent != null && c.Trip.Indent.BranchId == branchId.Value)
+                         || (c.Trip.BranchId == null && (c.Trip.Indent == null || c.Trip.Indent.BranchId == null))));
+                }
+                else
+                {
+                    locQuery = locQuery.Where(c => c.Trip != null &&
+                        (c.Trip.BranchId == branchId.Value || (c.Trip.Indent != null && c.Trip.Indent.BranchId == branchId.Value)));
+                }
             }
 
             var currentLocations = await locQuery
@@ -730,7 +746,17 @@ namespace api_backend.Services
 
             if (branchId.HasValue && branchId.Value > 0)
             {
-                tripQuery = tripQuery.Where(t => t.BranchId == branchId.Value || (t.Indent != null && t.Indent.BranchId == branchId.Value));
+                if (isHeadOfficeFilter)
+                {
+                    tripQuery = tripQuery.Where(t =>
+                        t.BranchId == branchId.Value
+                        || (t.Indent != null && t.Indent.BranchId == branchId.Value)
+                        || (t.BranchId == null && (t.Indent == null || t.Indent.BranchId == null)));
+                }
+                else
+                {
+                    tripQuery = tripQuery.Where(t => t.BranchId == branchId.Value || (t.Indent != null && t.Indent.BranchId == branchId.Value));
+                }
             }
 
             var activeTrips = await tripQuery

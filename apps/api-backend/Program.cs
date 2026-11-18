@@ -270,6 +270,23 @@ using (var scope = app.Services.CreateScope())
             WHERE i.""Id"" = sq.""IndentId"" 
               AND (sq.""Status"" = 'Approved' OR sq.""Status"" = 'PO_Received')
               AND sq.""SellingPrice"" > 0;
+
+            -- Backfill legacy / Tenant Admin indents & trips with NULL BranchId to their company's Head Office (HO)
+            UPDATE ""Indents"" i
+            SET ""BranchId"" = (
+                SELECT b.""Id"" FROM ""Branches"" b
+                WHERE b.""CompanyId"" = i.""CompanyId"" AND b.""IsHeadOffice"" = true
+                ORDER BY b.""Id"" ASC
+                LIMIT 1
+            )
+            WHERE i.""BranchId"" IS NULL;
+
+            UPDATE ""Trips"" t
+            SET ""BranchId"" = COALESCE(
+                (SELECT i.""BranchId"" FROM ""Indents"" i WHERE i.""Id"" = t.""IndentId""),
+                (SELECT b.""Id"" FROM ""Branches"" b WHERE b.""CompanyId"" = t.""CompanyId"" AND b.""IsHeadOffice"" = true ORDER BY b.""Id"" ASC LIMIT 1)
+            )
+            WHERE t.""BranchId"" IS NULL;
         ");
     }
     catch (Exception ex)

@@ -75,6 +75,18 @@ namespace api_backend.Controllers
                 {
                     indent.BranchId = bid;
                 }
+                else
+                {
+                    // Tenant Admin without a specific branch defaults new indents to Head Office (HO)
+                    var hoBranchId = await _context.Branches
+                        .Where(b => b.IsHeadOffice)
+                        .Select(b => b.Id)
+                        .FirstOrDefaultAsync();
+                    if (hoBranchId > 0)
+                    {
+                        indent.BranchId = hoBranchId;
+                    }
+                }
             }
 
             _context.Indents.Add(indent);
