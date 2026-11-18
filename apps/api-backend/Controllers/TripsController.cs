@@ -6,6 +6,8 @@ using Microsoft.EntityFrameworkCore;
 using api_backend.Data;
 using api_backend.Models;
 using api_backend.Services.Interfaces;
+using System.Security.Claims;
+using System.Linq;
 
 namespace api_backend.Controllers
 {
@@ -61,7 +63,8 @@ namespace api_backend.Controllers
             if (trip == null) return NotFound();
 
             trip.LRGenerationType = "System";
-            trip.LRNumber = $"TRANSITFLOW-LR-{trip.Id.ToString().PadLeft(4, '0')}";
+            // Previous: trip.LRNumber = $"TRANSITFLOW-LR-{trip.Id.ToString().PadLeft(4, '0')}";
+            trip.LRNumber = $"LOGIPULSE-LR-{trip.Id.ToString().PadLeft(4, '0')}";
             
             await _context.SaveChangesAsync();
             return Ok(trip);
@@ -129,9 +132,9 @@ namespace api_backend.Controllers
 
         // GET: api/Trips
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Trip>>> GetTrips()
+        public async Task<ActionResult<IEnumerable<Trip>>> GetTrips([FromQuery] int? branchId)
         {
-            var trips = await _context.Trips
+            var query = _context.Trips
                 .AsNoTracking()
                 .AsSplitQuery()
                 .Include(t => t.Indent)
@@ -142,6 +145,30 @@ namespace api_backend.Controllers
                 .Include(t => t.Payments)
                 .Include(t => t.AdditionalCharges)
                 .Include(t => t.Invoice)
+                .AsQueryable();
+
+            // Extract User Role and BranchId claim for RBAC
+            var roleClaim = User.FindFirst(ClaimTypes.Role)?.Value;
+            var userBranchIdClaim = User.FindFirst("BranchId")?.Value;
+            int? userBranchId = int.TryParse(userBranchIdClaim, out var bid) && bid > 0 ? bid : null;
+
+            bool isGlobalAdmin = roleClaim == "Tenant Admin" || roleClaim == "Admin" || roleClaim == "Director/Operations Head" || string.IsNullOrEmpty(roleClaim);
+
+            if (isGlobalAdmin)
+            {
+                // Global Admins see all trips, or filter by a specific branch if requested
+                if (branchId.HasValue && branchId.Value > 0)
+                {
+                    query = query.Where(t => t.BranchId == branchId.Value || (t.Indent != null && t.Indent.BranchId == branchId.Value));
+                }
+            }
+            else if (userBranchId.HasValue)
+            {
+                // Branch Supervisor or Dispatcher strictly sees their own branch trips
+                query = query.Where(t => t.BranchId == userBranchId.Value || (t.Indent != null && t.Indent.BranchId == userBranchId.Value));
+            }
+
+            var trips = await query
                 .OrderByDescending(t => t.CreatedAt)
                 .ToListAsync();
 
@@ -199,6 +226,24 @@ namespace api_backend.Controllers
         [HttpPost]
         public async Task<ActionResult<Trip>> PostTrip(Trip trip)
         {
+            if (!trip.BranchId.HasValue && trip.IndentId > 0)
+            {
+                var indent = await _context.Indents.FindAsync(trip.IndentId);
+                if (indent?.BranchId != null)
+                {
+                    trip.BranchId = indent.BranchId;
+                }
+            }
+
+            if (!trip.BranchId.HasValue)
+            {
+                var userBranchIdClaim = User.FindFirst("BranchId")?.Value;
+                if (int.TryParse(userBranchIdClaim, out var bid) && bid > 0)
+                {
+                    trip.BranchId = bid;
+                }
+            }
+
             _context.Trips.Add(trip);
             await _context.SaveChangesAsync();
 

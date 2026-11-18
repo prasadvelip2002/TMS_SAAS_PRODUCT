@@ -147,7 +147,9 @@ export function TripAssignmentForm({ indent, onSuccess }: { indent: any, onSucce
 
             {assignedTripSuccess.driverPhone && (
               <a
-                href={assignedTripSuccess.shareUrl || `https://wa.me/${assignedTripSuccess.driverPhone.replace(/\D/g, '')}?text=${encodeURIComponent(`🚛 *TransitFlow · Trip Assignment*\n\nHello *${assignedTripSuccess.driverName}*,\nTrip #${assignedTripSuccess.tripId} has been assigned to you (${assignedTripSuccess.vehicleNumber}).\n\n📍 Tap this link to turn ON your GPS and start the trip:\n👉 ${assignedTripSuccess.trackingUrl}`)}`}
+                // Previous TransitFlow link:
+                // href={assignedTripSuccess.shareUrl || `https://wa.me/${assignedTripSuccess.driverPhone.replace(/\D/g, '')}?text=${encodeURIComponent(`🚛 *TransitFlow · Trip Assignment*\n\nHello *${assignedTripSuccess.driverName}*,\nTrip #${assignedTripSuccess.tripId} has been assigned to you (${assignedTripSuccess.vehicleNumber}).\n\n📍 Tap this link to turn ON your GPS and start the trip:\n👉 ${assignedTripSuccess.trackingUrl}`)}`}
+                href={assignedTripSuccess.shareUrl || `https://wa.me/${assignedTripSuccess.driverPhone.replace(/\D/g, '')}?text=${encodeURIComponent(`🚛 *LogiPulse · Trip Assignment*\n\nHello *${assignedTripSuccess.driverName}*,\nTrip #${assignedTripSuccess.tripId} has been assigned to you (${assignedTripSuccess.vehicleNumber}).\n\n📍 Tap this link to turn ON your GPS and start the trip:\n👉 ${assignedTripSuccess.trackingUrl}`)}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="py-2.5 px-3 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl text-xs flex items-center justify-center gap-2 shadow transition"

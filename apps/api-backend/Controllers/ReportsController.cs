@@ -5,6 +5,7 @@ using api_backend.Data;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Claims;
 using System.Threading.Tasks;
 
 namespace api_backend.Controllers
@@ -24,7 +25,13 @@ namespace api_backend.Controllers
         [HttpGet("trips")]
         public async Task<IActionResult> GetTripReport()
         {
-            var trips = await _context.Trips
+            var roleClaim = User.FindFirst(ClaimTypes.Role)?.Value;
+            var userBranchIdClaim = User.FindFirst("BranchId")?.Value;
+            int? userBranchId = int.TryParse(userBranchIdClaim, out var bid) && bid > 0 ? bid : null;
+
+            bool isGlobalAdmin = roleClaim == "Tenant Admin" || roleClaim == "Admin" || roleClaim == "Director/Operations Head" || string.IsNullOrEmpty(roleClaim);
+
+            var query = _context.Trips
                 .AsNoTracking()
                 .Include(t => t.Indent)
                     .ThenInclude(i => i.Customer)
@@ -32,6 +39,14 @@ namespace api_backend.Controllers
                 .Include(t => t.Vehicle)
                 .Include(t => t.AdditionalCharges)
                 .Include(t => t.Invoice)
+                .AsQueryable();
+
+            if (!isGlobalAdmin && userBranchId.HasValue)
+            {
+                query = query.Where(t => t.BranchId == userBranchId.Value || (t.Indent != null && t.Indent.BranchId == userBranchId.Value));
+            }
+
+            var trips = await query
                 .OrderByDescending(t => t.CreatedAt)
                 .ToListAsync();
 

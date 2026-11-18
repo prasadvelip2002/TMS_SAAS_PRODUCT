@@ -86,19 +86,21 @@ export default function NotificationsPage() {
 
     switch (templateKey) {
       case "trip_assigned":
+        // Previous TransitFlow message:
+        // setMessageBody(`🚛 *TransitFlow · Trip Assignment*\n\n... Please report at the loading bay on time and verify status in TransitFlow Driver App.`);
         setMessageBody(
-          `🚛 *TransitFlow · Trip Assignment*\n\n` +
+          `🚛 *LogiPulse · Trip Assignment*\n\n` +
           `Hello *${targetName}*,\n` +
           `A new trip has been assigned to you:\n\n` +
           `• *Trip ID:* TRIP-1042\n` +
           `• *Route:* Mumbai ➔ Pune\n` +
           `• *Advance Amount:* ₹12,000\n\n` +
-          `Please report at the loading bay on time and verify status in TransitFlow Driver App.`
+          `Please report at the loading bay on time and verify status in LogiPulse Driver App.`
         );
         break;
       case "delivery_confirm":
         setMessageBody(
-          `✅ *TransitFlow · Consignment Delivered*\n\n` +
+          `✅ *LogiPulse · Consignment Delivered*\n\n` +
           `Dear *${targetName}*,\n` +
           `Your consignment has safely reached the destination.\n\n` +
           `• *Status:* Delivered Successfully\n` +
@@ -108,15 +110,15 @@ export default function NotificationsPage() {
         break;
       case "advance_disbursed":
         setMessageBody(
-          `💰 *TransitFlow · Advance Disbursed*\n\n` +
+          `💰 *LogiPulse · Advance Disbursed*\n\n` +
           `Hello *${targetName}*,\n` +
           `Your trip advance of *₹15,000* has been disbursed to your registered account.\n\n` +
-          `Please verify the balance in your TransitFlow Driver wallet. Drive safely!`
+          `Please verify the balance in your LogiPulse Driver wallet. Drive safely!`
         );
         break;
       case "pod_reminder":
         setMessageBody(
-          `📸 *TransitFlow · Action Required: Upload POD*\n\n` +
+          `📸 *LogiPulse · Action Required: Upload POD*\n\n` +
           `Hello *${targetName}*,\n` +
           `Your recent trip has been marked as Delivered.\n` +
           `Please snap and upload a clear photo of the stamped POD to trigger balance release.`
@@ -403,7 +405,7 @@ export default function NotificationsPage() {
             <div className="px-6 py-5 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
               <div>
                 <h3 className="font-bold text-lg text-slate-900 tracking-tight">WhatsApp Dispatch Log</h3>
-                <p className="text-xs font-medium text-slate-500 mt-0.5">Every outbound WhatsApp message dispatched by TransitFlow</p>
+                <p className="text-xs font-medium text-slate-500 mt-0.5">Every outbound WhatsApp message dispatched by LogiPulse</p>
               </div>
               <button 
                 onClick={handleOpenComposer}

@@ -53,7 +53,9 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseNpgsql(connectionString));
 
 // Configure JWT Authentication
-var jwtKey = builder.Configuration["Jwt:Key"] ?? "SuperSecretKeyForTransportManagementSystem!123";
+var jwtKey = Environment.GetEnvironmentVariable("JWT_KEY")
+    ?? builder.Configuration["Jwt:Key"]
+    ?? "SuperSecretKeyForTransportManagementSystem!123";
 builder.Services.AddAuthentication(options =>
 {
     options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -209,6 +211,22 @@ using (var scope = app.Services.CreateScope())
                 ""UpdatedBy"" integer
             );
             CREATE INDEX IF NOT EXISTS ""IX_VehicleCurrentLocations_VehicleId"" ON ""VehicleCurrentLocations"" (""VehicleId"");
+
+            -- Clean up duplicate rows in VehicleCurrentLocations keeping only the latest location per vehicle
+            DELETE FROM ""VehicleCurrentLocations""
+            WHERE ""Id"" NOT IN (
+                SELECT DISTINCT ON (""VehicleId"") ""Id""
+                FROM ""VehicleCurrentLocations""
+                ORDER BY ""VehicleId"", ""LastLocationAt"" DESC, ""Id"" DESC
+            );
+
+            CREATE UNIQUE INDEX IF NOT EXISTS ""UX_VehicleCurrentLocations_VehicleId"" ON ""VehicleCurrentLocations"" (""VehicleId"");
+
+            ALTER TABLE ""Branches"" ADD COLUMN IF NOT EXISTS ""Code"" text;
+            ALTER TABLE ""Branches"" ADD COLUMN IF NOT EXISTS ""Address"" text;
+            ALTER TABLE ""Branches"" ADD COLUMN IF NOT EXISTS ""Phone"" text;
+            ALTER TABLE ""Branches"" ADD COLUMN IF NOT EXISTS ""GstNumber"" text;
+            ALTER TABLE ""Branches"" ADD COLUMN IF NOT EXISTS ""IsHeadOffice"" boolean DEFAULT false;
         ");
         db.Database.ExecuteSqlRaw(@"
             UPDATE ""Trips"" t
@@ -261,11 +279,13 @@ using (var scope = app.Services.CreateScope())
 }
 
 // Configure the HTTP request pipeline.
-// Always enable Swagger for the demo
 app.UseSwagger();
 app.UseSwaggerUI();
 
-app.UseHttpsRedirection();
+if (app.Environment.IsDevelopment())
+{
+    app.UseHttpsRedirection();
+}
 app.UseStaticFiles();
 
 app.UseCors("AllowAll");
@@ -278,7 +298,18 @@ app.MapControllers();
 app.MapGet("/api/health", () => Results.Ok(new { status = "healthy", timestamp = DateTime.UtcNow }));
 app.MapGet("/health", () => Results.Ok(new { status = "healthy", timestamp = DateTime.UtcNow }));
 
-app.MapGet("/", () => "Hitro Logistics API is running successfully on Render! Navigate to /swagger to view the API documentation.");
+if (app.Environment.IsDevelopment())
+{
+    app.MapGet("/api/debug/system-state", async (ApplicationDbContext db) =>
+    {
+        var users = await db.Users.IgnoreQueryFilters().Select(u => new { u.Id, u.Name, u.Email, u.Role, u.BranchId, BranchName = u.Branch != null ? u.Branch.Name : null }).ToListAsync();
+        var branches = await db.Branches.IgnoreQueryFilters().Select(b => new { b.Id, b.Name, b.Code, b.Location, b.TenantId, b.CompanyId }).ToListAsync();
+        var trips = await db.Trips.IgnoreQueryFilters().Select(t => new { t.Id, t.VehicleId, t.Status, t.BranchId, IndentBranchId = t.Indent != null ? t.Indent.BranchId : (int?)null }).ToListAsync();
+        return Results.Ok(new { users, branches, trips });
+    });
+}
+
+app.MapGet("/", () => "LogiPulse TMS API is running successfully! Navigate to /swagger to view the API documentation.");
 
 var summaries = new[]
 {

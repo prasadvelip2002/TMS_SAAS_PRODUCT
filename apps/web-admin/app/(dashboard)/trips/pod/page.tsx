@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
-import { fetchApi } from "@/lib/api";
+import { fetchApi, getApiBaseUrl, getBackendOrigin } from "@/lib/api";
 import { ProtoTable, Td, Badge } from "@/components/PrototypeUI";
 import { Loader2, Camera, CheckCircle, Smartphone, ExternalLink, XCircle, X, Search, Grid, List, Image as ImageIcon, FileText } from "lucide-react";
 import Link from "next/link";
@@ -109,7 +109,7 @@ export default function AdminPODDashboard() {
       const token = localStorage.getItem('token');
       // Localhost commented out for production deployment:
       // const uploadRes = await fetch("http://localhost:5063/api/Documents/Upload", {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5063/api";
+      const apiUrl = getApiBaseUrl();
       const uploadRes = await fetch(`${apiUrl}/Documents/Upload`, {
         method: "POST",
         headers: {
@@ -621,7 +621,7 @@ export default function AdminPODDashboard() {
 
               <div className="grid grid-cols-1 gap-6">
                 {tripDocuments.length > 0 ? tripDocuments.map((doc: any) => {
-                  const backendHost = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:5063/api").replace(/\/api$/, "");
+                  const backendHost = getBackendOrigin();
                   const filePreviewUrl = doc.fileUrl?.startsWith("http") ? doc.fileUrl : `${backendHost}${doc.fileUrl}`;
                   return (
                   <div key={doc.id} className="border border-slate-200 rounded-2xl overflow-hidden group bg-white shadow-sm hover:shadow-md transition-shadow">

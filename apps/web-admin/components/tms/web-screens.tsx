@@ -821,7 +821,7 @@ export function WebScreens() {
           <span className="h-3 w-3 rounded-full bg-amber-400" />
           <span className="h-3 w-3 rounded-full bg-emerald-400" />
           <div className="ml-3 flex-1 truncate rounded-md bg-card px-3 py-1 text-xs text-muted-foreground">
-            app.transitflow.io/{active}
+            app.logipulse.io/{active}
           </div>
         </div>
 
@@ -832,7 +832,7 @@ export function WebScreens() {
               <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
                 <Truck className="h-4 w-4" />
               </span>
-              <span className="font-bold">TransitFlow</span>
+              <span className="font-bold">LogiPulse</span>
             </div>
             <nav className="mt-2 flex flex-col gap-1">
               {NAV.map((item) => {
@@ -861,7 +861,7 @@ export function WebScreens() {
             <header className="flex items-center justify-between border-b border-border px-5 py-3">
               <div>
                 <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                  TransitFlow <span>/</span> <span className="text-foreground">{current.label}</span>
+                  LogiPulse <span>/</span> <span className="text-foreground">{current.label}</span>
                 </div>
                 <h3 className="text-lg font-semibold">{current.label}</h3>
               </div>

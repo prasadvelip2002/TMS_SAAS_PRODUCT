@@ -35,8 +35,10 @@ namespace api_backend.Services.Tracking
 
         public async Task<ProviderLocationResult?> GetLocationAsync(string trackingIdentifier, CancellationToken ct = default)
         {
-            var baseUrl = _configuration["Dotmove:BaseUrl"];
-            var apiKey = _configuration["Dotmove:ApiKey"];
+            var baseUrl = Environment.GetEnvironmentVariable("DOTMOVE_BASE_URL")
+                ?? _configuration["Dotmove:BaseUrl"];
+            var apiKey = Environment.GetEnvironmentVariable("DOTMOVE_API_KEY")
+                ?? _configuration["Dotmove:ApiKey"];
 
             // If production Dotmove credentials are configured and not placeholders
             if (!string.IsNullOrWhiteSpace(baseUrl) && 
@@ -107,23 +109,16 @@ namespace api_backend.Services.Tracking
         private ProviderLocationResult GenerateSimSandboxCoordinate(string trackingIdentifier)
         {
             var rand = new Random();
-            // Typical Indian transit corridor: NH-48 (Mumbai - Pune - Bangalore)
-            double baseLat = 15.3647; // Hubballi / NH48 corridor
-            double baseLng = 75.1240;
-
-            // Introduce minor jitter for simulation
-            double latJitter = (rand.NextDouble() - 0.5) * 0.08;
-            double lngJitter = (rand.NextDouble() - 0.5) * 0.08;
-            double accuracyMeters = 350.0 + rand.Next(100, 450); // Realistic telecom cell-tower radius: 450m - 800m
+            double accuracyMeters = 350.0 + rand.Next(100, 400); // Realistic telecom cell-tower radius: 350m - 750m
 
             return new ProviderLocationResult
             {
-                Latitude = Math.Round(baseLat + latJitter, 6),
-                Longitude = Math.Round(baseLng + lngJitter, 6),
-                Accuracy = accuracyMeters,
-                Speed = rand.Next(40, 68),
-                Heading = 145.0,
-                Address = "NH-48 Transit Corridor, Karnataka, India (Cell Tower Triangulation)",
+                Latitude = 0,
+                Longitude = 0,
+                Accuracy = accuracyMeters, 
+                Speed = rand.Next(40, 65),
+                Heading = 180.0,
+                Address = "Telecom Cellular Tower Triangulation",
                 RawPayload = JsonSerializer.Serialize(new { mode = "SANDBOX_SIMULATION", identifier = trackingIdentifier }),
                 RecordedAt = DateTime.UtcNow,
                 Success = true

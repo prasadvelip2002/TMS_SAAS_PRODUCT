@@ -23,6 +23,7 @@ import {
   Crosshair,
   X
 } from "lucide-react";
+import { fetchRoadRoute } from "@/lib/routing";
 
 export default function DriverTripMobilePage() {
   const params = useParams();
@@ -107,6 +108,135 @@ export default function DriverTripMobilePage() {
 
   const watchIdRef = useRef<number | null>(null);
   const wakeLockRef = useRef<any>(null);
+  const prevCoordRef = useRef<{ lat: number; lng: number; time: number } | null>(null);
+  const lastPingTimeRef = useRef<number>(0);
+  const pollTimerRef = useRef<any>(null);
+
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const audioBlobUrlRef = useRef<string | null>(null);
+  const workerRef = useRef<Worker | null>(null);
+  const sendGpsPingRef = useRef<(pos: GeolocationPosition) => void>(() => {});
+
+  const createSilentWavBlob = () => {
+    const sampleRate = 8000;
+    const numSamples = sampleRate * 10; // 10 seconds of PCM audio
+    const buffer = new ArrayBuffer(44 + numSamples);
+    const view = new DataView(buffer);
+    
+    // "RIFF" chunk
+    view.setUint32(0, 0x52494646, false);
+    view.setUint32(4, 36 + numSamples, true);
+    view.setUint32(8, 0x57415645, false); // "WAVE"
+    
+    // "fmt " chunk
+    view.setUint32(12, 0x666d7420, false);
+    view.setUint32(16, 16, true);
+    view.setUint16(20, 1, true); // PCM
+    view.setUint16(22, 1, true); // Mono
+    view.setUint32(24, sampleRate, true);
+    view.setUint32(28, sampleRate, true);
+    view.setUint16(32, 1, true);
+    view.setUint16(34, 8, true);
+    
+    // "data" chunk
+    view.setUint32(36, 0x64617461, false);
+    view.setUint32(40, numSamples, true);
+    
+    const samples = new Uint8Array(buffer, 44, numSamples);
+    samples.fill(128); // 8-bit PCM silence
+    
+    return new Blob([buffer], { type: 'audio/wav' });
+  };
+
+  const startBackgroundServices = (tripId: number | string) => {
+    // 1. Play continuous silent HTML5 audio element with MediaSession
+    // This instructs Android OS that Chrome is actively playing media, preventing tab suspension when minimized
+    try {
+      if (!audioRef.current && typeof window !== "undefined") {
+        const wavBlob = createSilentWavBlob();
+        const audioUrl = URL.createObjectURL(wavBlob);
+        audioBlobUrlRef.current = audioUrl;
+        const audio = new Audio(audioUrl);
+        audio.loop = true;
+        audio.volume = 0.05;
+        audio.play().catch(() => {});
+        audioRef.current = audio;
+
+        if ('mediaSession' in navigator) {
+          navigator.mediaSession.metadata = new MediaMetadata({
+            title: `Trip #${tripId} GPS Active`,
+            artist: 'LogiPulse Fleet Telemetry',
+            album: 'Persistent Highway Tracking'
+          });
+          navigator.mediaSession.setActionHandler('pause', () => {
+            stopLiveStreaming();
+          });
+        }
+      }
+    } catch (e) {
+      console.warn("Audio background service notice:", e);
+    }
+
+    // 2. Request WakeLock
+    requestWakeLock();
+
+    // 3. Dedicated WebWorker heartbeat (unthrottled timer in background OS thread)
+    try {
+      if (!workerRef.current && typeof window !== "undefined" && window.Worker) {
+        const workerBlob = new Blob([`
+          let timer = null;
+          self.onmessage = function(e) {
+            if (e.data === 'start') {
+              if (timer) clearInterval(timer);
+              timer = setInterval(() => {
+                self.postMessage('ping');
+              }, 3500);
+            } else if (e.data === 'stop') {
+              if (timer) clearInterval(timer);
+              timer = null;
+            }
+          };
+        `], { type: 'application/javascript' });
+        const workerUrl = URL.createObjectURL(workerBlob);
+        const worker = new Worker(workerUrl);
+        worker.onmessage = (e) => {
+          if (e.data === 'ping') {
+            if (typeof navigator !== "undefined" && navigator.geolocation) {
+              navigator.geolocation.getCurrentPosition(
+                (pos) => sendGpsPingRef.current(pos),
+                () => {},
+                { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
+              );
+            }
+          }
+        };
+        worker.postMessage('start');
+        workerRef.current = worker;
+      }
+    } catch (e) {
+      console.warn("WebWorker background service notice:", e);
+    }
+  };
+
+  const stopBackgroundServices = () => {
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current = null;
+    }
+    if (audioBlobUrlRef.current) {
+      URL.revokeObjectURL(audioBlobUrlRef.current);
+      audioBlobUrlRef.current = null;
+    }
+    if (workerRef.current) {
+      workerRef.current.postMessage('stop');
+      workerRef.current.terminate();
+      workerRef.current = null;
+    }
+    if (wakeLockRef.current) {
+      wakeLockRef.current.release?.();
+      wakeLockRef.current = null;
+    }
+  };
 
   const getApiBase = () => {
     if (typeof window !== "undefined") {
@@ -184,9 +314,39 @@ export default function DriverTripMobilePage() {
 
   // Send GPS coordinate payload to TMS backend
   const sendGpsPing = async (pos: GeolocationPosition) => {
+    sendGpsPingRef.current = sendGpsPing;
     const lat = pos.coords.latitude;
     const lng = pos.coords.longitude;
-    const speed = pos.coords.speed ? Math.round(pos.coords.speed * 3.6) : 0;
+    const now = Date.now();
+
+    // Throttle to 1 ping per 2.5 seconds to avoid connection spam
+    if (lastPingTimeRef.current && (now - lastPingTimeRef.current < 2500)) {
+      return;
+    }
+    lastPingTimeRef.current = now;
+
+    // Compute speed: prioritize hardware sensor; fallback to distance over time
+    let speed = pos.coords.speed !== null && pos.coords.speed !== undefined && !isNaN(pos.coords.speed)
+      ? Math.round(pos.coords.speed * 3.6)
+      : 0;
+
+    if (speed <= 0 && prevCoordRef.current) {
+      const dt = (now - prevCoordRef.current.time) / 1000;
+      if (dt >= 1.5 && dt <= 180) {
+        const dLat = (lat - prevCoordRef.current.lat) * (Math.PI / 180);
+        const dLng = (lng - prevCoordRef.current.lng) * (Math.PI / 180);
+        const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+          Math.cos(prevCoordRef.current.lat * (Math.PI / 180)) * Math.cos(lat * (Math.PI / 180)) *
+          Math.sin(dLng / 2) * Math.sin(dLng / 2);
+        const distMeters = 6371000 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        const calcSpeed = Math.round((distMeters / dt) * 3.6);
+        if (calcSpeed >= 3 && calcSpeed <= 150) {
+          speed = calcSpeed;
+        }
+      }
+    }
+    prevCoordRef.current = { lat, lng, time: now };
+
     const accuracy = Math.round(pos.coords.accuracy);
 
     setCurrentCoords({ lat, lng });
@@ -241,6 +401,9 @@ export default function DriverTripMobilePage() {
     // Proactively call start trip endpoint
     if (resolvedTripId) {
       fetch(`${getApiBase()}/Locations/driver/start/${resolvedTripId}`, { method: "POST" }).catch(() => {});
+      if (typeof window !== "undefined") {
+        localStorage.setItem(`logipulse_tracking_trip_${resolvedTripId}`, "ACTIVE");
+      }
     }
 
     if (!navigator.geolocation) {
@@ -249,7 +412,7 @@ export default function DriverTripMobilePage() {
     }
 
     setPermissionError(null);
-    requestWakeLock();
+    startBackgroundServices(resolvedTripId || 0);
 
     // 1. Initial Immediate GPS ping
     navigator.geolocation.getCurrentPosition(
@@ -275,6 +438,9 @@ export default function DriverTripMobilePage() {
     );
 
     // 2. Continuous GPS tracking watcher
+    if (watchIdRef.current !== null) {
+      navigator.geolocation.clearWatch(watchIdRef.current);
+    }
     const id = navigator.geolocation.watchPosition(
       (pos) => {
         setIsStreaming(true);
@@ -285,13 +451,63 @@ export default function DriverTripMobilePage() {
       },
       {
         enableHighAccuracy: true,
-        maximumAge: 4000,
+        maximumAge: 2000,
         timeout: 15000
       }
     );
-
     watchIdRef.current = id;
+
+    // 3. Continuous active heartbeat polling interval (keeps GPS streaming even during highway cruising)
+    if (pollTimerRef.current) clearInterval(pollTimerRef.current);
+    pollTimerRef.current = setInterval(() => {
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+          (pos) => {
+            setIsStreaming(true);
+            sendGpsPing(pos);
+          },
+          () => {},
+          { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
+        );
+      }
+    }, 4000);
   }, [resolvedTripId, trip]);
+
+  // Stop Live Streaming GPS (Only when driver explicitly pauses or completes trip)
+  const stopLiveStreaming = useCallback(() => {
+    if (resolvedTripId && typeof window !== "undefined") {
+      localStorage.removeItem(`logipulse_tracking_trip_${resolvedTripId}`);
+    }
+    stopBackgroundServices();
+    if (watchIdRef.current !== null) {
+      navigator.geolocation.clearWatch(watchIdRef.current);
+      watchIdRef.current = null;
+    }
+    if (pollTimerRef.current) {
+      clearInterval(pollTimerRef.current);
+      pollTimerRef.current = null;
+    }
+    setIsStreaming(false);
+  }, [resolvedTripId]);
+
+  // Auto-resume background tracking if previously started on this phone OR if trip is In_Transit
+  useEffect(() => {
+    if (trip && resolvedTripId && !isStreaming && typeof window !== "undefined") {
+      const savedState = localStorage.getItem(`logipulse_tracking_trip_${resolvedTripId}`);
+      if ((savedState === "ACTIVE" || trip.status === "In_Transit") && trip.status !== "Completed") {
+        console.log("Auto-resuming persistent tracking for trip #" + resolvedTripId);
+        startLiveStreaming();
+      }
+    }
+  }, [trip, resolvedTripId, isStreaming, startLiveStreaming]);
+
+  useEffect(() => {
+    return () => {
+      if (watchIdRef.current !== null) navigator.geolocation.clearWatch(watchIdRef.current);
+      if (pollTimerRef.current) clearInterval(pollTimerRef.current);
+      stopBackgroundServices();
+    };
+  }, []);
 
   // Network/IP Location Fallback (Works seamlessly when mobile browser blocks hardware GPS over plain HTTP)
   const handleFallbackNetworkLocation = async () => {
@@ -327,9 +543,9 @@ export default function DriverTripMobilePage() {
       }
 
       if (!lat || !lng) {
-        // Fallback to origin or Bangalore coordinate
-        lat = 12.9141; // Mangalore / Bangalore region
-        lng = 74.8560;
+        // Fallback dynamically to the active trip's origin or destination coordinates
+        lat = trip?.srcLat || trip?.destLat || 20.5937;
+        lng = trip?.srcLng || trip?.destLng || 78.9629;
       }
 
       setIsStreaming(true);
@@ -378,10 +594,7 @@ export default function DriverTripMobilePage() {
       });
       if (!res.ok) throw new Error("Could not complete trip.");
 
-      if (watchIdRef.current !== null) {
-        navigator.geolocation.clearWatch(watchIdRef.current);
-      }
-      setIsStreaming(false);
+      stopLiveStreaming();
       setTrip((prev: any) => ({ ...prev, status: "Completed" }));
     } catch (e: any) {
       alert(e?.message || "Failed to complete trip.");
@@ -409,10 +622,23 @@ export default function DriverTripMobilePage() {
       fetch(`${getApiBase()}/Locations/driver/start/${resolvedTripId}`, { method: "POST" }).catch(() => {});
     }
 
-    const srcLat = trip.srcLat || 12.9716;
-    const srcLng = trip.srcLng || 77.5946;
-    const destLat = trip.destLat || 19.0760;
-    const destLng = trip.destLng || 72.8777;
+    const srcLat = trip.srcLat || 20.5937;
+    const srcLng = trip.srcLng || 78.9629;
+    const destLat = trip.destLat || 20.5937;
+    const destLng = trip.destLng || 78.9629;
+
+    let routeWaypoints: [number, number][] = [];
+
+    // Pre-fetch true highway road corridor asynchronously
+    if (srcLat !== destLat || srcLng !== destLng) {
+      fetchRoadRoute(srcLat, srcLng, destLat, destLng)
+        .then((res) => {
+          if (res && res.coordinates && res.coordinates.length > 1) {
+            routeWaypoints = res.coordinates;
+          }
+        })
+        .catch(() => {});
+    }
 
     const stepSimulation = async () => {
       simProgressRef.current += 0.012; // Advance along corridor
@@ -421,12 +647,24 @@ export default function DriverTripMobilePage() {
       }
 
       const progress = simProgressRef.current;
-      // Add subtle highway curvature jitter
-      const jitterLat = Math.sin(progress * Math.PI * 4) * 0.008;
-      const jitterLng = Math.cos(progress * Math.PI * 4) * 0.008;
+      let lat = 0;
+      let lng = 0;
 
-      const lat = Math.round((srcLat + progress * (destLat - srcLat) + jitterLat) * 1000000) / 1000000;
-      const lng = Math.round((srcLng + progress * (destLng - srcLng) + jitterLng) * 1000000) / 1000000;
+      if (routeWaypoints.length > 1) {
+        const index = Math.min(
+          Math.floor(progress * (routeWaypoints.length - 1)),
+          routeWaypoints.length - 1
+        );
+        lat = routeWaypoints[index][0];
+        lng = routeWaypoints[index][1];
+      } else {
+        // Fallback interpolation along origin -> destination vector
+        const jitterLat = Math.sin(progress * Math.PI * 4) * 0.003;
+        const jitterLng = Math.cos(progress * Math.PI * 4) * 0.003;
+        lat = Math.round((srcLat + progress * (destLat - srcLat) + jitterLat) * 1000000) / 1000000;
+        lng = Math.round((srcLng + progress * (destLng - srcLng) + jitterLng) * 1000000) / 1000000;
+      }
+
       const speed = Math.floor(48 + Math.random() * 16); // 48 - 64 km/h
       const percentInt = Math.round(progress * 100);
 
@@ -440,7 +678,8 @@ export default function DriverTripMobilePage() {
         }
       } as unknown as GeolocationPosition;
 
-      setCurrentAddressName(`NH Highway Corridor (${percentInt}% towards ${trip.destCity})`);
+      const destCityName = trip.destinationCity || trip.destCity || "Destination";
+      setCurrentAddressName(`Highway Corridor (${percentInt}% towards ${destCityName})`);
       await sendGpsPing(simPos);
     };
 
@@ -520,11 +759,18 @@ export default function DriverTripMobilePage() {
       {/* Mobile App Header */}
       <header className="bg-slate-900 border-b border-slate-800 px-4 py-3 sticky top-0 z-20 flex items-center justify-between">
         <div className="flex items-center gap-2.5">
+          {/* Previous:
           <div className="w-8 h-8 rounded-xl bg-blue-600 flex items-center justify-center font-black text-sm text-white shadow-md">
             TF
           </div>
           <div>
             <h1 className="text-sm font-black tracking-tight text-white leading-tight">TransitFlow Driver</h1>
+          */}
+          <div className="w-8 h-8 rounded-xl bg-blue-600 flex items-center justify-center font-black text-sm text-white shadow-md">
+            LP
+          </div>
+          <div>
+            <h1 className="text-sm font-black tracking-tight text-white leading-tight">LogiPulse Driver</h1>
             <span className="text-[10px] text-slate-400 block font-medium">GPS Telemetry Console</span>
           </div>
         </div>
@@ -606,10 +852,10 @@ export default function DriverTripMobilePage() {
             >
               <div className="flex items-center gap-2 text-base">
                 <Play className="w-5 h-5 fill-current" />
-                <span>START TRIP & SHARE SATELLITE GPS</span>
+                <span>{trip.status === "In_Transit" ? "RESUME LIVE GPS BROADCASTING" : "START TRIP & SHARE SATELLITE GPS"}</span>
               </div>
               <span className="text-[11px] font-medium text-emerald-100 opacity-90">
-                Uses your phone's built-in GPS sensor
+                {trip.status === "In_Transit" ? "Trip is in progress · Tap to reconnect phone sensors" : "Uses your phone's built-in GPS sensor"}
               </span>
             </button>
 
@@ -673,6 +919,36 @@ export default function DriverTripMobilePage() {
                 <span className="text-xs font-bold text-emerald-300">Live Phone GPS Broadcasting</span>
               </div>
               <span className="text-[10px] text-slate-400 font-mono">{pingCount} pings sent</span>
+            </div>
+
+            {/* Driving & Background Telemetry Instructions Callout */}
+            <div className="bg-gradient-to-r from-emerald-950/80 to-blue-950/80 border border-emerald-700/80 rounded-2xl p-3.5 text-xs space-y-2 shadow-lg">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1.5 font-bold text-emerald-200">
+                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping"></span>
+                  <span>Trip Telemetry Active & Broadcasting</span>
+                </div>
+                <span className="text-[10px] font-mono bg-emerald-900/60 text-emerald-300 px-2 py-0.5 rounded-full border border-emerald-700/60 font-bold">
+                  LIVE
+                </span>
+              </div>
+              <p className="text-[11px] text-slate-300 leading-relaxed">
+                Your truck is actively moving on the fleet dispatch radar. Tracking stays active even if you minimize this browser, open navigation apps, or lock your screen.
+              </p>
+              <div className="pt-1">
+                <a
+                  href={trip?.destLat && trip?.destLng 
+                    ? `https://www.google.com/maps/dir/?api=1&destination=${trip.destLat},${trip.destLng}`
+                    : `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(trip?.destCity || 'Destination')}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full py-2.5 px-3 bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold rounded-xl text-xs flex items-center justify-center gap-2 shadow-md transition active:scale-98"
+                >
+                  <Navigation className="w-4 h-4 text-white" />
+                  <span>Open Turn-by-Turn in Google Maps</span>
+                  <ExternalLink className="w-3.5 h-3.5 opacity-80" />
+                </a>
+              </div>
             </div>
 
             {/* Current Real Locality Detected */}
@@ -752,25 +1028,34 @@ export default function DriverTripMobilePage() {
               </button>
             </div>
 
-            {/* Instant Ping & Ping Status */}
-            <div className="flex items-center justify-between pt-1 text-xs">
+            {/* Instant Ping, Pause & Ping Status */}
+            <div className="flex items-center justify-between pt-1 text-xs gap-2">
               <span className="text-[11px] text-slate-400 flex items-center gap-1">
                 <Clock className="w-3.5 h-3.5 text-slate-500" />
                 Last ping: <strong className="text-slate-200">{lastPingTime || "Just now"}</strong>
               </span>
 
-              <button
-                onClick={handleManualPing}
-                disabled={isPingingNow}
-                className="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-blue-300 font-semibold rounded-lg text-xs flex items-center gap-1 border border-slate-700 transition"
-              >
-                <RefreshCw className={`w-3 h-3 ${isPingingNow ? 'animate-spin text-blue-400' : ''}`} />
-                Send Ping Now
-              </button>
+              <div className="flex items-center gap-1.5">
+                <button
+                  onClick={stopLiveStreaming}
+                  className="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-amber-300 font-semibold rounded-lg text-xs flex items-center gap-1 border border-slate-700 transition"
+                  title="Pause phone streaming"
+                >
+                  Pause
+                </button>
+                <button
+                  onClick={handleManualPing}
+                  disabled={isPingingNow}
+                  className="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-blue-300 font-semibold rounded-lg text-xs flex items-center gap-1 border border-slate-700 transition"
+                >
+                  <RefreshCw className={`w-3 h-3 ${isPingingNow ? 'animate-spin text-blue-400' : ''}`} />
+                  Ping Now
+                </button>
+              </div>
             </div>
 
             <p className="text-[11px] text-slate-400 text-center pt-1 border-t border-slate-800/80">
-              💡 Keep this tab open while driving. Your dispatcher sees your truck on the map in real time.
+              💡 Tracking only stops when you return to this link and tap <strong>ARRIVED AT DESTINATION (END TRIP)</strong> below.
             </p>
           </div>
         )}

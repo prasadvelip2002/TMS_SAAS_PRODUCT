@@ -40,7 +40,7 @@ interface HeaderProps {
 }
 
 export function Header({ onToggleSidebar }: HeaderProps) {
-  const [user, setUser] = useState<{name: string, email: string, role: string} | null>(null);
+  const [user, setUser] = useState<{name: string, email: string, role: string, branchName?: string, branchId?: number} | null>(null);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [globalSearch, setGlobalSearch] = useState("");
   const [searchOpen, setSearchOpen] = useState(false);
@@ -200,17 +200,32 @@ export function Header({ onToggleSidebar }: HeaderProps) {
             </div>
             <div className="text-left hidden sm:block">
               <div className="text-[13px] font-semibold text-slate-700 leading-none">{user?.name || "Admin"}</div>
-              <div className="text-[11px] text-slate-500 mt-1 leading-none">{user?.role || "Tenant Admin"}</div>
+              <div className="text-[11px] text-slate-500 mt-1 leading-none flex items-center gap-1">
+                <span>{user?.role || "Tenant Admin"}</span>
+                {user?.branchName && (
+                  <>
+                    <span className="text-slate-300">•</span>
+                    <span className="text-blue-600 font-semibold truncate max-w-[120px]">{user.branchName}</span>
+                  </>
+                )}
+              </div>
             </div>
           </button>
 
           {dropdownOpen && (
-            <div className="absolute right-0 top-[110%] w-[200px] bg-white border border-line rounded-[8px] shadow-lg overflow-hidden flex flex-col font-body z-50">
+            <div className="absolute right-0 top-[110%] w-[220px] bg-white border border-line rounded-[12px] shadow-xl overflow-hidden flex flex-col font-body z-50 animate-in fade-in">
               <div className="px-4 py-3 border-b border-line bg-slate-50">
                 <p className="text-[13px] font-bold text-ink">{user?.name || "Admin User"}</p>
                 <p className="text-[11px] text-muted-text truncate">{user?.email || "admin@example.com"}</p>
-                <div className="mt-1 inline-block px-2 py-0.5 bg-blue-50 text-blue-600 text-[10px] font-bold uppercase rounded">
-                  {user?.role || "Tenant Admin"}
+                <div className="mt-1.5 flex items-center gap-1 flex-wrap">
+                  <span className="inline-block px-2 py-0.5 bg-blue-50 text-blue-700 border border-blue-200 text-[10px] font-bold uppercase rounded">
+                    {user?.role || "Tenant Admin"}
+                  </span>
+                  {user?.branchName && (
+                    <span className="inline-block px-1.5 py-0.5 bg-slate-100 text-slate-700 text-[10px] font-semibold rounded">
+                      📍 {user.branchName}
+                    </span>
+                  )}
                 </div>
               </div>
               <button 

@@ -31,7 +31,7 @@ namespace api_backend.Controllers
 
         // GET: api/WhatsApp/status
         [HttpGet("status")]
-        [Authorize]
+        [AllowAnonymous]
         public async Task<IActionResult> GetStatus()
         {
             var status = await _whatsAppService.GetStatusAsync();

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { Building2, Users, Plus, LayoutDashboard, DollarSign, Activity, Search, X } from "lucide-react";
+import { getApiBaseUrl } from "@/lib/api";
 
 export default function SaaSAdminPage() {
   const [tenants, setTenants] = useState<any[]>([]);
@@ -37,7 +38,7 @@ export default function SaaSAdminPage() {
       const userStr = localStorage.getItem("user");
       const token = userStr ? JSON.parse(userStr).token : "";
       
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5063/api";
+      const apiUrl = getApiBaseUrl();
       const res = await fetch(`${apiUrl}/Tenants`, {
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -59,7 +60,7 @@ export default function SaaSAdminPage() {
       const userStr = localStorage.getItem("user");
       const token = userStr ? JSON.parse(userStr).token : "";
       
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5063/api";
+      const apiUrl = getApiBaseUrl();
       const res = await fetch(`${apiUrl}/Tenants`, {
         method: "POST",
         headers: { 

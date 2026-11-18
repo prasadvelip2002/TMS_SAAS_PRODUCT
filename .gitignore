@@ -7,12 +7,19 @@ __v0_jsx-dev-runtime.ts
 .vercel/
 
 # Environment variables
+.env
 .env*.local
 
 # Common ignores
 node_modules
 .next/
 .DS_Store
+*.tsbuildinfo
+
+# Local tools & runtime caches
+cloudflared.exe
+**/runtime_geocache.json
+**/live_fleet.json
 
 # Temporary scripts and uploads
 apps/TempFix/

@@ -6,6 +6,9 @@ using Microsoft.EntityFrameworkCore;
 using api_backend.Data;
 using api_backend.Models;
 
+using System.Security.Claims;
+using System.Linq;
+
 namespace api_backend.Controllers
 {
     [Route("api/[controller]")]
@@ -22,9 +25,29 @@ namespace api_backend.Controllers
 
         // GET: api/Indents
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Indent>>> GetIndents()
+        public async Task<ActionResult<IEnumerable<Indent>>> GetIndents([FromQuery] int? branchId)
         {
-            return await _context.Indents.AsNoTracking().Include(i => i.Customer).ToListAsync();
+            var query = _context.Indents.AsNoTracking().Include(i => i.Customer).AsQueryable();
+
+            var roleClaim = User.FindFirst(ClaimTypes.Role)?.Value;
+            var userBranchIdClaim = User.FindFirst("BranchId")?.Value;
+            int? userBranchId = int.TryParse(userBranchIdClaim, out var bid) && bid > 0 ? bid : null;
+
+            bool isGlobalAdmin = roleClaim == "Tenant Admin" || roleClaim == "Admin" || roleClaim == "Director/Operations Head" || string.IsNullOrEmpty(roleClaim);
+
+            if (isGlobalAdmin)
+            {
+                if (branchId.HasValue && branchId.Value > 0)
+                {
+                    query = query.Where(i => i.BranchId == branchId.Value);
+                }
+            }
+            else if (userBranchId.HasValue)
+            {
+                query = query.Where(i => i.BranchId == userBranchId.Value);
+            }
+
+            return await query.OrderByDescending(i => i.CreatedAt).ToListAsync();
         }
 
         // GET: api/Indents/5
@@ -45,6 +68,15 @@ namespace api_backend.Controllers
         [HttpPost]
         public async Task<ActionResult<Indent>> PostIndent(Indent indent)
         {
+            if (!indent.BranchId.HasValue)
+            {
+                var userBranchIdClaim = User.FindFirst("BranchId")?.Value;
+                if (int.TryParse(userBranchIdClaim, out var bid) && bid > 0)
+                {
+                    indent.BranchId = bid;
+                }
+            }
+
             _context.Indents.Add(indent);
             await _context.SaveChangesAsync();
 

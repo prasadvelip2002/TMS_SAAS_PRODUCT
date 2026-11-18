@@ -6,6 +6,8 @@ using Microsoft.EntityFrameworkCore;
 using api_backend.Data;
 using api_backend.Models;
 using api_backend.Services.Interfaces;
+using System.Linq;
+using System.Security.Claims;
 
 namespace api_backend.Controllers
 {
@@ -29,7 +31,23 @@ namespace api_backend.Controllers
         [HttpGet]
         public async Task<ActionResult<IEnumerable<Payment>>> GetPayments()
         {
-            return await _context.Payments.Include(p => p.Trip).ToListAsync();
+            var roleClaim = User.FindFirst(ClaimTypes.Role)?.Value;
+            var userBranchIdClaim = User.FindFirst("BranchId")?.Value;
+            int? userBranchId = int.TryParse(userBranchIdClaim, out var bid) && bid > 0 ? bid : null;
+
+            bool isGlobalAdmin = roleClaim == "Tenant Admin" || roleClaim == "Admin" || roleClaim == "Director/Operations Head" || string.IsNullOrEmpty(roleClaim);
+
+            var query = _context.Payments
+                .Include(p => p.Trip)
+                    .ThenInclude(t => t.Indent)
+                .AsQueryable();
+
+            if (!isGlobalAdmin && userBranchId.HasValue)
+            {
+                query = query.Where(p => p.Trip != null && (p.Trip.BranchId == userBranchId.Value || (p.Trip.Indent != null && p.Trip.Indent.BranchId == userBranchId.Value)));
+            }
+
+            return await query.OrderByDescending(p => p.CreatedAt).ToListAsync();
         }
 
         // GET: api/Payments/5

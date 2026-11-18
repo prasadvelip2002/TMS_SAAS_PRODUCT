@@ -366,7 +366,8 @@ export default function SalesDashboard() {
         `*Vehicle Required*: ${selectedIndent.vehicleType}\n\n` +
         `*Agreed Contract Rate*: ₹${Number(sq.sellingPrice).toLocaleString('en-IN')}\n\n` +
         `Please reply with your PO Number or Gate Dispatch Clearance to proceed.\n\n` +
-        `Thank you,\nTransitflow Logistics`;
+        // Previous: `Thank you,\nTransitflow Logistics`;
+        `Thank you,\nLogiPulse Logistics`;
     } else {
       // Spot customer: Sales quotation with selling price
       message = `Hello ${selectedIndent?.customer?.name},\n\n` +
@@ -376,7 +377,8 @@ export default function SalesDashboard() {
         `*Vehicle Required*: ${selectedIndent.vehicleType}\n\n` +
         `*Total Quotation (Selling Price)*: ₹${Number(sq.sellingPrice).toLocaleString('en-IN')}\n\n` +
         `Please reply with your PO Number to confirm this booking.\n\n` +
-        `Thank you,\nTransitflow Logistics`;
+        // Previous: `Thank you,\nTransitflow Logistics`;
+        `Thank you,\nLogiPulse Logistics`;
     }
     
     navigator.clipboard.writeText(message);

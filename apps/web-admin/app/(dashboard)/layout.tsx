@@ -27,35 +27,71 @@ export default function DashboardLayout({
       const user = JSON.parse(userStr);
       const role = user.role || "Tenant Admin";
 
+      // Role group definitions matching Sidebar RBAC
+      const ALL_OPERATIONAL = [
+        'Tenant Admin', 
+        'Director/Operations Head', 
+        'Operations Manager', 
+        'Branch Manager',
+        'Branch Supervisor', 
+        'Logistics Executive',
+        'Dispatcher', 
+        'Manager', 
+        'Internal User', 
+        'Platform Admin'
+      ];
+
+      const FINANCE_ROLES = [
+        'Tenant Admin', 
+        'Branch Manager',
+        'Branch Supervisor', 
+        'Finance Executive',
+        'Finance', 
+        'Accounts', 
+        'Operations Manager', 
+        'Platform Admin'
+      ];
+
+      const SETTINGS_ROLES = [
+        'Tenant Admin', 
+        'Branch Manager',
+        'Branch Supervisor',
+        'Platform Admin'
+      ];
+
+      const ALL_ROLES = Array.from(new Set([...ALL_OPERATIONAL, ...FINANCE_ROLES]));
+
       // RBAC Rules
       const rules: Record<string, string[]> = {
-        "/map": ["Tenant Admin", "Manager", "Internal User"],
-        "/customers": ["Tenant Admin", "Internal User", "Accounts"],
-        "/fleet": ["Tenant Admin", "Internal User", "Accounts"],
-        "/vehicles": ["Tenant Admin", "Internal User", "Accounts"],
-        "/drivers": ["Tenant Admin", "Internal User", "Accounts"],
-        "/trips/indents": ["Tenant Admin", "Internal User", "Manager"],
-        "/trips/procurement": ["Tenant Admin", "Internal User", "Manager"],
-        "/trips/assignment": ["Tenant Admin", "Internal User", "Manager"],
-        "/trips/advance-payment": ["Tenant Admin", "Accounts"],
-        "/trips/pod": ["Tenant Admin", "Internal User", "Manager"],
-        "/trips/charges": ["Tenant Admin", "Internal User", "Accounts"],
-        "/payments/settlements": ["Tenant Admin", "Accounts"],
-        "/payments/invoices": ["Tenant Admin", "Accounts"],
-        "/users": ["Tenant Admin"],
-        "/automation": ["Tenant Admin", "Manager"],
+        "/map": ALL_OPERATIONAL,
+        "/customers": ALL_ROLES,
+        "/fleet": ALL_OPERATIONAL,
+        "/vehicles": ALL_OPERATIONAL,
+        "/drivers": ALL_OPERATIONAL,
+        "/trips/advance-payment": FINANCE_ROLES,
+        "/trips/charges": FINANCE_ROLES,
+        "/trips": ALL_OPERATIONAL,
+        "/payments": FINANCE_ROLES,
+        "/settings": SETTINGS_ROLES,
+        "/users": SETTINGS_ROLES,
+        "/automation": ALL_OPERATIONAL,
+        "/reports": ALL_ROLES,
+        "/notifications": ALL_OPERATIONAL,
+        "/saas-admin": ["Platform Admin"]
       };
 
       let isAllowed = true;
-      if (role === "Platform Admin") {
+      if (role === "Platform Admin" || role === "Tenant Admin") {
         isAllowed = true;
       } else {
-        for (const route in rules) {
+        // Sort routes by length descending so more specific sub-paths match first (e.g. /trips/advance-payment before /trips)
+        const sortedRoutes = Object.keys(rules).sort((a, b) => b.length - a.length);
+        for (const route of sortedRoutes) {
           if (pathname.startsWith(route)) {
             if (!rules[route].includes(role)) {
               isAllowed = false;
-              break;
             }
+            break;
           }
         }
       }

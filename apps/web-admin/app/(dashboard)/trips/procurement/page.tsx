@@ -38,8 +38,9 @@ export default function ProcurementDashboard() {
         fetchApi("/Vendors")
       ]);
       // Only show indents that are New/Pending or have active RFQs
-      setIndents(indentsData.filter((i: any) => i.status === "New" || i.status === "Pending" || i.status === "Assigned"));
-      setVendors(vendorsData);
+      const indentsList = Array.isArray(indentsData) ? indentsData : [];
+      setIndents(indentsList.filter((i: any) => i.status === "New" || i.status === "Pending" || i.status === "Assigned"));
+      setVendors(Array.isArray(vendorsData) ? vendorsData : []);
     } catch (error) {
       console.error(error);
     } finally {

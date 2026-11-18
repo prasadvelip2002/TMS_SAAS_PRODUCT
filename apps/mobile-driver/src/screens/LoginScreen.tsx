@@ -54,7 +54,7 @@ export default function LoginScreen({ onLogin }: { onLogin: (user: any) => void 
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.card}>
-        <Text style={styles.title}>TransitFlow Driver</Text>
+        <Text style={styles.title}>LogiPulse Driver</Text>
         <Text style={styles.subtitle}>Sign in to manage your trips</Text>
 
         <Text style={styles.label}>Mobile number</Text>

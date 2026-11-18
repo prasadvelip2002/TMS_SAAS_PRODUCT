@@ -2,6 +2,15 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
 export function middleware(request: NextRequest) {
+  // Allow all static files (images, icons, fonts, etc.)
+  if (
+    request.nextUrl.pathname.includes('.') ||
+    request.nextUrl.pathname.startsWith('/_next') ||
+    request.nextUrl.pathname.startsWith('/api')
+  ) {
+    return NextResponse.next();
+  }
+
   // Check for our custom isLoggedIn cookie
   const isLoggedIn = request.cookies.get('isLoggedIn');
 
@@ -11,7 +20,8 @@ export function middleware(request: NextRequest) {
     request.nextUrl.pathname.startsWith('/bidding') ||
     request.nextUrl.pathname.startsWith('/pod') ||
     request.nextUrl.pathname.startsWith('/invoices') ||
-    request.nextUrl.pathname.startsWith('/driver');
+    request.nextUrl.pathname.startsWith('/driver') ||
+    request.nextUrl.pathname.startsWith('/track');
 
   if (isExternalPortalRoute) {
     return NextResponse.next();
@@ -38,5 +48,5 @@ export function middleware(request: NextRequest) {
 
 export const config = {
   // Apply this middleware to all pages except api, static files, images, etc.
-  matcher: ['/((?!api|_next/static|_next/image|favicon.ico|logo.png).*)'],
+  matcher: ['/((?!api|_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)).*)'],
 };

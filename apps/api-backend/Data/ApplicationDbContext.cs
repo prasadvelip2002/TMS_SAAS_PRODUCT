@@ -131,13 +131,13 @@ namespace api_backend.Data
 
                 if (entry.State == EntityState.Added)
                 {
-                    if (entry.Entity is ITenantEntity tenantEntity && tenantId > 0 && tenantEntity.TenantId == 0)
+                    if (entry.Entity is ITenantEntity tenantEntity && tenantEntity.TenantId == 0)
                     {
-                        tenantEntity.TenantId = tenantId;
+                        tenantEntity.TenantId = tenantId > 0 ? tenantId : 1;
                     }
-                    if (entry.Entity is ICompanyEntity companyEntity && companyId > 0 && companyEntity.CompanyId == 0)
+                    if (entry.Entity is ICompanyEntity companyEntity && companyEntity.CompanyId == 0)
                     {
-                        companyEntity.CompanyId = companyId;
+                        companyEntity.CompanyId = companyId > 0 ? companyId : 1;
                     }
                 }
             }

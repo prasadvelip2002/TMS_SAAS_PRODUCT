@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef } from "react";
 import { useParams } from "next/navigation";
-import { fetchApi } from "@/lib/api";
+import { fetchApi, getApiBaseUrl } from "@/lib/api";
 import { Loader2, Camera, UploadCloud, CheckCircle, AlertTriangle, Truck } from "lucide-react";
 
 export default function DriverPODUpload() {
@@ -56,7 +56,7 @@ export default function DriverPODUpload() {
       formData.append("entityId", trip.tripId);
       formData.append("documentType", "DeliveryReceipt");
 
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5063/api";
+      const apiUrl = getApiBaseUrl();
       const uploadRes = await fetch(`${apiUrl}/Documents/Upload`, {
         method: "POST",
         body: formData,
@@ -104,7 +104,8 @@ export default function DriverPODUpload() {
             <CheckCircle className="w-10 h-10 text-green-600" />
           </div>
           <h1 className="text-2xl font-black text-slate-900 mb-2">POD Uploaded!</h1>
-          <p className="text-slate-500 mb-6 text-sm">Thank you! Your Proof of Delivery has been sent to Transitflow Logistics successfully.</p>
+          {/* Previous: <p className="text-slate-500 mb-6 text-sm">Thank you! Your Proof of Delivery has been sent to Transitflow Logistics successfully.</p> */}
+          <p className="text-slate-500 mb-6 text-sm">Thank you! Your Proof of Delivery has been sent to LogiPulse successfully.</p>
           <button onClick={() => window.close()} className="text-blue-500 font-semibold text-sm hover:underline">
             Close Window
           </button>
@@ -118,7 +119,10 @@ export default function DriverPODUpload() {
       <div className="bg-[#0F172A] text-white p-6 pt-10 rounded-b-[40px] shadow-lg mb-8 relative overflow-hidden">
         <div className="absolute inset-0 bg-blue-500/10" />
         <div className="relative z-10">
-          <img src="/logo.png" alt="TRANSITFLOW LOGISTICS" className="h-6 mb-4 mix-blend-multiply bg-white/90 px-2 py-0.5 rounded" />
+          {/* Previous: <img src="/logo_transitflow.png" alt="TRANSITFLOW LOGISTICS" className="h-6 mb-4 mix-blend-multiply bg-white/90 px-2 py-0.5 rounded" /> */}
+          <div className="inline-block bg-white rounded-lg px-3 py-1 shadow-sm mb-4">
+            <img src="/logo.png" alt="LogiPulse" className="h-6 object-contain" />
+          </div>
           <h1 className="text-2xl font-black mb-1">Upload POD</h1>
           <p className="text-blue-200 text-sm opacity-80">Proof of Delivery Submission</p>
         </div>

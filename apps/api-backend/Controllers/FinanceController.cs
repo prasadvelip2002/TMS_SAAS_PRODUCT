@@ -7,6 +7,7 @@ using System;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Collections.Generic;
+using System.Security.Claims;
 
 using api_backend.Services.Interfaces;
 
@@ -30,7 +31,13 @@ namespace api_backend.Controllers
         [HttpGet("vendor-settlements")]
         public async Task<IActionResult> GetPendingVendorSettlements()
         {
-            var trips = await _context.Trips
+            var roleClaim = User.FindFirst(ClaimTypes.Role)?.Value;
+            var userBranchIdClaim = User.FindFirst("BranchId")?.Value;
+            int? userBranchId = int.TryParse(userBranchIdClaim, out var bid) && bid > 0 ? bid : null;
+
+            bool isGlobalAdmin = roleClaim == "Tenant Admin" || roleClaim == "Admin" || roleClaim == "Director/Operations Head" || string.IsNullOrEmpty(roleClaim);
+
+            var tripsQuery = _context.Trips
                 .Include(t => t.Vendor)
                 .Include(t => t.Vehicle)
                 .Include(t => t.Driver)
@@ -38,8 +45,14 @@ namespace api_backend.Controllers
                     .ThenInclude(i => i.Customer)
                 .Include(t => t.Payments)
                 .Include(t => t.AdditionalCharges)
-                .Where(t => t.Status == "Closed" && t.VendorId != null)
-                .ToListAsync();
+                .Where(t => t.Status == "Closed" && t.VendorId != null);
+
+            if (!isGlobalAdmin && userBranchId.HasValue)
+            {
+                tripsQuery = tripsQuery.Where(t => t.BranchId == userBranchId.Value || (t.Indent != null && t.Indent.BranchId == userBranchId.Value));
+            }
+
+            var trips = await tripsQuery.ToListAsync();
 
             return Ok(trips);
         }
@@ -74,12 +87,25 @@ namespace api_backend.Controllers
         [HttpGet("unbilled-trips/{customerId}")]
         public async Task<IActionResult> GetUnbilledTrips(int customerId)
         {
-            var trips = await _context.Trips
+            var roleClaim = User.FindFirst(ClaimTypes.Role)?.Value;
+            var userBranchIdClaim = User.FindFirst("BranchId")?.Value;
+            int? userBranchId = int.TryParse(userBranchIdClaim, out var bid) && bid > 0 ? bid : null;
+
+            bool isGlobalAdmin = roleClaim == "Tenant Admin" || roleClaim == "Admin" || roleClaim == "Director/Operations Head" || string.IsNullOrEmpty(roleClaim);
+
+            var query = _context.Trips
                 .Include(t => t.Indent)
                 .Include(t => t.Vehicle)
                 .Include(t => t.AdditionalCharges)
                 .Where(t => t.Status == "Closed" && t.InvoiceId == null && t.Indent.CustomerId == customerId)
-                .ToListAsync();
+                .AsQueryable();
+
+            if (!isGlobalAdmin && userBranchId.HasValue)
+            {
+                query = query.Where(t => t.BranchId == userBranchId.Value || (t.Indent != null && t.Indent.BranchId == userBranchId.Value));
+            }
+
+            var trips = await query.ToListAsync();
 
             // Map approved Sales Quotations SellingPrice (Customer agreed rate with margin per leg or full route)
             var indentIds = trips.Select(t => t.IndentId).Distinct().ToList();
@@ -271,8 +297,24 @@ namespace api_backend.Controllers
         [HttpGet("invoices")]
         public async Task<IActionResult> GetInvoices()
         {
-            var invoices = await _context.Invoices
+            var roleClaim = User.FindFirst(ClaimTypes.Role)?.Value;
+            var userBranchIdClaim = User.FindFirst("BranchId")?.Value;
+            int? userBranchId = int.TryParse(userBranchIdClaim, out var bid) && bid > 0 ? bid : null;
+
+            bool isGlobalAdmin = roleClaim == "Tenant Admin" || roleClaim == "Admin" || roleClaim == "Director/Operations Head" || string.IsNullOrEmpty(roleClaim);
+
+            var query = _context.Invoices
                 .Include(i => i.Customer)
+                .Include(i => i.Trips)
+                    .ThenInclude(t => t.Indent)
+                .AsQueryable();
+
+            if (!isGlobalAdmin && userBranchId.HasValue)
+            {
+                query = query.Where(i => i.Trips != null && i.Trips.Any(t => t.BranchId == userBranchId.Value || (t.Indent != null && t.Indent.BranchId == userBranchId.Value)));
+            }
+
+            var invoices = await query
                 .OrderByDescending(i => i.CreatedAt)
                 .ToListAsync();
 

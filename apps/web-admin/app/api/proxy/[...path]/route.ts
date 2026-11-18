@@ -42,9 +42,13 @@ async function handleProxy(request: NextRequest, path: string) {
   const backendBase = getBackendUrl().replace(/\/$/, "");
   const targetUrl = `${backendBase}/${path}${search}`;
 
-  const headers: Record<string, string> = {
-    "Content-Type": "application/json",
-  };
+  const headers: Record<string, string> = {};
+  const contentType = request.headers.get("content-type");
+  if (contentType) {
+    headers["content-type"] = contentType;
+  } else if (request.method !== "GET" && request.method !== "HEAD") {
+    headers["content-type"] = "application/json";
+  }
 
   const authHeader = request.headers.get("authorization");
   if (authHeader) {
@@ -59,9 +63,9 @@ async function handleProxy(request: NextRequest, path: string) {
 
   if (request.method !== "GET" && request.method !== "HEAD") {
     try {
-      const body = await request.text();
-      if (body) {
-        options.body = body;
+      const bodyBuffer = await request.arrayBuffer();
+      if (bodyBuffer && bodyBuffer.byteLength > 0) {
+        options.body = bodyBuffer;
       }
     } catch {
       // no body

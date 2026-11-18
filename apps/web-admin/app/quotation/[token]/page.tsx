@@ -92,7 +92,8 @@ export default function CustomerQuotationPage() {
           <h2 className="text-xl font-black text-slate-900 mb-2">Quotation Unavailable</h2>
           <p className="text-sm text-slate-500 mb-6">{error || "Unable to locate quotation details."}</p>
           <div className="text-xs text-slate-400 bg-slate-50 p-3 rounded-xl">
-            Please contact TransitFlow support or reply to your WhatsApp notification.
+            {/* Previous: Please contact TransitFlow support or reply to your WhatsApp notification. */}
+            Please contact LogiPulse support or reply to your WhatsApp notification.
           </div>
         </div>
       </div>
@@ -148,10 +149,13 @@ export default function CustomerQuotationPage() {
       {/* Top Header */}
       <div className="w-full max-w-lg mb-4 flex items-center justify-between">
         <div className="flex items-center gap-2">
+          {/* Previous:
           <div className="w-8 h-8 rounded-xl bg-blue-600 flex items-center justify-center text-white font-black text-sm shadow-md shadow-blue-500/30">
             TF
           </div>
           <span className="font-bold text-slate-900 text-base tracking-tight">TransitFlow Logistics</span>
+          */}
+          <img src="/logo.png" alt="LogiPulse" className="h-7 object-contain" />
         </div>
         <span className="text-[11px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full flex items-center gap-1">
           <ShieldCheck className="w-3 h-3" /> Secure Magic Link
@@ -275,7 +279,8 @@ export default function CustomerQuotationPage() {
 
         {/* Footer */}
         <div className="bg-slate-50 p-4 border-t border-slate-100 text-center text-[11px] text-slate-400">
-          TransitFlow Transport & Supply Chain Operating System
+          {/* Previous: TransitFlow Transport & Supply Chain Operating System */}
+          LogiPulse Transport & Supply Chain Operating System
         </div>
       </div>
     </div>

@@ -5,7 +5,7 @@ using api_backend.Data;
 using api_backend.Models;
 using System.Linq;
 using System.Threading.Tasks;
-
+using System.Security.Claims;
 using System;
 using api_backend.Services.Interfaces;
 
@@ -56,9 +56,25 @@ namespace api_backend.Controllers
         [Authorize]
         public async Task<IActionResult> GetAllSalesQuotations()
         {
-            var sqs = await _context.SalesQuotations
+            var roleClaim = User.FindFirst(ClaimTypes.Role)?.Value;
+            var userBranchIdClaim = User.FindFirst("BranchId")?.Value;
+            int? userBranchId = int.TryParse(userBranchIdClaim, out var bid) && bid > 0 ? bid : null;
+
+            bool isGlobalAdmin = roleClaim == "Tenant Admin" || roleClaim == "Admin" || roleClaim == "Director/Operations Head" || string.IsNullOrEmpty(roleClaim);
+
+            var query = _context.SalesQuotations
+                .Include(s => s.Indent)
+                .Include(s => s.Trip)
                 .Include(s => s.WinningVendorQuotation)
-                .ThenInclude(v => v.Vendor)
+                    .ThenInclude(v => v.Vendor)
+                .AsQueryable();
+
+            if (!isGlobalAdmin && userBranchId.HasValue)
+            {
+                query = query.Where(s => (s.Trip != null && s.Trip.BranchId == userBranchId.Value) || (s.Indent != null && s.Indent.BranchId == userBranchId.Value));
+            }
+
+            var sqs = await query
                 .OrderByDescending(s => s.CreatedAt)
                 .ToListAsync();
 

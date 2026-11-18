@@ -68,13 +68,15 @@ namespace api_backend.Services
 
             var shareUrl = GenerateWhatsAppShareUrl(normalizedPhone, request.Message);
 
-            var ultraInstanceId = _configuration["WhatsApp:InstanceId"] ?? "instance191876";
-            var ultraToken = _configuration["WhatsApp:Token"] ?? "dsclvk3g7h6j8bl4";
+            var ultraInstanceId = Environment.GetEnvironmentVariable("ULTRAMSG_INSTANCE_ID")
+                ?? _configuration["WhatsApp:InstanceId"];
+            var ultraToken = Environment.GetEnvironmentVariable("ULTRAMSG_TOKEN")
+                ?? _configuration["WhatsApp:Token"];
 
-            var accessToken = _configuration["WhatsApp:AccessToken"] 
-                ?? Environment.GetEnvironmentVariable("WHATSAPP_ACCESS_TOKEN");
-            var phoneNumberId = _configuration["WhatsApp:PhoneNumberId"] 
-                ?? Environment.GetEnvironmentVariable("WHATSAPP_PHONE_NUMBER_ID");
+            var accessToken = Environment.GetEnvironmentVariable("WHATSAPP_ACCESS_TOKEN")
+                ?? _configuration["WhatsApp:AccessToken"];
+            var phoneNumberId = Environment.GetEnvironmentVariable("WHATSAPP_PHONE_NUMBER_ID")
+                ?? _configuration["WhatsApp:PhoneNumberId"];
 
             string status = "Sent";
             string? externalMessageId = null;
@@ -222,11 +224,12 @@ namespace api_backend.Services
             var lrNo = string.IsNullOrEmpty(trip.LRNumber) ? "Pending LR" : trip.LRNumber;
             var advance = trip.AdvanceAmount > 0 ? $"₹{trip.AdvanceAmount:N0}" : "₹0";
 
-            var trackingBase = _configuration["AppSettings:DriverTrackingUrl"] ?? _configuration["AppSettings:FrontendBaseUrl"] ?? "http://localhost:3000";
+            var trackingBase = _configuration["AppSettings:DriverTrackingUrl"] ?? GetFrontendBaseUrl();
             var trackingUrl = $"{trackingBase}/driver/trip/{trip.Id}";
 
+            // Previous: $"🚛 *TransitFlow · Trip Assignment*\n\n" +
             var message = 
-                $"🚛 *TransitFlow · Trip Assignment*\n\n" +
+                $"🚛 *LogiPulse · Trip Assignment*\n\n" +
                 $"Hello *{driverName}*,\n" +
                 $"A new trip has been assigned to you:\n\n" +
                 $"• *Trip ID:* TRIP-{trip.Id}\n" +
@@ -262,11 +265,12 @@ namespace api_backend.Services
             var pickup = indent?.Source ?? "Source";
             var drop = indent?.Destination ?? "Destination";
 
-            var trackingBase = _configuration["AppSettings:DriverTrackingUrl"] ?? _configuration["AppSettings:FrontendBaseUrl"] ?? "http://localhost:3000";
+            var trackingBase = _configuration["AppSettings:DriverTrackingUrl"] ?? GetFrontendBaseUrl();
             var trackingUrl = $"{trackingBase}/driver/trip/{trip.Id}";
 
+            // Previous: $"🟢 *TransitFlow · Trip Dispatched & Started*\n\n" +
             var message = 
-                $"🟢 *TransitFlow · Trip Dispatched & Started*\n\n" +
+                $"🟢 *LogiPulse · Trip Dispatched & Started*\n\n" +
                 $"Hello *{driverName}*,\n" +
                 $"Your trip has been started by Fleet Operations:\n\n" +
                 $"• *Trip ID:* TRIP-{trip.Id}\n" +
@@ -292,14 +296,15 @@ namespace api_backend.Services
             var drop = indent?.Destination ?? "Destination";
             var lrNo = string.IsNullOrEmpty(trip.LRNumber) ? $"TRIP-{trip.Id}" : trip.LRNumber;
 
+            // Previous: $"✅ *TransitFlow · Consignment Delivered*\n\n" + ... "Thank you for choosing TransitFlow!";
             var message =
-                $"✅ *TransitFlow · Consignment Delivered*\n\n" +
+                $"✅ *LogiPulse · Consignment Delivered*\n\n" +
                 $"Dear {recipientName ?? "Customer"},\n" +
                 $"Consignment for *LR: {lrNo}* has safely arrived at *{drop}*.\n\n" +
                 $"• *Trip ID:* TRIP-{trip.Id}\n" +
                 $"• *Delivery Status:* Completed\n" +
                 $"• *Delivered At:* {DateTime.UtcNow:dd MMM yyyy, hh:mm tt} UTC\n\n" +
-                $"Proof of Delivery (POD) will be verified and uploaded shortly. Thank you for choosing TransitFlow!";
+                $"Proof of Delivery (POD) will be verified and uploaded shortly. Thank you for choosing LogiPulse!";
 
             return await SendMessageAsync(new WhatsAppSendRequest
             {
@@ -316,8 +321,9 @@ namespace api_backend.Services
             var phone = driver?.Phone;
             if (string.IsNullOrEmpty(phone)) return new WhatsAppSendResult { Success = false, Status = "Skipped" };
 
+            // Previous: $"💰 *TransitFlow · Advance Payment Disbursed*\n\n" +
             var message =
-                $"💰 *TransitFlow · Advance Payment Disbursed*\n\n" +
+                $"💰 *LogiPulse · Advance Payment Disbursed*\n\n" +
                 $"Hello {driver?.Name ?? "Driver"},\n" +
                 $"An advance amount of *₹{amount:N0}* for *Trip TRIP-{trip.Id}* has been approved and processed to your account.\n\n" +
                 $"Please confirm receipt in the Driver app. Safe travels!";
@@ -342,8 +348,9 @@ namespace api_backend.Services
                 ? $"{baseUrl}/pod/{trip.PODMagicLinkToken}"
                 : $"{baseUrl}/trips/pod";
 
+            // Previous: $"📸 *TransitFlow · Action Required: Upload POD*\n\n" +
             var message =
-                $"📸 *TransitFlow · Action Required: Upload POD*\n\n" +
+                $"📸 *LogiPulse · Action Required: Upload POD*\n\n" +
                 $"Hello {driver?.Name ?? "Driver"},\n" +
                 $"Your trip *TRIP-{trip.Id}* has been marked as Delivered.\n\n" +
                 $"👉 *Tap here to upload stamped POD photo:*\n{uploadLink}\n\n" +
@@ -376,8 +383,9 @@ namespace api_backend.Services
                 ? $"{baseUrl}/bidding/{magicLinkToken}"
                 : $"{baseUrl}/trips/procurement";
 
+            // Previous: $"📢 *TransitFlow · New Load Enquiry / RFQ*\n\n" +
             var message =
-                $"📢 *TransitFlow · New Load Enquiry / RFQ*\n\n" +
+                $"📢 *LogiPulse · New Load Enquiry / RFQ*\n\n" +
                 $"Hello *{vendorName}*,\n" +
                 $"We have a new load ready for vehicle placement:\n\n" +
                 $"• *Indent Ref:* IND-{1000 + indent.Id}\n" +
@@ -414,8 +422,9 @@ namespace api_backend.Services
                 ? $"{baseUrl}/quotation/{sq.MagicLinkToken}"
                 : $"{baseUrl}/trips/sales";
 
+            // Previous: $"📋 *TransitFlow · Sales Quotation & Confirmation*\n\n" +
             var message =
-                $"📋 *TransitFlow · Sales Quotation & Confirmation*\n\n" +
+                $"📋 *LogiPulse · Sales Quotation & Confirmation*\n\n" +
                 $"Hello *{customerName}*,\n" +
                 $"Here is the official quotation for your transport booking:\n\n" +
                 $"• *Booking Ref:* IND-{1000 + indent.Id}\n" +
@@ -448,8 +457,9 @@ namespace api_backend.Services
             var pickupDate = indent.LoadingDate != default ? indent.LoadingDate.ToString("dd MMM yyyy") : "Scheduled";
             var pickupTime = !string.IsNullOrEmpty(indent.LoadingTime) ? $" @ {indent.LoadingTime}" : "";
 
+            // Previous: $"✅ *TransitFlow · Trip Confirmed & PO Accepted*\n\n" + ... "*TransitFlow Logistics Team*";
             var message =
-                $"✅ *TransitFlow · Trip Confirmed & PO Accepted*\n\n" +
+                $"✅ *LogiPulse · Trip Confirmed & PO Accepted*\n\n" +
                 $"Hello *{customerName}*,\n" +
                 $"Your Purchase Order (*{poNumber}*) has been successfully accepted and your transport booking is confirmed!\n\n" +
                 $"• *Booking Ref:* IND-{1000 + indent.Id}\n" +
@@ -461,7 +471,7 @@ namespace api_backend.Services
                 $"• *Agreed Freight:* ₹{sq.SellingPrice:N0}\n" +
                 $"• *Status:* Confirmed · Vehicle Placement in Progress\n\n" +
                 $"We are coordinating vehicle placement. You will receive live vehicle tracking details as soon as the vehicle is assigned & en route.\n\n" +
-                $"*TransitFlow Logistics Team*";
+                $"*LogiPulse Logistics Team*";
 
             return await SendMessageAsync(new WhatsAppSendRequest
             {
@@ -483,8 +493,9 @@ namespace api_backend.Services
             var baseUrl = GetFrontendBaseUrl();
             var invoiceLink = $"{baseUrl}/invoices/{invoice.Id}/pdf";
 
+            // Previous: $"🧾 *TransitFlow · Tax Invoice Generated*\n\n" + ... "Thank you for partnering with TransitFlow!";
             var message =
-                $"🧾 *TransitFlow · Tax Invoice Generated*\n\n" +
+                $"🧾 *LogiPulse · Tax Invoice Generated*\n\n" +
                 $"Dear *{customerName}*,\n" +
                 $"A new tax invoice has been generated for your recent consignments:\n\n" +
                 $"• *Invoice No:* {invoice.InvoiceNumber}\n" +
@@ -493,7 +504,7 @@ namespace api_backend.Services
                 $"• *Grand Total:* ₹{invoice.GrandTotal:N0}\n" +
                 $"• *Due Date:* {dueDate}\n\n" +
                 $"👉 *View & Download Tax Invoice:*\n{invoiceLink}\n\n" +
-                $"Kindly process payment by the due date. Thank you for partnering with TransitFlow!";
+                $"Kindly process payment by the due date. Thank you for partnering with LogiPulse!";
 
             return await SendMessageAsync(new WhatsAppSendRequest
             {
@@ -514,10 +525,14 @@ namespace api_backend.Services
 
         public async Task<WhatsAppConfigStatus> GetStatusAsync()
         {
-            var ultraInstanceId = _configuration["WhatsApp:InstanceId"];
-            var ultraToken = _configuration["WhatsApp:Token"];
-            var accessToken = _configuration["WhatsApp:AccessToken"];
-            var phoneNumberId = _configuration["WhatsApp:PhoneNumberId"];
+            var ultraInstanceId = Environment.GetEnvironmentVariable("ULTRAMSG_INSTANCE_ID")
+                ?? _configuration["WhatsApp:InstanceId"];
+            var ultraToken = Environment.GetEnvironmentVariable("ULTRAMSG_TOKEN")
+                ?? _configuration["WhatsApp:Token"];
+            var accessToken = Environment.GetEnvironmentVariable("WHATSAPP_ACCESS_TOKEN")
+                ?? _configuration["WhatsApp:AccessToken"];
+            var phoneNumberId = Environment.GetEnvironmentVariable("WHATSAPP_PHONE_NUMBER_ID")
+                ?? _configuration["WhatsApp:PhoneNumberId"];
 
             bool isUltra = !string.IsNullOrEmpty(ultraInstanceId) && !string.IsNullOrEmpty(ultraToken);
             bool isMeta = !string.IsNullOrEmpty(accessToken) && !string.IsNullOrEmpty(phoneNumberId);
@@ -531,7 +546,9 @@ namespace api_backend.Services
             {
                 IsLiveConfigured = isLive,
                 Provider = isUltra ? $"UltraMsg Gateway ({ultraInstanceId} · Connected)" : isMeta ? "Meta WhatsApp Cloud API (Live)" : "WhatsApp Gateway (Simulated)",
-                BusinessNumber = _configuration["WhatsApp:BusinessNumber"] ?? "+91 63602 74186",
+                BusinessNumber = Environment.GetEnvironmentVariable("WHATSAPP_BUSINESS_NUMBER")
+                    ?? _configuration["WhatsApp:BusinessNumber"]
+                    ?? "+91 93847 12208",
                 Mode = isLive ? "Direct Background Mobile Delivery" : "Simulation & Direct Web Share",
                 TotalSent = totalSent,
                 TotalDelivered = totalDelivered,

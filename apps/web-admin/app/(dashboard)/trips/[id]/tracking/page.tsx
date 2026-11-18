@@ -25,6 +25,7 @@ import {
   MessageSquare
 } from "lucide-react";
 import { Panel } from "@/components/PrototypeUI";
+import { fetchRoadRoute } from "@/lib/routing";
 
 const FleetMap = dynamic(() => import('@/components/FleetMap'), { 
   ssr: false,
@@ -45,13 +46,15 @@ export default function TripTrackingPage() {
   const [trip, setTrip] = useState<any>(null);
   const [vehicleTelemetry, setVehicleTelemetry] = useState<any>(null);
   const [trailHistory, setTrailHistory] = useState<any[]>([]);
+  const [roadRoute, setRoadRoute] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [copiedLink, setCopiedLink] = useState(false);
   const [pollingSim, setPollingSim] = useState(false);
 
   const getDriverTrackingUrl = () => {
     if (typeof window !== "undefined") {
-      return `${window.location.origin}/driver/trip/${tripId}`;
+      const origin = process.env.NEXT_PUBLIC_APP_URL || window.location.origin;
+      return `${origin}/driver/trip/${tripId}`;
     }
     return `/driver/trip/${tripId}`;
   };
@@ -59,45 +62,46 @@ export default function TripTrackingPage() {
   const loadTripData = useCallback(async () => {
     if (!tripId || isNaN(tripId)) return;
     try {
-      const [tripData, liveFleet, historyData] = await Promise.all([
+      const [tripData, tripTelemetry, historyData] = await Promise.all([
         fetchApi(`/Trips/${tripId}`).catch(() => null),
-        fetchApi(`/Locations/live`).catch(() => []),
-        fetchApi(`/Locations/trip/${tripId}/history`).catch(() => [])
+        fetchApi(`/Locations/trip/${tripId}/telemetry`, { forceRefresh: true }).catch(() => null),
+        fetchApi(`/Locations/trip/${tripId}/history`, { forceRefresh: true }).catch(() => [])
       ]);
 
       setTrip(tripData);
 
-      if (Array.isArray(liveFleet)) {
-        const found = liveFleet.find((v: any) => v.tripId === tripId);
-        if (found) {
-          setVehicleTelemetry(found);
-        } else if (tripData) {
-          // Construct fallback telemetry from trip's origin
-          setVehicleTelemetry({
-            id: `V-${tripData.vehicleId || 0}`,
-            tripId: tripData.id,
-            vehicleId: tripData.vehicleId || 0,
-            num: tripData.vehicle?.vehicleNumber || "Assigned Vehicle",
-            driver: tripData.driver?.name || "Driver",
-            driverPhone: tripData.driver?.phone,
-            source: tripData.indent?.source || "Origin",
-            srcLat: 12.9716,
-            srcLng: 77.5946,
-            dest: tripData.indent?.destination || "Destination",
-            destLat: 19.0760,
-            destLng: 72.8777,
-            currentLat: 12.9716,
-            currentLng: 77.5946,
-            accuracy: 15,
-            speed: 0,
-            status: tripData.status,
-            trackingType: tripData.driver?.trackingType || "MOBILE_GPS",
-            trackingProvider: tripData.driver?.trackingProvider || "MOBILE",
-            trackingStatus: tripData.status === "Assigned" ? "ASSIGNED" : "OFFLINE",
-            currentAddress: `Awaiting Driver Start at ${tripData.indent?.source || "Origin"}`,
-            lastPingAgo: "Awaiting Start"
-          });
+      if (tripTelemetry) {
+        setVehicleTelemetry(tripTelemetry);
+        if (tripTelemetry.srcLat && tripTelemetry.destLat) {
+          fetchRoadRoute(tripTelemetry.srcLat, tripTelemetry.srcLng, tripTelemetry.destLat, tripTelemetry.destLng)
+            .then(setRoadRoute)
+            .catch(() => {});
         }
+      } else if (tripData) {
+        setVehicleTelemetry({
+          id: `V-${tripData.vehicleId || 0}`,
+          tripId: tripData.id,
+          vehicleId: tripData.vehicleId || 0,
+          num: tripData.vehicle?.vehicleNumber || "Assigned Vehicle",
+          driver: tripData.driver?.name || "Driver",
+          driverPhone: tripData.driver?.phone,
+          source: tripData.indent?.source || "Origin",
+          srcLat: 0,
+          srcLng: 0,
+          dest: tripData.indent?.destination || "Destination",
+          destLat: 0,
+          destLng: 0,
+          currentLat: 0,
+          currentLng: 0,
+          accuracy: 15,
+          speed: 0,
+          status: tripData.status,
+          trackingType: tripData.driver?.trackingType || "MOBILE_GPS",
+          trackingProvider: tripData.driver?.trackingProvider || "MOBILE",
+          trackingStatus: tripData.status === "Assigned" ? "ASSIGNED" : "OFFLINE",
+          currentAddress: `Awaiting Driver Start at ${tripData.indent?.source || "Origin"}`,
+          lastPingAgo: "Awaiting Start"
+        });
       }
 
       if (Array.isArray(historyData)) {
@@ -208,7 +212,9 @@ export default function TripTrackingPage() {
 
           {trip.driver?.phone && (
             <a
-              href={`https://wa.me/${trip.driver.phone.replace(/\D/g, '')}?text=${encodeURIComponent(`🚛 *TransitFlow · Live Location Link*\n\nHello *${trip.driver.name}*,\nPlease open this link on your smartphone to start the trip and share live GPS location with fleet dispatch:\n👉 ${driverLink}`)}`}
+              // Previous TransitFlow link:
+              // href={`https://wa.me/${trip.driver.phone.replace(/\D/g, '')}?text=${encodeURIComponent(`🚛 *TransitFlow · Live Location Link*\n\nHello *${trip.driver.name}*,\nPlease open this link on your smartphone to start the trip and share live GPS location with fleet dispatch:\n👉 ${driverLink}`)}`}
+              href={`https://wa.me/${trip.driver.phone.replace(/\D/g, '')}?text=${encodeURIComponent(`🚛 *LogiPulse · Live Location Link*\n\nHello *${trip.driver.name}*,\nPlease open this link on your smartphone to start the trip and share live GPS location with fleet dispatch:\n👉 ${driverLink}`)}`}
               target="_blank"
               rel="noopener noreferrer"
               className="px-3 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-xl shadow-sm transition flex items-center gap-1.5"
@@ -232,6 +238,7 @@ export default function TripTrackingPage() {
                 trailHistory={trailHistory}
                 autoFollow={true}
                 recenterTrigger={0}
+                roadRouteGeometry={roadRoute?.coordinates}
               />
             )}
 

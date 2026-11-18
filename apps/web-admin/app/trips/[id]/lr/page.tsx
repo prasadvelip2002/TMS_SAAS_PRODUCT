@@ -31,7 +31,9 @@ export default function LorryReceiptPrint() {
   if (loading) return <div className="p-10 text-center font-sans">Loading Document...</div>;
   if (!trip) return <div className="p-10 text-center font-sans text-red-500">Failed to load LR</div>;
 
-  const lrNumber = `TRANSITFLOW-LR-${trip.id.toString().padStart(4, '0')}`;
+  // Previous TransitFlow LR format:
+  // const lrNumber = `TRANSITFLOW-LR-${trip.id.toString().padStart(4, '0')}`;
+  const lrNumber = trip.lrNumber || `LOGIPULSE-LR-${trip.id.toString().padStart(4, '0')}`;
   const date = new Date(trip.createdAt).toLocaleDateString('en-IN');
   
   // Format for A4 print
@@ -42,10 +44,15 @@ export default function LorryReceiptPrint() {
         {/* Header */}
         <div className="flex justify-between items-start border-b-2 border-black pb-4 mb-6">
           <div>
-            <img src="/logo.png" alt="TRANSITFLOW LOGISTICS" className="h-14 mb-2 mix-blend-multiply" />
+            {/* --- Previous TransitFlow Header (Uncomment to switch back) ---
+            <img src="/logo_transitflow.png" alt="TRANSITFLOW LOGISTICS" className="h-14 mb-2 mix-blend-multiply" />
             <h1 className="text-xl font-black uppercase tracking-widest text-slate-900">Transitflow Logistics</h1>
-            <p className="text-[11px] text-slate-600">Global Warehousing & 3PL Provider</p>
             <p className="text-[11px] text-slate-600">info@transitflowlogistics.com | +91 98765 43210</p>
+            -------------------------------------------------------------- */}
+            <img src="/logo.png" alt="LogiPulse" className="h-12 mb-2 object-contain" />
+            <h1 className="text-xl font-black uppercase tracking-widest text-slate-900">LogiPulse Logistics</h1>
+            <p className="text-[11px] text-slate-600">Global Warehousing & 3PL Provider</p>
+            <p className="text-[11px] text-slate-600">info@logipulse.io | +91 98765 43210</p>
           </div>
           <div className="text-right">
             <h2 className="text-2xl font-bold uppercase tracking-wider mb-2">Lorry Receipt</h2>
@@ -64,7 +71,8 @@ export default function LorryReceiptPrint() {
             <h3 className="font-bold text-[12px] border-b border-slate-300 pb-1 mb-2 uppercase text-slate-500">Consignor (Sender)</h3>
             <p className="font-bold text-sm uppercase">
               {trip.legType === "OutboundLeg2" 
-                ? (trip.indent?.warehouseLocation ? `${trip.indent.warehouseLocation} (Central Hub)` : "TRANSITFLOW LOGISTICS HUB") 
+                // Previous: ? (trip.indent?.warehouseLocation ? `${trip.indent.warehouseLocation} (Central Hub)` : "TRANSITFLOW LOGISTICS HUB") 
+                ? (trip.indent?.warehouseLocation ? `${trip.indent.warehouseLocation} (Central Hub)` : "LOGIPULSE LOGISTICS HUB") 
                 : (trip.indent?.customer?.name || 'Loading Customer Details...')}
             </p>
             <p className="text-[12px] mt-1">
@@ -79,7 +87,8 @@ export default function LorryReceiptPrint() {
             <h3 className="font-bold text-[12px] border-b border-slate-300 pb-1 mb-2 uppercase text-slate-500">Consignee (Receiver)</h3>
             <p className="font-bold text-sm uppercase">
               {trip.legType === "InboundLeg1" 
-                ? (trip.indent?.warehouseLocation ? `${trip.indent.warehouseLocation} (Central Hub)` : "TRANSITFLOW LOGISTICS HUB") 
+                // Previous: ? (trip.indent?.warehouseLocation ? `${trip.indent.warehouseLocation} (Central Hub)` : "TRANSITFLOW LOGISTICS HUB") 
+                ? (trip.indent?.warehouseLocation ? `${trip.indent.warehouseLocation} (Central Hub)` : "LOGIPULSE LOGISTICS HUB") 
                 : (trip.indent?.customer?.name ? `${trip.indent.customer.name} - Plant` : "CONSIGNEE (Destination)")}
             </p>
             <p className="text-[12px] mt-1 whitespace-pre-line">
@@ -102,15 +111,18 @@ export default function LorryReceiptPrint() {
               </tr>
               <tr className="border-b border-slate-400">
                 <th className="p-2 border-r border-slate-400 text-[11px] uppercase text-slate-500">From</th>
-                <td className="p-2 border-r border-slate-400 text-sm">{trip.legType === "OutboundLeg2" ? (trip.indent?.warehouseLocation || "Transitflow Warehouse") : trip.indent?.source}</td>
+                {/* Previous: <td className="p-2 border-r border-slate-400 text-sm">{trip.legType === "OutboundLeg2" ? (trip.indent?.warehouseLocation || "Transitflow Warehouse") : trip.indent?.source}</td> */}
+                <td className="p-2 border-r border-slate-400 text-sm">{trip.legType === "OutboundLeg2" ? (trip.indent?.warehouseLocation || "LogiPulse Warehouse") : trip.indent?.source}</td>
                 <th className="p-2 border-r border-slate-400 text-[11px] uppercase text-slate-500">To</th>
-                <td className="p-2 text-sm">{trip.legType === "InboundLeg1" ? (trip.indent?.warehouseLocation || "Transitflow Warehouse") : trip.indent?.destination}</td>
+                {/* Previous: <td className="p-2 text-sm">{trip.legType === "InboundLeg1" ? (trip.indent?.warehouseLocation || "Transitflow Warehouse") : trip.indent?.destination}</td> */}
+                <td className="p-2 text-sm">{trip.legType === "InboundLeg1" ? (trip.indent?.warehouseLocation || "LogiPulse Warehouse") : trip.indent?.destination}</td>
               </tr>
               <tr>
                 <th className="p-2 border-r border-slate-400 text-[11px] uppercase text-slate-500">Driver Phone</th>
                 <td className="p-2 border-r border-slate-400 text-sm">{trip.driver?.phone || 'N/A'}</td>
                 <th className="p-2 border-r border-slate-400 text-[11px] uppercase text-slate-500">Transporter</th>
-                <td className="p-2 text-sm">{trip.vendor?.name || 'Transitflow Own Fleet'}</td>
+                {/* Previous: <td className="p-2 text-sm">{trip.vendor?.name || 'Transitflow Own Fleet'}</td> */}
+                <td className="p-2 text-sm">{trip.vendor?.name || 'LogiPulse Own Fleet'}</td>
               </tr>
             </tbody>
           </table>
@@ -147,14 +159,16 @@ export default function LorryReceiptPrint() {
             <div className="border-t border-black pt-2 text-[12px] uppercase font-bold text-slate-600">Driver Signature</div>
           </div>
           <div className="text-center">
-            <div className="border-t border-black pt-2 text-[12px] uppercase font-bold text-slate-600">For Transitflow Logistics</div>
+            {/* Previous: <div className="border-t border-black pt-2 text-[12px] uppercase font-bold text-slate-600">For Transitflow Logistics</div> */}
+            <div className="border-t border-black pt-2 text-[12px] uppercase font-bold text-slate-600">For LogiPulse Logistics</div>
           </div>
         </div>
 
         {/* Terms */}
         <div className="mt-10 border-t border-slate-300 pt-4">
           <p className="text-[9px] text-slate-500 uppercase text-justify leading-relaxed">
-            <strong>Terms & Conditions:</strong> 1. Goods are transported at owner's risk unless explicitly insured. 2. Transitflow Logistics is not responsible for damages caused by improper packaging, natural calamities, or unforeseen circumstances. 3. All disputes are subject to local jurisdiction. 4. Demurrage will be charged after 24 hours of vehicle arrival at destination. 5. This LR must be surrendered at the time of delivery.
+            {/* Previous: 2. Transitflow Logistics is not responsible for damages... */}
+            <strong>Terms & Conditions:</strong> 1. Goods are transported at owner's risk unless explicitly insured. 2. LogiPulse Logistics is not responsible for damages caused by improper packaging, natural calamities, or unforeseen circumstances. 3. All disputes are subject to local jurisdiction. 4. Demurrage will be charged after 24 hours of vehicle arrival at destination. 5. This LR must be surrendered at the time of delivery.
           </p>
         </div>
 

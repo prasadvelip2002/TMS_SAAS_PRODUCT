@@ -8,7 +8,7 @@ namespace api_backend.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    [Authorize(Roles = "Platform Admin,Tenant Admin")]
+    [Authorize]
     public class CompaniesController : ControllerBase
     {
         private readonly ApplicationDbContext _context;
@@ -27,6 +27,7 @@ namespace api_backend.Controllers
         }
 
         [HttpPut("current")]
+        [Authorize(Roles = "Platform Admin,Tenant Admin")]
         public async Task<IActionResult> UpdateCurrentCompany(Company updatedCompany)
         {
             var company = await _context.Companies.FirstOrDefaultAsync();

@@ -50,8 +50,13 @@ export default function InvoicePDF() {
         {/* Header */}
         <div className="flex justify-between items-start border-b-2 border-slate-900 pb-6 mb-6">
           <div>
+            {/* Previous:
             <h1 className="text-4xl font-black tracking-tighter text-blue-700 mb-1">TAX INVOICE</h1>
             <p className="text-sm font-bold text-slate-500 uppercase tracking-wider">Transitflow Logistics Solutions</p>
+            */}
+            <img src="/logo.png" alt="LogiPulse" className="h-10 mb-2 object-contain" />
+            <h1 className="text-3xl font-black tracking-tighter text-blue-700 mb-0.5">TAX INVOICE</h1>
+            <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">LogiPulse Solutions</p>
           </div>
           <div className="text-right">
             <div className="text-2xl font-mono font-bold text-slate-900">{invoice.invoiceNumber}</div>
@@ -73,7 +78,8 @@ export default function InvoicePDF() {
           </div>
           <div className="w-1/2 pl-4 border-l border-slate-200">
             <h3 className="font-bold text-slate-400 uppercase tracking-wider mb-2 text-xs">Service Provider</h3>
-            <p className="font-bold text-slate-800">TRANSITFLOW LOGISTICS SOLUTIONS</p>
+            {/* Previous: <p className="font-bold text-slate-800">TRANSITFLOW LOGISTICS SOLUTIONS</p> */}
+            <p className="font-bold text-slate-800">LOGIPULSE LOGISTICS SOLUTIONS</p>
             <p className="text-slate-600 leading-relaxed mt-1">
               123 Transport Nagar, Sector 4<br />
               Mumbai, Maharashtra 400001<br />
@@ -165,7 +171,8 @@ export default function InvoicePDF() {
             <h3 className="font-bold text-slate-800 mb-2">Bank Details</h3>
             <p className="text-slate-600">
               Bank: <strong>HDFC Bank Ltd.</strong><br />
-              A/c Name: <strong>TRANSITFLOW LOGISTICS SOLUTIONS</strong><br />
+              {/* Previous: A/c Name: <strong>TRANSITFLOW LOGISTICS SOLUTIONS</strong><br /> */}
+              A/c Name: <strong>LOGIPULSE LOGISTICS SOLUTIONS</strong><br />
               A/c No: <strong>50200012345678</strong><br />
               IFSC: <strong>HDFC0001234</strong>
             </p>
@@ -173,7 +180,8 @@ export default function InvoicePDF() {
           <div className="text-center flex flex-col items-center justify-end">
             <div className="w-40 h-16 border-b-2 border-slate-300 mb-2"></div>
             <p className="font-bold text-slate-800">Authorized Signatory</p>
-            <p className="text-xs text-slate-500">Transitflow Logistics Solutions</p>
+            {/* Previous: <p className="text-xs text-slate-500">Transitflow Logistics Solutions</p> */}
+            <p className="text-xs text-slate-500">LogiPulse Solutions</p>
           </div>
         </div>
 

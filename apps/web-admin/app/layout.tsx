@@ -8,9 +8,12 @@ const inter = Inter({ subsets: ['latin'], variable: '--font-body' })
 const plexMono = IBM_Plex_Mono({ weight: ['400', '500', '600'], subsets: ['latin'], variable: '--font-mono' })
 
 export const metadata: Metadata = {
-  title: 'TransitFlow TMS — Design System & Blueprints',
+  // Previous TransitFlow branding:
+  // title: 'TransitFlow TMS — Design System & Blueprints',
+  // description: 'Flow charts and high-fidelity web + mobile UI blueprints for a multi-tenant Transport Management System.',
+  title: 'LogiPulse TMS — Intelligent Operating Platform for 2PL & 3PL',
   description:
-    'Flow charts and high-fidelity web + mobile UI blueprints for a multi-tenant Transport Management System.',
+    'Intelligent Transport Management System (TMS) operating platform for 2PL & 3PL logistics.',
   generator: 'v0.app',
   icons: {
     icon: [

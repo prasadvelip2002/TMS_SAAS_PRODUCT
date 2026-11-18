@@ -17,9 +17,9 @@ FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS final
 WORKDIR /app
 COPY --from=build /app/publish .
 
-# Expose port 80/8080 depending on standard Render setups
-# Render automatically injects the PORT environment variable.
+# Expose port 8080 (Render/Railway/Cloud Run inject PORT dynamically)
 EXPOSE 8080
+ENV ASPNETCORE_ENVIRONMENT=Production
 ENV ASPNETCORE_URLS=http://+:8080
 
-ENTRYPOINT ["dotnet", "api-backend.dll"]
+CMD ["sh", "-c", "ASPNETCORE_URLS=http://+:${PORT:-8080} dotnet api-backend.dll"]

@@ -74,6 +74,80 @@ export default function IndentsPage() {
   const [isCustomSource, setIsCustomSource] = useState(false);
   const [isCustomDestination, setIsCustomDestination] = useState(false);
   const [contractRateBadge, setContractRateBadge] = useState<string | null>(null);
+  const [sourceGeoHint, setSourceGeoHint] = useState<{
+    displayName: string;
+    pincode?: string;
+    lat?: number;
+    lng?: number;
+  } | null>(null);
+  const [destGeoHint, setDestGeoHint] = useState<{
+    displayName: string;
+    pincode?: string;
+    lat?: number;
+    lng?: number;
+  } | null>(null);
+  const [isResolvingSource, setIsResolvingSource] = useState(false);
+  const [isResolvingDest, setIsResolvingDest] = useState(false);
+
+  useEffect(() => {
+    const query = formData.source?.trim();
+    if (query && query.length >= 3 && query !== "__custom__") {
+      setIsResolvingSource(true);
+      const timer = setTimeout(() => {
+        fetchApi(`/Locations/geocode?query=${encodeURIComponent(query)}`)
+          .then((res: any) => {
+            if (res && res.success) {
+              const pin = res.pincode || (res.displayName?.match(/\b[1-9][0-9]{5}\b/) || [])[0];
+              const short = (res.displayName || query).split(',').slice(0, 3).join(',').trim();
+              setSourceGeoHint({
+                displayName: short,
+                pincode: pin,
+                lat: res.latitude,
+                lng: res.longitude
+              });
+            } else {
+              setSourceGeoHint(null);
+            }
+          })
+          .catch(() => setSourceGeoHint(null))
+          .finally(() => setIsResolvingSource(false));
+      }, 400);
+      return () => clearTimeout(timer);
+    } else {
+      setSourceGeoHint(null);
+      setIsResolvingSource(false);
+    }
+  }, [formData.source]);
+
+  useEffect(() => {
+    const query = formData.destination?.trim();
+    if (query && query.length >= 3 && query !== "__custom__") {
+      setIsResolvingDest(true);
+      const timer = setTimeout(() => {
+        fetchApi(`/Locations/geocode?query=${encodeURIComponent(query)}`)
+          .then((res: any) => {
+            if (res && res.success) {
+              const pin = res.pincode || (res.displayName?.match(/\b[1-9][0-9]{5}\b/) || [])[0];
+              const short = (res.displayName || query).split(',').slice(0, 3).join(',').trim();
+              setDestGeoHint({
+                displayName: short,
+                pincode: pin,
+                lat: res.latitude,
+                lng: res.longitude
+              });
+            } else {
+              setDestGeoHint(null);
+            }
+          })
+          .catch(() => setDestGeoHint(null))
+          .finally(() => setIsResolvingDest(false));
+      }, 400);
+      return () => clearTimeout(timer);
+    } else {
+      setDestGeoHint(null);
+      setIsResolvingDest(false);
+    }
+  }, [formData.destination]);
 
   const handleCustomerTypeFilterChange = (type: 'Contract' | 'Spot' | 'All') => {
     setCustomerTypeFilter(type);
@@ -845,26 +919,75 @@ export default function IndentsPage() {
                       </div>
 
                       {contractSources.length > 0 && !isCustomSource ? (
-                        <select 
-                          required 
-                          value={formData.source} 
-                          onChange={e => handleSourceSelect(e.target.value)} 
-                          className="w-full border border-slate-200 rounded-xl px-4 py-3 text-[14px] bg-slate-50 hover:bg-slate-100 focus:bg-white text-slate-800 font-medium outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all shadow-sm"
-                        >
-                          <option value="">Select Contract Source</option>
-                          {contractSources.map(s => (
-                            <option key={s} value={s}>{s}</option>
-                          ))}
-                          <option value="__custom__">✏️ Custom / Other Source...</option>
-                        </select>
+                        <div>
+                          <select 
+                            required 
+                            value={formData.source} 
+                            onChange={e => handleSourceSelect(e.target.value)} 
+                            className="w-full border border-slate-200 rounded-xl px-4 py-3 text-[14px] bg-slate-50 hover:bg-slate-100 focus:bg-white text-slate-800 font-medium outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all shadow-sm"
+                          >
+                            <option value="">Select Contract Source</option>
+                            {contractSources.map(s => (
+                              <option key={s} value={s}>{s}</option>
+                            ))}
+                            <option value="__custom__">✏️ Custom / Other Source...</option>
+                          </select>
+                          {sourceGeoHint && (
+                            <div className="mt-1.5 text-[11px] font-semibold text-emerald-800 bg-emerald-50 px-2.5 py-1.5 rounded-lg border border-emerald-200/80 flex items-center justify-between gap-1.5 animate-in fade-in">
+                              <div className="flex items-center gap-1.5 truncate">
+                                <MapPin className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                                <span className="truncate">{sourceGeoHint.displayName}</span>
+                              </div>
+                              <div className="flex items-center gap-1.5 shrink-0">
+                                {sourceGeoHint.pincode && (
+                                  <span className="bg-emerald-600 text-white font-mono font-bold px-1.5 py-0.5 rounded text-[10px]">
+                                    PIN {sourceGeoHint.pincode}
+                                  </span>
+                                )}
+                                {sourceGeoHint.lat && sourceGeoHint.lng && (
+                                  <span className="text-[10px] text-emerald-700/80 font-mono hidden sm:inline">
+                                    {sourceGeoHint.lat.toFixed(2)}°, {sourceGeoHint.lng.toFixed(2)}°
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          )}
+                        </div>
                       ) : (
-                        <input 
-                          required 
-                          value={formData.source} 
-                          onChange={e => setFormData({...formData, source: e.target.value})} 
-                          className="w-full border border-slate-200 rounded-xl px-4 py-3 text-[14px] bg-slate-50 hover:bg-slate-100 focus:bg-white text-slate-800 font-medium outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all shadow-sm" 
-                          placeholder="e.g. Mumbai" 
-                        />
+                        <div>
+                          <input 
+                            required 
+                            value={formData.source} 
+                            onChange={e => setFormData({...formData, source: e.target.value})} 
+                            className="w-full border border-slate-200 rounded-xl px-4 py-3 text-[14px] bg-slate-50 hover:bg-slate-100 focus:bg-white text-slate-800 font-medium outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all shadow-sm" 
+                            placeholder="Enter 6-digit PIN Code or Address (e.g. 560058 or Peenya)" 
+                          />
+                          {isResolvingSource && (
+                            <div className="mt-1.5 text-[11px] text-blue-600 flex items-center gap-1.5 animate-in fade-in font-medium px-1">
+                              <Activity className="w-3 h-3 animate-spin text-blue-600" /> Resolving location & PIN dynamically...
+                            </div>
+                          )}
+                          {sourceGeoHint && !isResolvingSource && (
+                            <div className="mt-1.5 text-[11px] font-semibold text-emerald-800 bg-emerald-50 px-2.5 py-1.5 rounded-lg border border-emerald-200/80 flex items-center justify-between gap-1.5 animate-in fade-in">
+                              <div className="flex items-center gap-1.5 truncate">
+                                <MapPin className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                                <span className="truncate">{sourceGeoHint.displayName}</span>
+                              </div>
+                              <div className="flex items-center gap-1.5 shrink-0">
+                                {sourceGeoHint.pincode && (
+                                  <span className="bg-emerald-600 text-white font-mono font-bold px-1.5 py-0.5 rounded text-[10px]">
+                                    PIN {sourceGeoHint.pincode}
+                                  </span>
+                                )}
+                                {sourceGeoHint.lat && sourceGeoHint.lng && (
+                                  <span className="text-[10px] text-emerald-700/80 font-mono hidden sm:inline">
+                                    {sourceGeoHint.lat.toFixed(2)}°, {sourceGeoHint.lng.toFixed(2)}°
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          )}
+                        </div>
                       )}
                     </div>
 
@@ -884,26 +1007,75 @@ export default function IndentsPage() {
                       </div>
 
                       {contractDestinations.length > 0 && !isCustomDestination ? (
-                        <select 
-                          required 
-                          value={formData.destination} 
-                          onChange={e => handleDestinationSelect(e.target.value)} 
-                          className="w-full border border-slate-200 rounded-xl px-4 py-3 text-[14px] bg-slate-50 hover:bg-slate-100 focus:bg-white text-slate-800 font-medium outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all shadow-sm"
-                        >
-                          <option value="">Select Contract Destination</option>
-                          {contractDestinations.map(d => (
-                            <option key={d} value={d}>{d}</option>
-                          ))}
-                          <option value="__custom__">✏️ Custom / Other Destination...</option>
-                        </select>
+                        <div>
+                          <select 
+                            required 
+                            value={formData.destination} 
+                            onChange={e => handleDestinationSelect(e.target.value)} 
+                            className="w-full border border-slate-200 rounded-xl px-4 py-3 text-[14px] bg-slate-50 hover:bg-slate-100 focus:bg-white text-slate-800 font-medium outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all shadow-sm"
+                          >
+                            <option value="">Select Contract Destination</option>
+                            {contractDestinations.map(d => (
+                              <option key={d} value={d}>{d}</option>
+                            ))}
+                            <option value="__custom__">✏️ Custom / Other Destination...</option>
+                          </select>
+                          {destGeoHint && (
+                            <div className="mt-1.5 text-[11px] font-semibold text-emerald-800 bg-emerald-50 px-2.5 py-1.5 rounded-lg border border-emerald-200/80 flex items-center justify-between gap-1.5 animate-in fade-in">
+                              <div className="flex items-center gap-1.5 truncate">
+                                <MapPin className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                                <span className="truncate">{destGeoHint.displayName}</span>
+                              </div>
+                              <div className="flex items-center gap-1.5 shrink-0">
+                                {destGeoHint.pincode && (
+                                  <span className="bg-emerald-600 text-white font-mono font-bold px-1.5 py-0.5 rounded text-[10px]">
+                                    PIN {destGeoHint.pincode}
+                                  </span>
+                                )}
+                                {destGeoHint.lat && destGeoHint.lng && (
+                                  <span className="text-[10px] text-emerald-700/80 font-mono hidden sm:inline">
+                                    {destGeoHint.lat.toFixed(2)}°, {destGeoHint.lng.toFixed(2)}°
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          )}
+                        </div>
                       ) : (
-                        <input 
-                          required 
-                          value={formData.destination} 
-                          onChange={e => setFormData({...formData, destination: e.target.value})} 
-                          className="w-full border border-slate-200 rounded-xl px-4 py-3 text-[14px] bg-slate-50 hover:bg-slate-100 focus:bg-white text-slate-800 font-medium outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all shadow-sm" 
-                          placeholder="e.g. Pune" 
-                        />
+                        <div>
+                          <input 
+                            required 
+                            value={formData.destination} 
+                            onChange={e => setFormData({...formData, destination: e.target.value})} 
+                            className="w-full border border-slate-200 rounded-xl px-4 py-3 text-[14px] bg-slate-50 hover:bg-slate-100 focus:bg-white text-slate-800 font-medium outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all shadow-sm" 
+                            placeholder="Enter 6-digit PIN Code or Address (e.g. 400099 or Bhiwandi)" 
+                          />
+                          {isResolvingDest && (
+                            <div className="mt-1.5 text-[11px] text-blue-600 flex items-center gap-1.5 animate-in fade-in font-medium px-1">
+                              <Activity className="w-3 h-3 animate-spin text-blue-600" /> Resolving location & PIN dynamically...
+                            </div>
+                          )}
+                          {destGeoHint && !isResolvingDest && (
+                            <div className="mt-1.5 text-[11px] font-semibold text-emerald-800 bg-emerald-50 px-2.5 py-1.5 rounded-lg border border-emerald-200/80 flex items-center justify-between gap-1.5 animate-in fade-in">
+                              <div className="flex items-center gap-1.5 truncate">
+                                <MapPin className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                                <span className="truncate">{destGeoHint.displayName}</span>
+                              </div>
+                              <div className="flex items-center gap-1.5 shrink-0">
+                                {destGeoHint.pincode && (
+                                  <span className="bg-emerald-600 text-white font-mono font-bold px-1.5 py-0.5 rounded text-[10px]">
+                                    PIN {destGeoHint.pincode}
+                                  </span>
+                                )}
+                                {destGeoHint.lat && destGeoHint.lng && (
+                                  <span className="text-[10px] text-emerald-700/80 font-mono hidden sm:inline">
+                                    {destGeoHint.lat.toFixed(2)}°, {destGeoHint.lng.toFixed(2)}°
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          )}
+                        </div>
                       )}
                     </div>
                   </div>

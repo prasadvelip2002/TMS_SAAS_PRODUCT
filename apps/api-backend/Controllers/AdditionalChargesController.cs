@@ -6,6 +6,7 @@ using Microsoft.EntityFrameworkCore;
 using api_backend.Data;
 using api_backend.Models;
 using System.Linq;
+using System.Security.Claims;
 
 namespace api_backend.Controllers
 {
@@ -25,7 +26,13 @@ namespace api_backend.Controllers
         [HttpGet]
         public async Task<ActionResult<IEnumerable<AdditionalCharge>>> GetAdditionalCharges()
         {
-            return await _context.AdditionalCharges
+            var roleClaim = User.FindFirst(ClaimTypes.Role)?.Value;
+            var userBranchIdClaim = User.FindFirst("BranchId")?.Value;
+            int? userBranchId = int.TryParse(userBranchIdClaim, out var bid) && bid > 0 ? bid : null;
+
+            bool isGlobalAdmin = roleClaim == "Tenant Admin" || roleClaim == "Admin" || roleClaim == "Director/Operations Head" || string.IsNullOrEmpty(roleClaim);
+
+            var query = _context.AdditionalCharges
                 .Include(c => c.Trip)
                     .ThenInclude(t => t.Indent)
                         .ThenInclude(i => i.Customer)
@@ -33,8 +40,14 @@ namespace api_backend.Controllers
                     .ThenInclude(t => t.Vendor)
                 .Include(c => c.Trip)
                     .ThenInclude(t => t.Vehicle)
-                .OrderByDescending(c => c.CreatedAt)
-                .ToListAsync();
+                .AsQueryable();
+
+            if (!isGlobalAdmin && userBranchId.HasValue)
+            {
+                query = query.Where(c => c.Trip != null && (c.Trip.BranchId == userBranchId.Value || (c.Trip.Indent != null && c.Trip.Indent.BranchId == userBranchId.Value)));
+            }
+
+            return await query.OrderByDescending(c => c.CreatedAt).ToListAsync();
         }
 
         // GET: api/AdditionalCharges/5

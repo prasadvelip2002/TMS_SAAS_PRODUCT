@@ -12,7 +12,8 @@ export default function LandingPage() {
           <div className="flex justify-between h-20 items-center">
             {/* Logo */}
             <div className="flex-shrink-0 flex items-center group cursor-pointer">
-              <Image src="/logo.png" alt="Transitflow LOGISTICS" width={320} height={80} className="h-14 md:h-16 w-auto object-contain mix-blend-multiply transition-transform duration-300 group-hover:scale-105" />
+              {/* Previous: <Image src="/logo_transitflow.png" alt="Transitflow LOGISTICS" width={320} height={80} className="h-14 md:h-16 w-auto object-contain mix-blend-multiply transition-transform duration-300 group-hover:scale-105" /> */}
+              <Image src="/logo.png" alt="LogiPulse" width={320} height={80} className="h-12 md:h-14 w-auto object-contain transition-transform duration-300 group-hover:scale-105" />
             </div>
             
             {/* Nav Links */}
@@ -55,7 +56,8 @@ export default function LandingPage() {
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
                 <span className="relative inline-flex rounded-full h-3 w-3 bg-blue-500"></span>
               </span>
-              TransitFlow v2.0 is Live
+              {/* Previous: TransitFlow v2.0 is Live */}
+              LogiPulse TMS is Live
             </div>
 
             <h1 className="text-5xl md:text-7xl font-black text-white tracking-tight mb-8 leading-[1.1] max-w-5xl mx-auto">
@@ -90,7 +92,8 @@ export default function LandingPage() {
         <div id="features" className="bg-slate-50 py-20 md:py-32 relative -mt-6 md:-mt-10 rounded-t-3xl md:rounded-t-[3rem] shadow-[0_-20px_50px_rgba(0,0,0,0.2)]">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center mb-12 md:mb-20">
-              <h2 className="text-blue-600 font-bold tracking-wider uppercase text-sm mb-3">Why TransitFlow?</h2>
+              {/* Previous: <h2 className="text-blue-600 font-bold tracking-wider uppercase text-sm mb-3">Why TransitFlow?</h2> */}
+              <h2 className="text-blue-600 font-bold tracking-wider uppercase text-sm mb-3">Why LogiPulse?</h2>
               <h3 className="text-4xl md:text-5xl font-black text-slate-900 tracking-tight">Everything you need to scale</h3>
             </div>
             
@@ -225,7 +228,8 @@ export default function LandingPage() {
           <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10"></div>
           <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10">
             <h2 className="text-3xl md:text-6xl font-black text-white mb-6 md:mb-8 tracking-tight">Ready to transform your transport business?</h2>
-            <p className="text-lg md:text-xl text-blue-100 mb-8 md:mb-12 font-medium">Join hundreds of logistics companies upgrading their operations with TransitFlow today.</p>
+            {/* Previous: <p className="text-lg md:text-xl text-blue-100 mb-8 md:mb-12 font-medium">Join hundreds of logistics companies upgrading their operations with TransitFlow today.</p> */}
+            <p className="text-lg md:text-xl text-blue-100 mb-8 md:mb-12 font-medium">Join hundreds of logistics companies upgrading their operations with LogiPulse today.</p>
             <Link href="/register" className="inline-flex items-center justify-center gap-2 md:gap-3 bg-white text-blue-700 hover:bg-blue-50 font-black text-lg md:text-xl px-8 md:px-12 py-4 md:py-5 rounded-full shadow-2xl hover:shadow-[0_0_40px_rgba(255,255,255,0.4)] hover:-translate-y-1 transition-all duration-300">
               Create Your Free Account <ArrowRight className="w-5 h-5 md:w-6 md:h-6" />
             </Link>
@@ -238,7 +242,8 @@ export default function LandingPage() {
       <footer className="bg-[#0B1120] pt-20 pb-10 border-t border-slate-800">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col md:flex-row justify-between items-center gap-6 mb-12">
-            <Image src="/logo.png" alt="Transitflow LOGISTICS" width={200} height={50} className="h-10 w-auto object-contain brightness-0 invert opacity-80" />
+            {/* Previous: <Image src="/logo_transitflow.png" alt="Transitflow LOGISTICS" width={200} height={50} className="h-10 w-auto object-contain brightness-0 invert opacity-80" /> */}
+            <Image src="/logo-white.png" alt="LogiPulse" width={200} height={50} className="h-10 w-auto object-contain opacity-95 hover:opacity-100 transition-opacity" />
             <div className="flex space-x-6 text-slate-400 font-medium">
               <Link href="#" className="hover:text-white transition-colors">Privacy Policy</Link>
               <Link href="#" className="hover:text-white transition-colors">Terms of Service</Link>
@@ -246,7 +251,8 @@ export default function LandingPage() {
             </div>
           </div>
           <div className="text-center text-slate-500 text-sm border-t border-slate-800 pt-8">
-            &copy; {new Date().getFullYear()} Transitflow Logistics SaaS. Built for the modern supply chain. All rights reserved.
+            {/* Previous: &copy; {new Date().getFullYear()} Transitflow Logistics SaaS. Built for the modern supply chain. All rights reserved. */}
+            &copy; {new Date().getFullYear()} LogiPulse TMS SaaS. Built for the modern supply chain. All rights reserved.
           </div>
         </div>
       </footer>

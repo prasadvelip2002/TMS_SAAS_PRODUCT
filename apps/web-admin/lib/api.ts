@@ -1,17 +1,40 @@
 export const getApiBaseUrl = () => {
+  const configuredUrl = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, '');
+  const isLocalConfigured = configuredUrl?.includes('localhost') || configuredUrl?.includes('127.0.0.1');
+
   if (typeof window !== 'undefined') {
-    const host = window.location.hostname;
-    if (host !== 'localhost' && host !== '127.0.0.1') {
-      if (/^(\d{1,3}\.){3}\d{1,3}$/.test(host)) {
-        return `http://${host}:5063/api`;
-      }
-      return process.env.NEXT_PUBLIC_API_URL || 'https://tms-saas-product.onrender.com/api';
+    const isLocalHost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+    if (isLocalHost) {
+      return configuredUrl || 'http://127.0.0.1:5063/api';
     }
+    // In production browser: prefer direct HTTPS backend URL if configured (avoids Vercel 10s proxy timeout on cold starts),
+    // otherwise fall back to Next.js /api/proxy route.
+    if (configuredUrl && !isLocalConfigured) {
+      return configuredUrl;
+    }
+    return '/api/proxy';
   }
   if (process.env.VERCEL || process.env.NODE_ENV === 'production') {
-    return process.env.NEXT_PUBLIC_API_URL || 'https://tms-saas-product.onrender.com/api';
+    return (configuredUrl && !isLocalConfigured ? configuredUrl : null) || 'https://tms-saas-product.onrender.com/api';
   }
-  return process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5063/api';
+  return configuredUrl || 'http://127.0.0.1:5063/api';
+};
+
+export const getBackendOrigin = () => {
+  const configuredUrl = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, '');
+  const isLocalConfigured = configuredUrl?.includes('localhost') || configuredUrl?.includes('127.0.0.1');
+
+  if (typeof window !== 'undefined') {
+    const isLocalHost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+    if (isLocalHost) {
+      return (configuredUrl || 'http://127.0.0.1:5063/api').replace(/\/api$/, '');
+    }
+    if (configuredUrl && !isLocalConfigured) {
+      return configuredUrl.replace(/\/api$/, '');
+    }
+    return 'https://tms-saas-product.onrender.com';
+  }
+  return (configuredUrl || 'https://tms-saas-product.onrender.com/api').replace(/\/api$/, '');
 };
 
 export const API_BASE_URL = getApiBaseUrl();
@@ -41,7 +64,7 @@ export function clearApiCache(prefix?: string) {
 if (typeof window !== 'undefined') {
   setInterval(() => {
     try {
-      fetch(`${getApiBaseUrl()}/api/health`, { method: 'GET', keepalive: true }).catch(() => {});
+      fetch(`${getApiBaseUrl()}/health`, { method: 'GET', keepalive: true }).catch(() => {});
     } catch {}
   }, 4 * 60 * 1000);
 }

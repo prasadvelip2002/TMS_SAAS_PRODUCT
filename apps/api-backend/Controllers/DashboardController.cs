@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using api_backend.Data;
 using System.Linq;
 using System;
+using System.Security.Claims;
 
 namespace api_backend.Controllers
 {
@@ -23,7 +24,20 @@ namespace api_backend.Controllers
         [HttpGet("stats")]
         public async Task<IActionResult> GetStats()
         {
-            var trips = await _context.Trips.ToListAsync();
+            var roleClaim = User.FindFirst(ClaimTypes.Role)?.Value;
+            var userBranchIdClaim = User.FindFirst("BranchId")?.Value;
+            int? userBranchId = int.TryParse(userBranchIdClaim, out var bid) && bid > 0 ? bid : null;
+
+            bool isGlobalAdmin = roleClaim == "Tenant Admin" || roleClaim == "Admin" || roleClaim == "Director/Operations Head" || string.IsNullOrEmpty(roleClaim);
+
+            var query = _context.Trips.Include(t => t.Indent).AsQueryable();
+
+            if (!isGlobalAdmin && userBranchId.HasValue)
+            {
+                query = query.Where(t => t.BranchId == userBranchId.Value || (t.Indent != null && t.Indent.BranchId == userBranchId.Value));
+            }
+
+            var trips = await query.ToListAsync();
             
             var activeTrips = trips.Count(t => t.Status == "Started" || t.Status == "Assigned");
             var deliveredTrips = trips.Count(t => t.Status == "Delivered" || t.Status == "Closed");

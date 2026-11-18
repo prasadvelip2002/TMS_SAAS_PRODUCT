@@ -77,7 +77,7 @@ function Login() {
         <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary text-primary-foreground">
           <Truck className="h-7 w-7" />
         </span>
-        <h2 className="mt-6 text-2xl font-bold">TransitFlow Driver</h2>
+        <h2 className="mt-6 text-2xl font-bold">LogiPulse Driver</h2>
         <p className="mt-1 text-sm text-muted-foreground">Sign in to manage your trips</p>
         <div className="mt-8 space-y-4">
           <div>
@@ -491,7 +491,7 @@ function Profile() {
           RK
         </div>
         <h2 className="mt-3 text-lg font-bold">Rajesh Kumar</h2>
-        <p className="text-xs opacity-80">Driver · TransitFlow Fleet</p>
+        <p className="text-xs opacity-80">Driver · LogiPulse Fleet</p>
         <div className="mt-2 inline-flex items-center gap-1 rounded-full bg-primary-foreground/15 px-3 py-1 text-xs">
           <Star className="h-3.5 w-3.5 fill-current" /> 4.7 · 312 trips
         </div>

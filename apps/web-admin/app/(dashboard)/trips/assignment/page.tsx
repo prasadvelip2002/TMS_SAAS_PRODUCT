@@ -40,6 +40,11 @@ export default function AssignmentPage() {
   const [assignedTripResult, setAssignedTripResult] = useState<any | null>(null);
   const [copiedModalLink, setCopiedModalLink] = useState(false);
 
+  // Proximity sorting state for pickup location
+  const [vehicleProximityMap, setVehicleProximityMap] = useState<Map<number, { distKm?: number; isNearby?: boolean }>>(new Map());
+  const [isCalculatingProximity, setIsCalculatingProximity] = useState(false);
+  const [pickupLocationName, setPickupLocationName] = useState<string>("");
+
   const filteredIndents = indents.filter((item) => {
     if (!searchQuery.trim()) return true;
     const q = searchQuery.toLowerCase().trim();
@@ -186,6 +191,30 @@ export default function AssignmentPage() {
   const openAssignPanel = (item: any) => {
     setSelectedIndent(item);
     
+    // Trigger pickup proximity discovery for vehicles
+    const pickupLoc = item.legType === "OutboundLeg2" ? (item.warehouseLocation || item.source) : item.source;
+    setPickupLocationName(pickupLoc || "");
+    if (pickupLoc && pickupLoc.trim().length >= 3) {
+      setIsCalculatingProximity(true);
+      fetchApi(`/Vehicles/nearby?pincode=${encodeURIComponent(pickupLoc.trim())}&radiusKm=100`)
+        .then((res: any) => {
+          if (res) {
+            const pMap = new Map<number, { distKm?: number; isNearby?: boolean }>();
+            (res.nearbyVehicles || []).forEach((v: any) => {
+              pMap.set(v.id, { distKm: v.distanceFromPincodeKm, isNearby: true });
+            });
+            (res.otherVehicles || []).forEach((v: any) => {
+              pMap.set(v.id, { distKm: v.distanceFromPincodeKm, isNearby: false });
+            });
+            setVehicleProximityMap(pMap);
+          }
+        })
+        .catch(() => {})
+        .finally(() => setIsCalculatingProximity(false));
+    } else {
+      setVehicleProximityMap(new Map());
+    }
+
     // If the item already has a partial trip, pre-fill the form
     if (item.trip) {
         const baseRate = item.trip.fixedRate || item.trip.supplierRate || item.trip.freightCharges || 0;
@@ -267,12 +296,20 @@ export default function AssignmentPage() {
     }
   };
 
-  const filteredVehicles = vehicles.filter(v => {
-    if (!formData.vendorId) {
-      return !v.vendorId;
-    }
-    return v.vendorId === parseInt(formData.vendorId);
-  });
+  const filteredVehicles = vehicles
+    .filter(v => {
+      if (!formData.vendorId) {
+        return !v.vendorId;
+      }
+      return v.vendorId === parseInt(formData.vendorId);
+    })
+    .sort((a, b) => {
+      const proxA = vehicleProximityMap.get(a.id);
+      const proxB = vehicleProximityMap.get(b.id);
+      const distA = proxA?.distKm ?? 99999;
+      const distB = proxB?.distKm ?? 99999;
+      return distA - distB;
+    });
 
   const filteredDrivers = drivers.filter(d => {
     if (!formData.vendorId) {
@@ -687,10 +724,35 @@ export default function AssignmentPage() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-[13px] font-bold text-slate-700 mb-1.5">Vehicle</label>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="block text-[13px] font-bold text-slate-700">Vehicle</label>
+                    {isCalculatingProximity && (
+                      <span className="text-[10px] text-blue-600 flex items-center gap-1 font-medium">
+                        <Activity className="w-3 h-3 animate-spin" /> Checking nearby...
+                      </span>
+                    )}
+                  </div>
+                  {pickupLocationName && vehicleProximityMap.size > 0 && (
+                    <div className="mb-1.5 text-[10.5px] font-semibold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200/80 flex items-center gap-1 truncate">
+                      <span>🎯 Sorted by proximity to pickup:</span>
+                      <span className="font-bold underline truncate">{pickupLocationName}</span>
+                    </div>
+                  )}
                   <select required value={formData.vehicleId} onChange={e => setFormData({...formData, vehicleId: e.target.value})} className="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-[14px] bg-slate-50/50 text-slate-900 font-medium outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all">
                     <option value="">Select Vehicle</option>
-                    {filteredVehicles.map(v => <option key={v.id} value={v.id}>{v.vehicleNumber} ({v.capacity}T)</option>)}
+                    {filteredVehicles.map(v => {
+                      const prox = vehicleProximityMap.get(v.id);
+                      const badge = prox?.isNearby
+                        ? `🎯 ${prox.distKm} km from pickup [Nearby]`
+                        : prox?.distKm !== undefined
+                        ? `${prox.distKm} km away`
+                        : "";
+                      return (
+                        <option key={v.id} value={v.id}>
+                          {v.vehicleNumber} ({v.capacity}T){badge ? ` • ${badge}` : ""}
+                        </option>
+                      );
+                    })}
                   </select>
                 </div>
 
@@ -860,7 +922,9 @@ export default function AssignmentPage() {
                 const trackingUrl = `${origin}/driver/trip/${assignedTripResult.tripId}`;
                 const driverPhone = assignedTripResult.driver?.phone || "";
                 const cleanPhone = driverPhone.replace(/\D/g, '');
-                const waMessage = `🚛 *TransitFlow · Trip Assignment*\n\nHello *${assignedTripResult.driver?.name || 'Driver'}*,\nTrip #${assignedTripResult.tripId} has been assigned to you with Vehicle *${assignedTripResult.vehicle?.vehicleNumber}*.\n\nRoute: ${assignedTripResult.indent?.source} ➔ ${assignedTripResult.indent?.destination}\n\n📍 *Start Live GPS Tracking:*\nTap this link on your phone to start the trip and share live GPS:\n👉 ${trackingUrl}`;
+                // Previous TransitFlow message:
+                // const waMessage = `🚛 *TransitFlow · Trip Assignment*\n\nHello *${assignedTripResult.driver?.name || 'Driver'}*,\nTrip #${assignedTripResult.tripId} has been assigned to you with Vehicle *${assignedTripResult.vehicle?.vehicleNumber}*.\n\nRoute: ${assignedTripResult.indent?.source} ➔ ${assignedTripResult.indent?.destination}\n\n📍 *Start Live GPS Tracking:*\nTap this link on your phone to start the trip and share live GPS:\n👉 ${trackingUrl}`;
+                const waMessage = `🚛 *LogiPulse · Trip Assignment*\n\nHello *${assignedTripResult.driver?.name || 'Driver'}*,\nTrip #${assignedTripResult.tripId} has been assigned to you with Vehicle *${assignedTripResult.vehicle?.vehicleNumber}*.\n\nRoute: ${assignedTripResult.indent?.source} ➔ ${assignedTripResult.indent?.destination}\n\n📍 *Start Live GPS Tracking:*\nTap this link on your phone to start the trip and share live GPS:\n👉 ${trackingUrl}`;
 
                 return (
                   <>

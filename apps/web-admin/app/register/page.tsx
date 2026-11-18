@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import Image from "next/image";
 import Link from "next/link";
 import { toast } from "sonner";
+import { getApiBaseUrl } from "@/lib/api";
 
 export default function RegisterPage() {
   const [tenantName, setTenantName] = useState("");
@@ -31,7 +32,7 @@ export default function RegisterPage() {
     setLoading(true);
 
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5063/api";
+      const apiUrl = getApiBaseUrl();
       const response = await fetch(`${apiUrl}/auth/setup`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -73,12 +74,23 @@ export default function RegisterPage() {
         <div className="absolute bottom-0 left-0 w-96 h-96 bg-blue-500 opacity-30 blur-[100px] rounded-full -translate-x-1/3 translate-y-1/3" />
 
         <div className="flex-1 flex flex-col justify-center max-w-xl relative z-10 mx-auto text-center items-center">
-          <div className="relative mb-12 -translate-y-12">
+          <div className="relative mb-12 -translate-y-6">
+            {/* Previous:
             <div className="absolute inset-0 bg-white/70 blur-[80px] rounded-full scale-150"></div>
-            <Image src="/logo.png" alt="Transitflow LOGISTICS" width={800} height={240} className="relative z-10 h-56 w-auto object-contain drop-shadow-2xl" />
+            <Image src="/logo_transitflow.png" alt="Transitflow LOGISTICS" width={800} height={240} className="relative z-10 h-56 w-auto object-contain drop-shadow-2xl" />
+            */}
+            <Image 
+              src="/logo-white.png" 
+              alt="LogiPulse" 
+              width={500} 
+              height={150} 
+              className="h-24 md:h-28 w-auto object-contain drop-shadow-[0_12px_24px_rgba(0,0,0,0.6)]" 
+              priority 
+            />
           </div>
+          {/* Previous: <h1 className="text-4xl md:text-5xl font-bold leading-tight mb-6 tracking-tight text-white drop-shadow-lg">Start your journey with Transitflow Logistics</h1> */}
           <h1 className="text-4xl md:text-5xl font-bold leading-tight mb-6 tracking-tight text-white drop-shadow-lg">
-            Start your journey with Transitflow Logistics
+            Start your journey with LogiPulse
           </h1>
           <p className="text-[#94A3B8] text-lg mb-12 font-medium leading-relaxed">
             Create your workspace in seconds. Onboard your fleet, invite your team, and take control of your transport operations.
@@ -104,8 +116,9 @@ export default function RegisterPage() {
 
         <div className="mx-auto w-full max-w-md bg-white p-8 sm:p-10 rounded-[2rem] shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 hover:shadow-[0_8px_40px_rgb(37,99,235,0.12)] hover:border-blue-200 transition-all duration-500 relative z-10 my-auto">
           <div className="text-center lg:text-left mb-10 mt-8 lg:mt-0">
-            <div className="lg:hidden flex items-center justify-center h-28 mb-8">
-              <Image src="/logo.png" alt="Transitflow LOGISTICS" width={400} height={160} className="h-full w-auto max-w-[320px] object-contain mix-blend-multiply" />
+            <div className="lg:hidden flex items-center justify-center h-20 mb-6">
+              {/* Previous: <Image src="/logo_transitflow.png" alt="Transitflow LOGISTICS" width={400} height={160} className="h-full w-auto max-w-[320px] object-contain mix-blend-multiply" /> */}
+              <Image src="/logo.png" alt="LogiPulse" width={400} height={160} className="h-full w-auto max-w-[260px] object-contain" />
             </div>
             <h2 className="text-3xl font-bold tracking-tight text-slate-900">Create workspace</h2>
             <p className="mt-2 text-sm text-slate-600">

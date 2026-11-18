@@ -76,7 +76,10 @@ namespace api_backend.Controllers
                 });
             }
 
-            var user = await _context.Users.IgnoreQueryFilters().FirstOrDefaultAsync(u => u.Email == request.Email && u.PasswordHash == request.Password);
+            var user = await _context.Users
+                .IgnoreQueryFilters()
+                .Include(u => u.Branch)
+                .FirstOrDefaultAsync(u => u.Email == request.Email && u.PasswordHash == request.Password);
 
             if (user == null)
             {
@@ -87,13 +90,18 @@ namespace api_backend.Controllers
             var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey));
             var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
 
-            var claims = new[]
+            var branchIdStr = user.BranchId?.ToString() ?? "";
+            var branchNameStr = user.Branch?.Name ?? "";
+
+            var claims = new List<Claim>
             {
                 new Claim(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
                 new Claim(JwtRegisteredClaimNames.Email, user.Email),
                 new Claim("TenantId", user.TenantId.ToString()),
                 new Claim("CompanyId", user.CompanyId.ToString()),
-                new Claim(ClaimTypes.Role, user.Role)
+                new Claim(ClaimTypes.Role, user.Role),
+                new Claim("BranchId", branchIdStr),
+                new Claim("BranchName", branchNameStr)
             };
 
             var token = new JwtSecurityToken(
@@ -106,7 +114,18 @@ namespace api_backend.Controllers
             return Ok(new
             {
                 token = new JwtSecurityTokenHandler().WriteToken(token),
-                user = new { user.Id, user.Name, user.Email, user.Role, user.TenantId, user.CompanyId }
+                user = new 
+                { 
+                    user.Id, 
+                    user.Name, 
+                    user.Email, 
+                    user.Phone,
+                    user.Role, 
+                    user.TenantId, 
+                    user.CompanyId,
+                    user.BranchId,
+                    BranchName = user.Branch?.Name ?? (user.Role == "Tenant Admin" || user.Role == "Admin" ? "All Branches (Head Office)" : "Unassigned")
+                }
             });
         }
         
@@ -131,6 +150,19 @@ namespace api_backend.Controllers
             _context.Companies.Add(company);
             await _context.SaveChangesAsync();
 
+            // Auto-create default Head Office branch for the new company
+            var defaultBranch = new Branch
+            {
+                Name = "Head Office",
+                Code = "HO",
+                Location = "Headquarters",
+                IsHeadOffice = true,
+                TenantId = tenant.Id,
+                CompanyId = company.Id
+            };
+            _context.Branches.Add(defaultBranch);
+            await _context.SaveChangesAsync();
+
             var user = new User 
             { 
                 Name = request.AdminName, 
@@ -138,13 +170,14 @@ namespace api_backend.Controllers
                 Phone = request.AdminPhone,
                 PasswordHash = request.AdminPassword, 
                 Role = "Tenant Admin",
+                BranchId = defaultBranch.Id,
                 TenantId = tenant.Id,
                 CompanyId = company.Id
             };
             _context.Users.Add(user);
             await _context.SaveChangesAsync();
 
-            return Ok(new { message = "Setup complete", tenantId = tenant.Id, companyId = company.Id, userId = user.Id });
+            return Ok(new { message = "Setup complete", tenantId = tenant.Id, companyId = company.Id, branchId = defaultBranch.Id, userId = user.Id });
         }
     }
 }
